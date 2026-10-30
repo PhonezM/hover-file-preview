@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>hover-file-preview demo</title>
+<style>
+  body { margin: 0; padding: 32px; font: 15px/1.6 system-ui; background: #f4f7fb; color: #172b4d; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p { margin: 0 0 20px; color: #505f79; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin: 6px 0; }
+  a { color: #0052cc; }
+</style>
+<h1>hover-file-preview demo</h1>
+<p>Serve this folder over http (a hover preview cannot fetch from <code>file://</code>),
+then hover a link:</p>
+<pre>python3 -m http.server 8765</pre>
+<ul>
+  <li><a href="demo-deck.pptx">demo-deck.pptx</a> - a 3 slide deck</li>
+  <li><a href="demo-sheet.xlsx">demo-sheet.xlsx</a> - a small sheet</li>
+  <li><a href="demo-doc.docx">demo-doc.docx</a> - a document with a table, a picture, a header and two columns</li>
+  <li><a href="demo-photo.png">demo-photo.png</a> - an image</li>
+  <li><a href="notes.md">notes.md</a> - markdown</li>
+</ul>

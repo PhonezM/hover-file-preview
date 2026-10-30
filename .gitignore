@@ -1,0 +1,18 @@
+# build output
+*.xpi
+build/
+
+# dependencies
+node_modules/
+
+# local fixtures (may contain real data - never commit)
+sample.*
+Slide*.PNG
+slide*.png
+
+# tooling caches / scratch
+.codegraph/
+.serena/
+compare/
+hover-file-preview-chrome.zip
+hover-file-preview-firefox.zip
