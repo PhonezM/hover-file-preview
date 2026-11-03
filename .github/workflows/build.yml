@@ -3,28 +3,43 @@ name: build
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
         with:
-          node-version: "20"
+          node-version: "22"
       - run: npm ci
       - run: npm test
       # bash, not ./, so a checkout without the exec bit still builds
       - run: bash build.sh
-      - uses: actions/upload-artifact@v4
+      - name: Lint Firefox package
+        run: npm run lint
+      - name: Check bundle size budgets
+        run: npm run size
+      - name: Install Chromium and run e2e tests
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          npx --yes playwright@1.64.1 install --with-deps chromium
+          npm run test:e2e
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: hover-file-preview-firefox
           path: hover-file-preview-firefox.zip
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: hover-file-preview-chrome
           path: hover-file-preview-chrome.zip
@@ -38,3 +53,16 @@ jobs:
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
             && gh release upload "$GITHUB_REF_NAME" --clobber hover-file-preview-firefox.zip hover-file-preview-chrome.zip \
             || gh release create "$GITHUB_REF_NAME" hover-file-preview-firefox.zip hover-file-preview-chrome.zip --generate-notes
+      - name: Sign Firefox package for AMO
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ -z "$WEB_EXT_API_KEY" || -z "$WEB_EXT_API_SECRET" ]]; then
+            echo "AMO signing secrets are absent; publishing unsigned packages only."
+            exit 0
+          fi
+          npx --yes web-ext@10 sign --source-dir build/firefox --artifacts-dir signed --channel unlisted
+          gh release upload "$GITHUB_REF_NAME" --clobber signed/*.xpi

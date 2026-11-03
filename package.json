@@ -1,17 +1,30 @@
 {
   "name": "hover-file-preview",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
-  "description": "Firefox/Zen extension: hover previews for image, PDF, text, spreadsheet, docx and pptx links.",
+  "description": "Firefox/Zen and Chrome extension: hover previews for images, PDF, text, spreadsheets, Word and PowerPoint links.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PhonezM/hover-file-preview.git"
+  },
+  "author": "PhonezM",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "./build.sh",
     "build:renderer": "./build-renderer.sh",
-    "test": "node --test tests/lib.test.mjs"
+    "test": "node --test tests/lib.test.mjs",
+    "test:e2e": "node tests/e2e.mjs",
+    "lint": "npx --yes web-ext@10 lint --source-dir build/firefox",
+    "size": "node scripts/check-size.mjs",
+    "test:all": "npm test && npm run test:e2e"
   },
   "devDependencies": {
     "echarts": "^5.5.1",
     "esbuild": "^0.24.0",
-    "jszip": "^3.10.1",
+    "playwright-core": "^1.64.1",
     "tslib": "^2.7.0",
     "uuid": "^10.0.0"
   }

@@ -1,0 +1,83 @@
+{
+  "extName": {
+    "message": "Hover File Preview"
+  },
+  "extDesc": {
+    "message": "Hover an image, PDF, text, spreadsheet or Office link to preview it without downloading the file."
+  },
+  "preview": {
+    "message": "File preview"
+  },
+  "open": {
+    "message": "Open"
+  },
+  "loading": {
+    "message": "Loading…"
+  },
+  "renderingSlides": {
+    "message": "Rendering slides…"
+  },
+  "unavailable": {
+    "message": "Preview unavailable"
+  },
+  "tooLarge": {
+    "message": "File too large ($1) — click to open",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "blockedPage": {
+    "message": "Blocked by this page (CSP) — click to open"
+  },
+  "httpError": {
+    "message": "HTTP $1 — click to open",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "imageFailed": {
+    "message": "Preview failed (blocked by this page?) — click to open"
+  },
+  "picturesUnreadable": {
+    "message": "pictures could not be read"
+  },
+  "picturesBlocked": {
+    "message": "$1 picture(s) blocked by this page",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "firstSlides": {
+    "message": "first $1 of $2 slides",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      },
+      "2": {
+        "content": "$2"
+      }
+    }
+  },
+  "renderFailed": {
+    "message": "Preview unavailable ($1)",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "firstRows": {
+    "message": "first $1 rows",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  }
+}

@@ -21,7 +21,9 @@ PYV
 STAMP=$(date -u +%Y%m%d-%H%M)
 
 rm -rf build
-for t in firefox chrome; do mkdir -p "build/$t/src" "build/$t/dist" "build/$t/icons"; done
+for t in firefox chrome; do
+  mkdir -p "build/$t/src" "build/$t/dist" "build/$t/icons" "build/$t/_locales/en" "build/$t/_locales/zh_TW"
+done
 
 # pptx.js is the readable bundle; minify it for the package. Falls back to the
 # unminified file when esbuild is not available.
@@ -47,14 +49,31 @@ PY
 for t in firefox chrome; do
   cp manifest.json "build/$t/"
   cp icons/icon-16.png icons/icon-32.png icons/icon-48.png icons/icon-128.png "build/$t/icons/"
-  cp src/zip.js src/lib.js src/xlsx.js src/docx.js "build/$t/src/"
+  cp src/zip.js src/lib.js src/xlsx.js src/docx.js src/background.js "build/$t/src/"
+  cp _locales/en/messages.json "build/$t/_locales/en/"
+  cp _locales/zh_TW/messages.json "build/$t/_locales/zh_TW/"
 done
+
+# Firefox MV3 has no service worker: keep background.scripts and drop the key.
+python3 - <<'PY'
+import json
+p = "build/firefox/manifest.json"
+m = json.load(open(p))
+bg = m.get("background", {})
+bg.pop("service_worker", None)
+m["background"] = bg
+json.dump(m, open(p, "w"), indent=2, ensure_ascii=False)
+open(p, "a").write("\n")
+PY
 
 # Chrome rejects the browser_specific_settings block; Firefox needs the gecko id
 python3 - <<'PY'
 import json
 m = json.load(open("manifest.json"))
 m.pop("browser_specific_settings", None)
+bg = m.get("background", {})
+bg.pop("scripts", None)
+m["background"] = bg
 m["minimum_chrome_version"] = "120"
 json.dump(m, open("build/chrome/manifest.json", "w"), indent=2, ensure_ascii=False)
 open("build/chrome/manifest.json", "a").write("\n")
@@ -68,6 +87,7 @@ FILES = [
     "manifest.json",
     "icons/icon-16.png", "icons/icon-32.png", "icons/icon-48.png", "icons/icon-128.png",
     "src/zip.js", "src/lib.js", "src/xlsx.js", "src/docx.js", "src/content.js",
+    "src/background.js", "_locales/en/messages.json", "_locales/zh_TW/messages.json",
     "dist/pptx.js",
 ]
 
@@ -91,6 +111,7 @@ EXPECTED = {
     "manifest.json",
     "icons/icon-16.png", "icons/icon-32.png", "icons/icon-48.png", "icons/icon-128.png",
     "src/zip.js", "src/lib.js", "src/xlsx.js", "src/docx.js", "src/content.js",
+    "src/background.js", "_locales/en/messages.json", "_locales/zh_TW/messages.json",
     "dist/pptx.js",
 }
 ok = True

@@ -1,6 +1,8 @@
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import test from "node:test";
+import os from "node:os";
+import { execFileSync } from "node:child_process";
 
 const require = createRequire(import.meta.url);
 const { detectKind, fileName, formatSize, decodeText } = require("../src/lib.js");
@@ -275,4 +277,44 @@ test("docx: table inside borders land on the cells", () => {
   // frame must not be left there alone
   const corner = html.match(/<td style="([^"]*)"/)[1];
   assert.equal(corner.includes("border-top") && corner.includes("border-left"), true, "the top-left corner cell carries both");
+});
+
+// ------------------------------------------------------------- hardening
+
+test("markdown: unsafe schemes are dropped and images are not auto-fetched", () => {
+  assert.equal(markdown("[x](javascript:alert%281%29)").includes("javascript:"), false);
+  assert.equal(markdown("[x](data:text/html;base64,PGI+)").includes('href="data:'), false);
+  const img = markdown("![alt](https://evil.test/p.png)");
+  assert.equal(img.includes("<img"), false, "no unsolicited image request");
+  assert.match(img, /class="md-img" href="https:\/\/evil\.test\/p\.png"/);
+});
+
+test("docx: quotes in a style value cannot break out of the tag", () => {
+  const ctx = { styles: {}, numbering: { nums: {}, abstract: {} }, rels: {}, media: {}, counters: {},
+    para: () => ({}), run: docx._props };
+  const html = docx._para('<w:p><w:r><w:rPr><w:color w:val="red&quot; onmouseover=&quot;alert(1)"/></w:rPr><w:t>x</w:t></w:r></w:p>', ctx);
+  assert.equal(html.includes("onmouseover="), false);
+  assert.equal(html.includes('<span style="color:'), false, "an invalid colour is dropped, not injected");
+});
+
+// The pptx XML scanner used to run off the end of a truncated part and spin
+// forever: a child process with a hard timeout is the only honest check.
+test("pptx: a truncated part terminates instead of spinning", async () => {
+  const { build } = await import("esbuild");
+  const out = path.join(os.tmpdir(), "hfp-pptx-parse-" + process.pid + ".cjs");
+  await build({
+    entryPoints: [path.join(import.meta.dirname, "..", "src", "pptx.src.js")],
+    bundle: true,
+    format: "cjs",
+    platform: "node",
+    logLevel: "silent",
+    outfile: out,
+  });
+  try {
+    execFileSync(process.execPath, ["-e",
+      "require(" + JSON.stringify(out) + ")._parseXml(" + JSON.stringify("<p:presentation") + ")"],
+      { timeout: 5000 });
+  } finally {
+    fs.rmSync(out, { force: true });
+  }
 });

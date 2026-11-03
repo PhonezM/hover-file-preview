@@ -575,11 +575,19 @@
         break;
       }
       var rowIdx = parseInt(attr("<row" + m[1] + ">", "r") || seen, 10) - 1;
+      if (rowIdx >= maxRows) {
+        truncated = true;
+        break;
+      }
       var ht = attr("<row" + m[1] + ">", "ht");
       if (ht) heights[rowIdx] = Math.round(parseFloat(ht) * 96 / 72);
-      while (lastRow + 1 < rowIdx && rows.length < maxRows) {
+      while (lastRow + 1 < rowIdx && lastRow + 1 < maxRows) {
         rows.push([]); // a gap between row numbers still shows as a row
         lastRow++;
+      }
+      if (rows.length >= maxRows) {
+        truncated = true;
+        break;
       }
       var cells = [];
       var cellRe = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
@@ -595,7 +603,10 @@
           cells.push({ text: "", span: 1, skip: false });
           lastCol++;
         }
-        if (cells.length >= MAX_COLS) truncated = true;
+        if (cells.length >= MAX_COLS) {
+          truncated = true;
+          break;
+        }
         var body = cm[2] || "";
         cells.push({ text: cellText(tag + body + "</c>", shared, styles), span: 1, skip: false });
         lastCol = ref.col;
@@ -613,12 +624,14 @@
       if (!a || !b) continue;
       var cell = rows[a.row] && rows[a.row][a.col];
       if (!cell) continue;
-      cell.span = Math.max(1, b.col - a.col + 1);
-      cell.down = Math.max(1, b.row - a.row + 1);
-      for (var r = a.row; r <= b.row; r++) {
-        for (var c = a.col; c <= b.col; c++) {
+      var rowEnd = Math.min(b.row, rows.length - 1, maxRows - 1);
+      var colEnd = Math.min(b.col, MAX_COLS - 1);
+      cell.span = Math.max(1, colEnd - a.col + 1);
+      cell.down = Math.max(1, rowEnd - a.row + 1);
+      for (var r = a.row; r <= rowEnd; r++) {
+        for (var c = a.col; c <= colEnd && c < rows[r].length && c < MAX_COLS; c++) {
           if (r === a.row && c === a.col) continue;
-          if (rows[r] && rows[r][c]) rows[r][c].skip = true;
+          if (rows[r][c]) rows[r][c].skip = true;
         }
       }
     }

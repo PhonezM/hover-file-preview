@@ -37,7 +37,16 @@ function omit(obj, keys) {
 
 const Se = { get, omit };
 import { v4 } from "uuid";
-import * as echarts from "echarts";
+import * as echarts from "echarts/core";
+import { BarChart, LineChart, PieChart } from "echarts/charts";
+import {
+  GridComponent,
+  TitleComponent,
+  LegendComponent,
+  TooltipComponent,
+} from "echarts/components";
+import { LabelLayout } from "echarts/features";
+import { SVGRenderer } from "echarts/renderers";
 import {
   __assign,
   __extends,
@@ -45,6 +54,20 @@ import {
   __awaiter,
   __generator,
 } from "tslib";
+
+// Only the three series this renderer emits, plus the components their options
+// use. The full echarts build was 87% of the bundle; geo/map was never used.
+echarts.use([
+  BarChart,
+  LineChart,
+  PieChart,
+  GridComponent,
+  TitleComponent,
+  LegendComponent,
+  TooltipComponent,
+  LabelLayout,
+  SVGRenderer,
+]);
 
 const Tt = __assign,
   _0 = __extends,
@@ -70,7 +93,8 @@ function $i(e) {
     l = 63,
     u = `\r
 	>/= `,
-    c = 0;
+    c = 0,
+    L = e.length;
   return (
     (q_ = 1),
     Iee(
@@ -80,16 +104,20 @@ function $i(e) {
             if (e.charCodeAt(c + 1) === a) return ((c = e.indexOf(">", c)), d);
             if (e.charCodeAt(c + 1) === i) {
               if (e.charCodeAt(c + 2) == r) {
+                // comment: stop at "-->" or at EOF, never spin past the end
                 for (
                   ;
-                  e.charCodeAt(c) !== n ||
-                  e.charCodeAt(c - 1) != r ||
-                  e.charCodeAt(c - 2) != r ||
-                  c == -1;
+                  c >= 0 &&
+                  c < L &&
+                  !(
+                    e.charCodeAt(c) === n &&
+                    e.charCodeAt(c - 1) === r &&
+                    e.charCodeAt(c - 2) === r
+                  );
                 )
                   c = e.indexOf(">", c + 1);
-                c === -1 && (c = e.length);
-              } else for (c += 2; e.charCodeAt(c) !== n; c++);
+                c === -1 && (c = L);
+              } else for (c += 2; c < L && e.charCodeAt(c) !== n; c++);
               c++;
               continue;
             }
@@ -97,23 +125,24 @@ function $i(e) {
               ((c = e.indexOf(">", c)), c++);
               continue;
             }
-            for (var h = ++c; u.indexOf(e[c]) === -1; c++);
+            for (var h = ++c; c < L && u.indexOf(e[c]) === -1; c++);
             for (
               var p = e.slice(h, c), g = !1, y = {};
-              e.charCodeAt(c) !== n;
+              c < L && e.charCodeAt(c) !== n;
               c++
             ) {
               var m = e.charCodeAt(c);
               if ((m > 64 && m < 91) || (m > 96 && m < 123)) {
-                for (h = c; u.indexOf(e[c]) === -1; c++);
+                for (h = c; c < L && u.indexOf(e[c]) === -1; c++);
                 for (
                   var v = e.slice(h, c), b = e.charCodeAt(c);
-                  b !== o && b !== s;
+                  c < L && b !== o && b !== s;
                 )
                   (c++, (b = e.charCodeAt(c)));
                 var _ = e[c],
                   S = ++c;
                 c = e.indexOf(_, S);
+                c < 0 && (c = L);
                 var C = e.slice(S, c);
                 (g || ((y = {}), (g = !0)), (y[v] = C));
               }
@@ -3483,12 +3512,14 @@ var fJe = (function () {
     );
   })(),
   hW = (function () {
-    function e() {
+    function e(t) {
       ((this.slides = []),
         (this.slideLayouts = []),
         (this.slideMaster = []),
         (this.themes = []),
         (this.medias = {}),
+        (this.maxSlides = t > 0 ? t : Infinity),
+        (this.slideTotal = 0),
         (this.wps = !1));
     }
     return (
@@ -3759,7 +3790,7 @@ var fJe = (function () {
                   (m = 0),
                   (C.label = 17));
               case 17:
-                return m < y.length
+                return m < y.length && this.slides.length < this.maxSlides
                   ? ((v = y[m].attrs.PartName.substr(1)),
                     (_ = $i),
                     [4, this._readPart(v)])
@@ -3777,6 +3808,7 @@ var fJe = (function () {
                 return (m++, [3, 17]);
               case 21:
                 return (
+                  (this.slideTotal = y.length),
                   this.slides.sort(function (T, k) {
                     return T.index - k.index;
                   }),
@@ -3898,6 +3930,19 @@ var fJe = (function () {
             var y;
           });
         });
+      }),
+      // audio/video are blob URLs owned by this deck; the browser keeps the
+      // bytes alive until revoked, and a card that closes must not leak them
+      (e.prototype.dispose = function () {
+        var m = this.medias || {};
+        Object.keys(m).forEach(function (k) {
+          try {
+            m[k] && URL.revokeObjectURL(m[k]);
+          } catch (err) {
+            /* already revoked */
+          }
+        });
+        this.medias = {};
       }),
       (e.prototype.getXmlByPath = function (t) {
         return oa(this, void 0, void 0, function () {
@@ -7432,12 +7477,15 @@ function o_(e, t) {
   if (ys[e]) for (var n = 0; n < ys[e].length; n++) ys[e][n](t);
 }
 function Ik(e, t) {
-  ys
-    ? ys[e] &&
-      (ys[e] = ys[e].filter(function (n) {
-        return n !== t;
-      }))
-    : (ys[e] = []);
+  if (!ys) return;
+  if (!ys[e]) return;
+  // no callback given means "drop every listener of this event" (destroy)
+  ys[e] =
+    t === void 0
+      ? []
+      : ys[e].filter(function (n) {
+          return n !== t;
+        });
 }
 var SW = (function () {
     function e(t, n, r) {
@@ -7901,6 +7949,20 @@ var SW = (function () {
         enumerable: !1,
         configurable: !0,
       }),
+      Object.defineProperty(e.prototype, "totalSlideCount", {
+        get: function () {
+          var t, n;
+          return (
+            ((n =
+              (t = this.pptx) === null || t === void 0
+                ? void 0
+                : t.slideTotal) ||
+              (t === null || t === void 0 ? void 0 : t.slides.length)) || 0
+          );
+        },
+        enumerable: !1,
+        configurable: !0,
+      }),
       (e.prototype._renderWrapper = function () {
         var t = document.createElement("div");
         (t.classList.add("pptx-preview-wrapper"),
@@ -8019,8 +8081,9 @@ var SW = (function () {
           o_("destroy"),
           Ik("destroy"),
           new Promise(function (r, a) {
+            n.pptx && n.pptx.dispose && n.pptx.dispose();
             n.wrapper.innerHTML = "";
-            var i = (n.pptx = new hW());
+            var i = (n.pptx = new hW(n.options.maxSlides));
             i.load(t)
               .then(function () {
                 try {
@@ -8065,8 +8128,9 @@ var SW = (function () {
           o_("destroy"),
           Ik("destroy"),
           new Promise(function (r, a) {
+            n.pptx && n.pptx.dispose && n.pptx.dispose();
             n.wrapper.innerHTML = "";
-            var i = (n.pptx = new hW());
+            var i = (n.pptx = new hW(n.options.maxSlides));
             i.load(t)
               .then(function () {
                 try {
@@ -8094,7 +8158,9 @@ var SW = (function () {
           this.htmlRender.renderSlide(this.currentIndex));
       }),
       (e.prototype.destroy = function () {
-        (o_("destroy"), Ik("destroy"));
+        (this.pptx && this.pptx.dispose && this.pptx.dispose(),
+          o_("destroy"),
+          Ik("destroy"));
       }),
       e
     );
@@ -8102,5 +8168,5 @@ var SW = (function () {
 function yJe(e, t) {
   return new mJe(e, t);
 }
-export { yJe as init };
+export { yJe as init, $i as _parseXml };
 export default { init: yJe };

@@ -16,3 +16,6 @@ slide*.png
 compare/
 hover-file-preview-chrome.zip
 hover-file-preview-firefox.zip
+
+# release signing output
+signed/

@@ -140,6 +140,18 @@
     });
   }
 
+  function safeHref(url) {
+    var value = String(url)
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
+      .replace(/^\s+|\s+$/g, "");
+    if (!/^(?:https?:|mailto:|#)/i.test(value)) return "";
+    return escapeHtml(value);
+  }
+
   /* inline spans: code first, then links and images, then emphasis.  Every
      protected span is swapped for a placeholder so emphasis cannot reach
      inside it. */
@@ -155,13 +167,21 @@
       return hold("<code>" + code + "</code>");
     });
     s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/g, function (m, alt, src) {
-      return hold('<img alt="' + alt + '" src="' + src + '">');
+      var href = safeHref(src);
+      if (!href) return hold(alt);
+      return hold('<a class="md-img" href="' + href + '" target="_blank" rel="noopener noreferrer">' + (alt || "image") + "</a>");
     });
     s = s.replace(/\[([^\]]+)\]\(([^)\s]+)[^)]*\)/g, function (m, label, href) {
-      return hold('<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + label + "</a>");
+      var safe = safeHref(href);
+      return hold(safe
+        ? '<a href="' + safe + '" target="_blank" rel="noopener noreferrer">' + label + "</a>"
+        : label);
     });
     s = s.replace(/&lt;(https?:\/\/[^\s&]+)&gt;/g, function (m, url) {
-      return hold('<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + "</a>");
+      var safe = safeHref(url);
+      return hold(safe
+        ? '<a href="' + safe + '" target="_blank" rel="noopener noreferrer">' + url + "</a>"
+        : url);
     });
 
     s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");

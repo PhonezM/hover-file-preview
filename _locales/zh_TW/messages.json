@@ -1,0 +1,83 @@
+{
+  "extName": {
+    "message": "Hover File Preview"
+  },
+  "extDesc": {
+    "message": "將滑鼠移到圖片、PDF、文字、試算表或 Office 連結上，即可預覽，毋須下載檔案。"
+  },
+  "preview": {
+    "message": "檔案預覽"
+  },
+  "open": {
+    "message": "開啟"
+  },
+  "loading": {
+    "message": "載入中…"
+  },
+  "renderingSlides": {
+    "message": "正在繪製投影片…"
+  },
+  "unavailable": {
+    "message": "無法預覽"
+  },
+  "tooLarge": {
+    "message": "檔案過大（$1）— 點擊開啟",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "blockedPage": {
+    "message": "被封鎖（此頁面的 CSP）— 點擊開啟"
+  },
+  "httpError": {
+    "message": "HTTP $1 — 點擊開啟",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "imageFailed": {
+    "message": "預覽失敗（可能被此頁面封鎖）— 點擊開啟"
+  },
+  "picturesUnreadable": {
+    "message": "無法讀取圖片"
+  },
+  "picturesBlocked": {
+    "message": "有 $1 張圖片被此頁面封鎖",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "firstSlides": {
+    "message": "第 1 至 $1 張，共 $2 張",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      },
+      "2": {
+        "content": "$2"
+      }
+    }
+  },
+  "renderFailed": {
+    "message": "無法預覽（$1）",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  },
+  "firstRows": {
+    "message": "首 $1 列",
+    "placeholders": {
+      "1": {
+        "content": "$1"
+      }
+    }
+  }
+}

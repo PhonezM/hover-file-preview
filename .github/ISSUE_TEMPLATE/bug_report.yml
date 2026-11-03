@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a reproducible problem with a file preview.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      description: Include Firefox/Zen 128+ or Chrome 120+ and the full version.
+      placeholder: Firefox 128.0
+    validations:
+      required: true
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension version
+      description: Find the build id in the preview card header, if available.
+      placeholder: 1.0.1 (build id)
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the file type and the action that opens the preview.
+      placeholder: "1. Open a page with a .docx link\n2. Hover the link"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Console errors
+      description: Paste relevant browser console errors, or write "none".
+      render: text
+    validations:
+      required: false

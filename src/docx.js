@@ -32,6 +32,27 @@
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  function escAttr(s) {
+    return esc(s).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  function hexColor(v) {
+    var value = String(v || "");
+    if (!/^#?(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value)) return "";
+    return "#" + value.replace(/^#/, "").toLowerCase();
+  }
+
+  function cssFont(v) {
+    return String(v || "")
+      .replace(/["'();:{}<>`\x00-\x1f\x7f-\x9f]/g, "")
+      .slice(0, 80);
+  }
+
+  function safeUrl(u) {
+    var value = String(u || "").replace(/^\s+/, "");
+    return /^(?:https?:|mailto:)/i.test(value) ? value : "";
+  }
+
   function attr(tag, name) {
     var m = new RegExp('\\b' + name + '="([^"]*)"').exec(tag);
     return m ? unxml(m[1]) : "";
@@ -130,9 +151,11 @@
     var re = /<Relationship\b[^>]*>/g;
     var m;
     while ((m = re.exec(xml)) !== null) {
+      var target = attr(m[0], "Target");
+      var external = attr(m[0], "TargetMode") === "External";
       map[attr(m[0], "Id")] = {
-        target: relTarget(attr(m[0], "Target")),
-        external: attr(m[0], "TargetMode") === "External",
+        target: external ? target : relTarget(target),
+        external: external,
       };
     }
     return map;
@@ -205,7 +228,10 @@
     var sz = find(xml, "w:sz");
     if (sz) out.size = parseInt(attr(sz, "w:val"), 10) / 2; // half points
     var color = find(xml, "w:color");
-    if (color && attr(color, "w:val") !== "auto") out.color = "#" + attr(color, "w:val");
+    if (color) {
+      var checkedColor = hexColor(attr(color, "w:val"));
+      if (checkedColor) out.color = checkedColor;
+    }
     var hl = find(xml, "w:highlight");
     if (hl) out.highlight = attr(hl, "w:val");
     var fonts = find(xml, "w:rFonts");
@@ -299,9 +325,11 @@
     if (rPr.strike) st.push("text-decoration:line-through");
     else if (rPr.underline) st.push("text-decoration:underline");
     if (rPr.size) st.push("font-size:" + rPr.size + "pt");
-    if (rPr.color) st.push("color:" + rPr.color);
+    var color = hexColor(rPr.color);
+    if (color) st.push("color:" + color);
     if (rPr.highlight) st.push("background:" + highlight(rPr.highlight));
-    if (rPr.font) st.push("font-family:" + esc(rPr.font));
+    var font = cssFont(rPr.font);
+    if (font) st.push("font-family:" + font);
     if (rPr.caps) text = text.toUpperCase();
     var out = esc(text).replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;");
     if (rPr.valign === "superscript" || rPr.valign === "subscript") {
@@ -346,7 +374,7 @@
     var rel = ctx.rels[rid];
     if (!rel || rel.external) return "";
     var data = ctx.media[rel.target];
-    if (!data) return "";
+    if (!data || !/^(blob:|data:image\/)/.test(data)) return "";
     var ext = find(drawing, "wp:extent");
     var cx = parseInt(attr(ext, "cx") || "0", 10) / 9525; // EMU -> px
     var cy = parseInt(attr(ext, "cy") || "0", 10) / 9525;
@@ -356,7 +384,7 @@
     // The card's stylesheet makes .docx-img a block; an inline style wins.
     var style = "display:inline-block;vertical-align:bottom" +
       (cx ? ";width:" + Math.round(cx) + "px;height:" + Math.round(cy) + "px" : "");
-    return '<img class="docx-img" src="' + data + '" alt="" style="' + style + '">';
+    return '<img class="docx-img" src="' + escAttr(data) + '" alt="" style="' + style + '">';
   }
 
   /* Word builds a number from the level's w:lvlText: "%1." at level 1,
@@ -429,9 +457,10 @@
         while ((hm = hr.exec(chunk)) !== null) text += unxml(hm[1]);
         var rid2 = attr(m[0], "r:id");
         var target = rid2 && ctx.rels[rid2] ? ctx.rels[rid2].target : "";
+        var href = safeUrl(target);
         html.push(
-          target
-            ? '<a href="' + esc(target) + '" target="_blank" rel="noopener noreferrer">' + esc(text) + "</a>"
+          href
+            ? '<a href="' + escAttr(href) + '" target="_blank" rel="noopener noreferrer">' + esc(text) + "</a>"
             : esc(text)
         );
       } else if (m[1] === "br") {
@@ -470,7 +499,8 @@
     if (props.line && props.lineRule !== "auto") {
       style.push("line-height:" + (props.line / 240).toFixed(2));
     }
-    if (props.shade && props.shade !== "auto") style.push("background:#" + props.shade);
+    var shade = hexColor(props.shade);
+    if (shade) style.push("background:" + shade);
 
     var list =
       props.numId && ctx.numbering.nums[props.numId] !== undefined
@@ -492,7 +522,7 @@
 
     var out = "<" + tag + (style.length ? ' style="' + style.join(";") + '"' : "") + ">";
     // a space after the label, the way Word's tab separates number and text
-    if (marker) out += '<span class="docx-marker">' + marker + "</span> ";
+    if (marker) out += '<span class="docx-marker">' + esc(marker) + "</span> ";
     out += content + "</" + tag + ">";
     if (props.pageBreakBefore) out = PAGE_BREAK + out;
     return out;
@@ -561,9 +591,9 @@
         var vMergeTag = find(tcPr, "w:vMerge");
         var vMerge = vMergeTag ? (attr(vMergeTag, "w:val") || "continue") : "";
         var shd = find(tcPr, "w:shd");
-        var fill = shd ? attr(shd, "w:fill") : "";
+        var fill = shd ? hexColor(attr(shd, "w:fill")) : "";
         var cellStyle = [];
-        if (fill && fill !== "auto") cellStyle.push("background:#" + fill);
+        if (fill) cellStyle.push("background:" + fill);
         var cellBorders = inner(tcPr, "w:tcBorders");
 
         var content = blocks(tc)
@@ -661,10 +691,10 @@
     var val = attr(tag, "w:val");
     if (!val || val === "none" || val === "nil") return "";
     var sz = parseInt(attr(tag, "w:sz") || "4", 10) / 8;
-    var color = attr(tag, "w:color");
+    var color = hexColor(attr(tag, "w:color"));
     var line =
       val === "dotted" ? "dotted" : val === "dashed" ? "dashed" : val === "double" ? "double" : "solid";
-    return Math.max(1, Math.round(sz)) + "px " + line + " " + (color && color !== "auto" ? "#" + color : "#808080");
+    return Math.max(1, Math.round(sz)) + "px " + line + " " + (color || "#808080");
   }
 
   function borderMap(own, styled) {
@@ -814,7 +844,7 @@
 
   /* ------------------------------------------------------------- render */
 
-  async function render(buf) {
+  async function render(buf, report) {
     var zip = await root.HFPZip.load(buf);
     var read = function (name) {
       var f = zip.file(name);
@@ -835,6 +865,7 @@
     var parts = {};
     var media = {};
     var urls = [];
+    var mediaBytes = 0;
     var extra = Object.keys(relMap).map(function (id) {
       var rel = relMap[id];
       if (rel.external) return Promise.resolve();
@@ -859,6 +890,7 @@
                     : "image/jpeg";
             return pictureUrl(bytes, type).then(function (url) {
               urls.push(url);
+              if (!media[target]) mediaBytes += bytes.length;
               media[target] = url;
             });
           })
@@ -899,12 +931,20 @@
     root.__docxMediaUrls = urls;
 
     root.__docxPictures = { media: Object.keys(media).length, imgs: 0 };
-    return (
+    var html = (
       '<div class="docx">' +
       bodyHtml(doc, ctx) +
       footnotesHtml(doc, ctx) +
       "</div>"
     );
+    var reportProto = report && typeof report === "object" ? Object.getPrototypeOf(report) : null;
+    if (report && typeof report === "object" && !Array.isArray(report) &&
+        (reportProto === Object.prototype || reportProto === null)) {
+      report.mediaUrls = urls;
+      report.mediaBytes = mediaBytes;
+      report.pictures = { media: root.__docxPictures.media, imgs: root.__docxPictures.imgs };
+    }
+    return html;
   }
 
   root.HFPdocx = {

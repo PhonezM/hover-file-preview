@@ -1,5 +1,72 @@
 # Changelog
 
+## 1.0.1 - 2026-11-03
+
+Performance, safety limits, localisation and an end-to-end test. Previews are
+unchanged in every kind; the renderer is 42.8% smaller, only loaded when a deck
+is actually previewed, and hostile Office files can no longer hang the page.
+
+**Renderer**
+
+- echarts is imported modularly (bar, line, pie, SVG); the minified renderer is
+  700,976 bytes instead of 1,203,512, and the bundle no longer contains any
+  `new Function`.
+- PowerPoint uses the library's list mode: slides are stacked in place instead
+  of being cloned one by one, so the 120 ms per-chart wait and the whole clone
+  loop are gone.
+- A deck stops at 100 parsed and rendered slides; the header says
+  "first 100 of N slides" instead of silently cutting it.
+- The 685 KB renderer is no longer a static content script. A background script
+  injects it into the tab's isolated world only when a .pptx link is hovered, so
+  other pages run the ~100 KB of readers and the card instead.
+
+**Limits**
+
+- The zip reader enforces 64 MiB per entry and 256 MiB per package for the
+  actual inflated bytes, validates the archive offsets, and refuses unknown
+  compression methods.
+- A merged cell whose range is far outside the displayed sheet is clamped
+  before iterating (A1:XFD1048576 used to ask for 17.2 billion cells).
+- A row past the sheet's row limit is reported as truncated instead of being
+  drawn at the wrong index.
+
+**Safety**
+
+- Word output validates colours, fonts, style values, hyperlink schemes and
+  list markers, so a crafted .docx can no longer inject HTML through a style
+  attribute or a `javascript:` link.
+- Markdown links only allow http(s), mailto and fragments; markdown images
+  become clickable links instead of automatically requesting third-party URLs.
+
+**Card**
+
+- A replaced or closed card aborts its in-flight download and every superseded
+  parse/render is discarded; the preview cache keeps a 64 MiB budget, not only
+  30 entries.
+- Two redundant copies of the deck buffer per render are gone.
+- The interface ships in English and Traditional Chinese (`_locales`), chosen by
+  the browser locale with English as the fallback.
+- Accessibility: the card is a labelled dialog, status and metadata are live
+  regions, sheet tabs are a tablist/tabpanel, Tabbing onto a previewable link
+  opens the card and moves focus into it, and `Esc` closes it.
+
+**Delivery**
+
+- CI on Node 22 runs the unit tests, the build, `web-ext lint`, a bundle-size
+  budget and the Chromium end-to-end suite, then uploads both store packages.
+- A `v*` tag publishes the release; addons.mozilla.org signing runs when
+  `WEB_EXT_API_KEY`/`WEB_EXT_API_SECRET` are configured, and the unsigned build
+  otherwise says so.
+- Added `SECURITY.md`, `CONTRIBUTING.md`, `PRIVACY.md`, `RELEASING.md`, issue and
+  pull-request templates, and weekly Dependabot updates.
+
+**Tests**
+
+- 24 unit tests, including truncated-XML termination and the injection cases.
+- 6 Chromium end-to-end cases (`npm run test:e2e`) against the packaged
+  extension, including keyboard open/close; before/after screenshots differ only
+  in the build stamp.
+
 ## 1.0.0 - 2026-10-30
 
 First public release. Hover an image, PDF, text/markdown, spreadsheet, Word or

@@ -9,6 +9,7 @@
   const INTENT_MS = 300;   // hover this long before fetching
   const LEAVE_MS = 200;    // grace period to cross the gap from link to card
   const CACHE_MAX = 30;    // blobs kept in memory (LRU)
+  const CACHE_BYTES = 64 * 1024 * 1024; // ponytail: approximate retained size, not exact heap
   const LIMITS = {
     image: 8 * 1024 * 1024,
     pdf: 25 * 1024 * 1024,
@@ -18,7 +19,48 @@
     pptx: 30 * 1024 * 1024
   };
   const MAX_SHEET_ROWS = 2000;  // ponytail: truncate, real pagination if anyone cares
-  const MAX_SLIDES = 100;       // ponytail: same
+  const MAX_SLIDES = 100;       // parsed and rendered per deck; the card says so
+
+  /* UI copy comes from _locales/<lang>/messages.json; the fallback keeps the
+     source usable when the i18n API is absent (e.g. a bare test page). */
+  function t(key, fallback, subs) {
+    try {
+      const msg = typeof chrome !== "undefined" && chrome.i18n && chrome.i18n.getMessage(key, subs);
+      return msg || fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  /* The 685 KB renderer is injected on demand into this tab's isolated world.
+     A dynamic import is not available to a Firefox MV3 content script
+     (Bugzilla 1803950) and a page-world script would obey the page's CSP, so
+     the background script uses scripting.executeScript; see src/background.js. */
+  let rendererPromise = null;
+  function loadRenderer() {
+    if (globalThis.pptxPreview) return Promise.resolve(globalThis.pptxPreview);
+    if (rendererPromise) return rendererPromise;
+    rendererPromise = new Promise((resolve) => {
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        resolve(globalThis.pptxPreview || null);
+      };
+      try {
+        chrome.runtime.sendMessage({ type: "hfp:load-renderer" }, () => {
+          void chrome.runtime.lastError;   // no receiver: treat as unavailable
+          done();
+        });
+      } catch (e) {
+        done();
+        return;
+      }
+      setTimeout(done, 3000);   // a missing background must not freeze the card
+    });
+    rendererPromise.then((lib) => { if (!lib) rendererPromise = null; });
+    return rendererPromise;
+  }
 
   const CSS = `
     :host { all: initial; }
@@ -126,6 +168,8 @@
     .slide p.empty { color: #97a0af; font-style: italic; }
     .slide table { border-collapse: collapse; margin: 4px 0 7px; font-size: 11.5px; }
     .slide td { border: 1px solid #e4e6ea; padding: 2px 6px; vertical-align: top; }
+    .card:focus-visible { outline: 2px solid #0052cc; outline-offset: 2px; }
+    .tab:focus-visible, .open:focus-visible { outline: 2px solid #0052cc; outline-offset: 1px; }
     .status { padding: 16px 14px; color: #6b778c; }
   `;
 
@@ -146,9 +190,11 @@
   let intentTimer = 0;
   let closeTimer = 0;
   let seq = 0;
+  let abortCtrl = null;   // the one fetch/render this card owns
 
-  const cache = new Map(); // url -> { kind, blobUrl?, text?, size }
+  const cache = new Map(); // url -> { kind, blobUrl?, text?, size, cost }
   const blocked = new Set(); // urls this page can never read (no CORS header)
+  let cacheBytes = 0;        // sum of entry.cost, kept below CACHE_BYTES
 
   /* ---------- card ---------- */
 
@@ -165,6 +211,8 @@
     cardEl = document.createElement("div");
     cardEl.className = "card";
     cardEl.setAttribute("role", "dialog");
+    cardEl.setAttribute("aria-label", t("preview", "File preview"));
+    cardEl.tabIndex = -1;
 
     const head = document.createElement("div");
     head.className = "head";
@@ -174,15 +222,17 @@
 
     metaEl = document.createElement("span");
     metaEl.className = "meta";
+    metaEl.setAttribute("aria-live", "polite");
 
     openEl = document.createElement("a");
     openEl.className = "open";
     openEl.target = "_blank";
     openEl.rel = "noopener noreferrer";
-    openEl.textContent = "Open";
+    openEl.textContent = t("open", "Open");
 
     bodyEl = document.createElement("div");
     bodyEl.className = "body";
+    bodyEl.setAttribute("aria-busy", "true");
 
     head.append(nameEl, metaEl, openEl);
     cardEl.append(head, bodyEl);
@@ -200,12 +250,15 @@
     if (currentViewer) { currentViewer.destroy(); currentViewer = null; }
     clearTimeout(intentTimer);
     clearTimeout(closeTimer);
+    cancelFetch();     // a download for a card nobody is looking at is wasted
+    seq++;             // and every parse/render already in flight is stale
     if (host) host.remove();
     host = null;
     shadow = null;
     cardEl = null;
     nameEl = metaEl = openEl = bodyEl = null;
     currentUrl = null;
+    focusCard = false;
   }
 
   // size + build in the header; every kind shows it, including the deck
@@ -214,6 +267,12 @@
     let m = size ? formatSize(size) : "";
     if (BUILD) m = (m ? m + " \u00b7 " : "") + BUILD;
     metaEl.textContent = m;
+  }
+
+  // append a qualifier ("first 100 of 240 slides") without losing the size
+  function metaNote(text) {
+    if (!metaEl) return;
+    metaEl.textContent = (metaEl.textContent ? metaEl.textContent + " \u00b7 " : "") + text;
   }
 
   // keep the card inside the window: a preview that turns out taller than the
@@ -247,6 +306,7 @@
     bodyEl.textContent = "";
     const p = document.createElement("div");
     p.className = "status";
+    p.setAttribute("role", "status");
     p.textContent = msg;
     bodyEl.appendChild(p);
   }
@@ -254,10 +314,18 @@
   function reveal() {
     if (!cardEl) return;
     cardEl.style.visibility = "";
+    if (bodyEl) bodyEl.setAttribute("aria-busy", "false");
     place();
+    // a card opened with the keyboard takes the focus, so Tab reaches its
+    // links instead of walking the rest of the page first
+    if (focusCard) {
+      focusCard = false;
+      try { cardEl.focus({ preventScroll: true }); } catch (e) { /* older engine */ }
+    }
   }
 
   let placed = false;  // the card is placed once and then never moves
+  let focusCard = false; // this card was opened with the keyboard
 
   function place() {
     if (!cardEl) return;
@@ -279,8 +347,8 @@
     placed = true;
   }
 
-  async function render(name, kind, entry, href) {
-    if (!bodyEl) return;
+  async function render(name, kind, entry, href, token) {
+    if (!bodyEl || (token !== undefined && token !== seq)) return;
     bodyEl.textContent = "";
 
     if (kind === "text") {
@@ -298,16 +366,23 @@
     } else if (kind === "sheet") {
       const tabs = document.createElement("div");
       tabs.className = "tabs";
+      tabs.setAttribute("role", "tablist");
       const pane = document.createElement("div");
       pane.className = "pane";
+      pane.id = "hfp-pane";
+      pane.setAttribute("role", "tabpanel");
       const select = (i) => {
         Array.from(tabs.children).forEach((b, j) => b.setAttribute("aria-selected", j === i ? "true" : "false"));
+        pane.setAttribute("aria-labelledby", "hfp-tab-" + i);
         pane.innerHTML = entry.sheets[i].html;
       };
       entry.sheets.forEach((s, i) => {
         const b = document.createElement("button");
         b.type = "button";
         b.className = "tab";
+        b.id = "hfp-tab-" + i;
+        b.setAttribute("role", "tab");
+        b.setAttribute("aria-controls", "hfp-pane");
         b.textContent = s.name;
         b.title = s.name;
         b.addEventListener("click", () => select(i));
@@ -323,9 +398,9 @@
       bodyEl.appendChild(wrap);
       // what the file carried vs what the card got, so a picture that never
       // arrives is named instead of leaving a gap
-      const pics = globalThis.__docxPictures;
+      const pics = entry.pictures;
       if (pics && pics.media && !pics.imgs && metaEl) {
-        metaEl.textContent = (metaEl.textContent ? metaEl.textContent + " \u00b7 " : "") + "pictures could not be read";
+        metaNote(t("picturesUnreadable", "pictures could not be read"));
       }
       // a page CSP that forbids data:/blob: images drops every picture without
       // an error we could catch - say so in the card instead of showing gaps
@@ -339,80 +414,63 @@
         if (metaEl) {
           metaEl.textContent =
             (metaEl.textContent ? metaEl.textContent + " \u00b7 " : "") +
-            blocked + " picture" + (blocked > 1 ? "s" : "") + " blocked by this page";
+            t("picturesBlocked", "$1 picture(s) blocked by this page", [String(blocked)]);
         }
       }, 400);
       openEl.href = href;
     } else if (kind === "pptx") {
-      const maxH = Math.max(280, Math.floor(innerHeight * 0.7) - 40);
-      const boxW = 860;
-      const boxH = Math.min(maxH, Math.round(boxW * 9 / 16));
+      const boxW = 860;   // the card's max width
 
       const holder = document.createElement("div");
       holder.className = "ppt-scroll";
-      // the deck is built one slide at a time in this holder, so it must not be
-      // visible while that happens: the card would flash through every slide
-      // (and end on the last one) before the stack is assembled
       holder.style.visibility = "hidden";
       bodyEl.appendChild(holder);
 
       const note = document.createElement("div");
       note.className = "status";
-      note.textContent = "Rendering slides…";
+      note.textContent = t("renderingSlides", "Rendering slides…");
       bodyEl.insertBefore(note, holder);
 
-      const lib = globalThis.pptxPreview;
+      const lib = await loadRenderer();
+      if (token !== seq) return;
       if (!lib) {
-        setStatus("Preview unavailable");
+        setStatus(t("unavailable", "Preview unavailable"));
         reveal();
         return;
       }
       try {
-        // mode "slide" keeps exactly one slide in the wrapper, so each clone
-        // below is a single slide (list mode renders the whole deck at once).
-        const viewer = lib.init(holder, { width: boxW, height: boxH, mode: "slide" });
-        await viewer.preview(entry.buf.slice(0));
+        // "list" stacks the slides in the wrapper itself. No clone per slide, so
+        // a chart drawn in place keeps its canvas and no copy can race it; the
+        // old per-slide clone loop plus its 120 ms chart sleep is gone.
+        // maxSlides bounds the parse and the DOM, not just the loop.
+        const viewer = lib.init(holder, { width: boxW, mode: "list", maxSlides: MAX_SLIDES });
+        currentViewer = { destroy: () => { try { viewer.destroy(); } catch (e) {} } };
+        await viewer.preview(entry.buf);
+        if (token !== seq || !bodyEl) return;
 
-        const count = viewer.slideCount || 1;
-        const stack = document.createElement("div");
-        stack.className = "ppt-stack";
-        let slideH = boxH;
-        for (let i = 0; i < count; i++) {
-          viewer.renderSingleSlide(i);
-          await new Promise((r) => requestAnimationFrame(r));
-          // a chart is drawn in a timer of its own, so give it a beat before the
-          // slide is copied - otherwise the copy carries an empty chart box
-          if (holder.querySelector(".chart-node")) {
-            await new Promise((r) => setTimeout(r, 120));
-          }
-          const slide = holder.querySelector(".pptx-preview-slide-wrapper-" + i);
-          if (!slide) continue;
-          const clone = slide.cloneNode(true);
-          clone.className = "ppt-viewer";
-          clone.style.position = "relative";
-          clone.style.margin = "0";
-          stack.appendChild(clone);
-          slideH = clone.getBoundingClientRect().height || slideH;
-        }
-        holder.innerHTML = "";
-        holder.appendChild(stack);
-        holder.style.height = slideH * count + "px";
+        const total = viewer.totalSlideCount || viewer.slideCount || 1;
+        const shown = viewer.slideCount || Math.min(total, MAX_SLIDES);
+        // the library paints its wrapper black for slide-mode letterboxing; in
+        // list mode that black shows through the 10 px gap between slides
+        const wrapper = holder.querySelector(".pptx-preview-wrapper");
+        if (wrapper) wrapper.style.background = "#fff";
         holder.style.visibility = "";
         note.remove();
         bodyEl.scrollTop = 0;
-        host.setAttribute("data-hfp-slides", count);
+        host.setAttribute("data-hfp-slides", String(shown));
 
-        currentViewer = { destroy: () => { try { viewer.destroy(); } catch (e) {} } };
         host.setAttribute("data-hfp-renderer", "pptx");
         openEl.href = href;
         showMeta(entry.size);
+        if (total > shown) metaNote(t("firstSlides", "first $1 of $2 slides", [String(shown), String(total)]));
         place();
         clampCard();
         return;
       } catch (e) {
+        if (token !== seq) return;   // a superseded render must not touch the new card
         console.warn("[hover-file-preview] pptx render failed:", e);
         if (host) host.setAttribute("data-hfp-error", String((e && e.message) || e));
-        setStatus("Preview unavailable (" + String((e && e.message) || "render error").slice(0, 80) + ")");
+        setStatus(t("renderFailed", "Preview unavailable ($1)", [String((e && e.message) || "render error").slice(0, 80)]));
         reveal();
         return;
       }
@@ -421,7 +479,7 @@
         const img = document.createElement("img");
         img.alt = name;
         img.onerror = () => {
-          setStatus("Preview failed (blocked by this page?) — click to open");
+          setStatus(t("imageFailed", "Preview failed (blocked by this page?) — click to open"));
           if (host) host.setAttribute("data-hfp-error", "image");
         };
         img.onload = () => clampCard();   // the picture's height is known now
@@ -438,7 +496,7 @@
 
     showMeta(entry.size);
     if (kind === "sheet" && entry.truncated) {
-      metaEl.textContent += " \u00b7 first " + MAX_SHEET_ROWS + " rows";
+      metaNote(t("firstRows", "first $1 rows", [String(MAX_SHEET_ROWS)]));
     }
     if (host) host.setAttribute("data-hfp-renderer", "direct");
     place();
@@ -455,21 +513,21 @@
   }
 
   /* docx -> HTML through our own reader, with the text outline as a last resort. */
-  async function buildDocxHtml(buf) {
+  async function buildDocxHtml(buf, report) {
     const lib = globalThis.HFPdocx;
-    globalThis.__docxMediaUrls = null;   // only this render's pictures may be cached
     if (lib) {
       try {
-        const html = await lib.render(buf);
+        const html = await lib.render(buf, report);
         if (html && html.trim()) return html;
       } catch (e) {
         console.warn("[hover-file-preview] docx render failed:", e);
       }
     }
 
-    const zipLib = globalThis.JSZip;
+    // the reader is unavailable: keep the text outline rather than no card
+    const zipLib = globalThis.HFPZip;
     if (!zipLib) throw Object.assign(new Error("no zip lib"), { code: "PARSE" });
-    const zip = await zipLib.loadAsync(buf);
+    const zip = await zipLib.load(buf);
     const doc = zip.file("word/document.xml");
     if (!doc) throw Object.assign(new Error("no document.xml"), { code: "PARSE" });
 
@@ -485,7 +543,7 @@
 
   /* pptx -> the raw buffer; the renderer parses it when the card opens. */
   async function buildSlides(buf) {
-    return { buf: buf.slice(0) };
+    return { buf };
   }
 
   /* ---------- cache ---------- */
@@ -498,19 +556,24 @@
     return hit;
   }
 
+  function evict(url) {
+    const old = cache.get(url);
+    if (!old) return;
+    cache.delete(url);
+    cacheBytes -= old.cost || 0;
+    if (old.blobUrl) URL.revokeObjectURL(old.blobUrl);
+    if (old.mediaUrls) old.mediaUrls.forEach((u) => URL.revokeObjectURL(u));
+  }
+
   function cachePut(url, entry) {
-    const prev = cache.get(url);      // a re-render replaces the old pictures
-    if (prev && prev !== entry) {
-      cache.delete(url);
-      if (prev.blobUrl) URL.revokeObjectURL(prev.blobUrl);
-      if (prev.mediaUrls) prev.mediaUrls.forEach((u) => URL.revokeObjectURL(u));
-    }
+    if (entry.cost > CACHE_BYTES) return;   // one huge deck must not hold the budget
+    evict(url);                              // a re-render replaces the old pictures
     cache.set(url, entry);
-    if (cache.size > CACHE_MAX) {
-      const [oldUrl, old] = cache.entries().next().value;
-      cache.delete(oldUrl);
-      if (old.blobUrl) URL.revokeObjectURL(old.blobUrl);
-      if (old.mediaUrls) old.mediaUrls.forEach((u) => URL.revokeObjectURL(u));
+    cacheBytes += entry.cost || 0;
+    while (cache.size > CACHE_MAX || cacheBytes > CACHE_BYTES) {
+      if (!cache.size) break;
+      const [oldUrl] = cache.entries().next().value;
+      evict(oldUrl);
     }
   }
 
@@ -524,18 +587,31 @@
     }
   }
 
-  async function fetchCapped(href, limit) {
+  function cancelFetch() {
+    if (!abortCtrl) return;
+    abortCtrl.abort();
+    abortCtrl = null;
+  }
+
+  async function fetchCapped(href, limit, signal) {
     let res;
     try {
-      res = await fetch(href, { credentials: "same-origin" });
+      res = await fetch(href, { credentials: "same-origin", signal });
     } catch (e) {
+      if (signal && signal.aborted) {
+        throw Object.assign(new Error("aborted"), { code: "ABORTED" });
+      }
       // a page CSP or a cross-origin link never reaches the network
       throw Object.assign(new Error("blocked"), { code: "BLOCKED" });
     }
-    if (!res.ok) throw Object.assign(new Error("HTTP " + res.status), { code: "HTTP", status: res.status });
+    if (!res.ok) {
+      if (res.body) res.body.cancel().catch(() => {});
+      throw Object.assign(new Error("HTTP " + res.status), { code: "HTTP", status: res.status });
+    }
 
     const declared = Number(res.headers.get("content-length") || 0);
     if (declared > limit) {
+      if (res.body) res.body.cancel().catch(() => {});
       throw Object.assign(new Error("too large"), { code: "TOO_LARGE", size: declared });
     }
     if (!res.body) {
@@ -549,15 +625,23 @@
     const reader = res.body.getReader();
     const chunks = [];
     let total = 0;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > limit) {
-        reader.cancel().catch(() => {});
-        throw Object.assign(new Error("too large"), { code: "TOO_LARGE", size: total });
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > limit) {
+          reader.cancel().catch(() => {});
+          throw Object.assign(new Error("too large"), { code: "TOO_LARGE", size: total });
+        }
+        chunks.push(value);
       }
-      chunks.push(value);
+    } catch (err) {
+      if (signal && signal.aborted) {
+        reader.cancel().catch(() => {});
+        throw Object.assign(new Error("aborted"), { code: "ABORTED" });
+      }
+      throw err;
     }
     const out = new Uint8Array(total);
     let off = 0;
@@ -570,11 +654,14 @@
 
   /* ---------- open ---------- */
 
-  async function open(anchor, kind, x, y) {
+  async function open(anchor, kind, x, y, viaKeyboard) {
     const href = anchor.href;
     const src = rawUrl(href);      // github.com/<o>/<r>/blob/... -> raw.githubusercontent.com
     const name = fileName(href, location.href);
     if (blocked.has(src)) return;   // known unreadable here: no card at all
+    cancelFetch();                  // a card that was replaced must not keep downloading
+    abortCtrl = new AbortController();
+    const signal = abortCtrl.signal;
     const mine = ++seq;
 
     anchorX = x;
@@ -583,28 +670,31 @@
     reserveH = kind === "pptx" ? Math.floor(innerHeight * 0.7) : 0;
     reserveW = kind === "pptx" ? 900 : 0;   // the card's max width
     placed = false;
+    focusCard = !!viaKeyboard;
 
+    if (currentViewer) { currentViewer.destroy(); currentViewer = null; }
     ensureCard();
     nameEl.textContent = name;
     nameEl.title = name;
     metaEl.textContent = "";
     openEl.href = href;
-    setStatus("Loading…");
+    setStatus(t("loading", "Loading…"));
     place();
 
     const cached = cacheGet(src);
     if (cached) {
-      render(name, kind, cached, href).catch(() => {}).then(reveal);
+      render(name, kind, cached, href, mine).catch(() => {}).then(() => { if (mine === seq) reveal(); });
       return;
     }
 
     let got;
     try {
-      got = await fetchCapped(src, LIMITS[kind]);
+      got = await fetchCapped(src, LIMITS[kind], signal);
     } catch (err) {
       if (mine !== seq || currentUrl !== href) return;
+      if (err.code === "ABORTED") return;   // the card was replaced or closed
       if (err.code === "TOO_LARGE") {
-        setStatus("File too large (" + formatSize(err.size) + ") — click to open");
+        setStatus(t("tooLarge", "File too large ($1) — click to open", [formatSize(err.size)]));
       } else if (err.code === "BLOCKED") {
         // a file on another origin that sends no CORS header can never be read
         // from here, so do not pop a card for it at all
@@ -613,11 +703,11 @@
           hide();
           return;
         }
-        setStatus("Blocked by this page (CSP) — click to open");
+        setStatus(t("blockedPage", "Blocked by this page (CSP) — click to open"));
       } else if (err.code === "HTTP") {
-        setStatus("HTTP " + err.status + " — click to open");
+        setStatus(t("httpError", "HTTP $1 — click to open", [String(err.status)]));
       } else {
-        setStatus("Preview unavailable");
+        setStatus(t("unavailable", "Preview unavailable"));
       }
       if (host) host.setAttribute("data-hfp-error", err.code || "fetch");
       reveal();
@@ -628,47 +718,61 @@
 
     let entry;
     if (kind === "text") {
-      entry = { kind, text: decodeText(got.buf), size: got.size };
+      const text = decodeText(got.buf);
+      entry = { kind, text, size: got.size, cost: Math.max(got.size, text.length * 2) };
     } else if (kind === "sheet") {
       try {
-        entry = { kind, sheets: await buildSheets(got.buf), size: got.size };
+        const sheets = await buildSheets(got.buf);
+        entry = {
+          kind,
+          sheets,
+          size: got.size,
+          cost: sheets.reduce((n, s) => n + s.html.length * 2, 0),
+        };
         entry.truncated = entry.sheets.some((s) => s.truncated);
       } catch (err) {
         if (mine !== seq || currentUrl !== href) return;
-        setStatus("Preview unavailable");
+        setStatus(t("unavailable", "Preview unavailable"));
         reveal();
         return;
       }
     } else if (kind === "docx") {
+      // the report is per render: globals let a superseded render hand its
+      // pictures to the next card
+      const report = {};
       try {
-        entry = { kind, html: await buildDocxHtml(got.buf), size: got.size };
+        const html = await buildDocxHtml(got.buf, report);
+        entry = {
+          kind,
+          html,
+          size: got.size,
+          mediaUrls: report.mediaUrls || [],
+          pictures: report.pictures,
+          cost: html.length * 2 + (report.mediaBytes || 0),
+        };
       } catch (err) {
         if (mine !== seq || currentUrl !== href) return;
-        setStatus("Preview unavailable");
+        setStatus(t("unavailable", "Preview unavailable"));
         reveal();
         return;
       }
-      // the rendered HTML embeds one blob URL per picture; the cache has to
-      // keep them alive for as long as it keeps the HTML
-      entry.mediaUrls = (globalThis.__docxMediaUrls || []).slice();
-      globalThis.__docxMediaUrls = null;
       if (mine !== seq || currentUrl !== href) return;
     } else if (kind === "pptx") {
       try {
-        entry = { kind, ...(await buildSlides(got.buf)), size: got.size };
+        entry = { kind, ...(await buildSlides(got.buf)), size: got.size, cost: got.size };
       } catch (err) {
         if (mine !== seq || currentUrl !== href) return;
-        setStatus("Preview unavailable");
+        setStatus(t("unavailable", "Preview unavailable"));
         reveal();
         return;
       }
       if (mine !== seq || currentUrl !== href) return;
     } else {
       const blob = new Blob([got.buf], { type: mimeFor(kind, name) });
-      entry = { kind, blobUrl: URL.createObjectURL(blob), size: got.size };
+      entry = { kind, blobUrl: URL.createObjectURL(blob), size: got.size, cost: got.size };
     }
     cachePut(src, entry);
-    render(name, kind, entry, href).catch(() => {}).then(reveal);
+    render(name, kind, entry, href, mine).catch(() => {}).then(() => { if (mine === seq) reveal(); });
   }
 
   /* ---------- events ---------- */
@@ -730,7 +834,38 @@
   document.addEventListener("mouseover", onOver, true);
 
   document.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape" && currentUrl) { hide(); return; }
+    if (ev.key !== "Escape") return;
+    clearTimeout(intentTimer);
+    if (currentUrl) hide();
+  }, true);
+
+  // Keyboard parity: tabbing onto a previewable link opens the same card, and
+  // the card takes the focus so its links and sheet tabs are reachable.
+  document.addEventListener("focusin", (ev) => {
+    if (host && (ev.target === host || host.contains(ev.target))) {
+      clearTimeout(closeTimer);
+      return;
+    }
+    const anchor = ev.target instanceof HTMLAnchorElement ? ev.target : null;
+    if (!anchor || !anchor.href) { clearTimeout(intentTimer); return; }
+    if (anchor.href === currentUrl) return;
+    const kind = detectKind(anchor.href, location.href);
+    if (!kind) return;
+    const r = anchor.getBoundingClientRect();
+    if (!r.width && !r.height) return;
+    clearTimeout(intentTimer);
+    intentTimer = setTimeout(() => open(anchor, kind, r.right, r.bottom, true), INTENT_MS);
+  }, true);
+
+  document.addEventListener("focusout", () => {
+    if (!currentUrl) return;
+    setTimeout(() => {
+      if (!currentUrl) return;
+      const active = document.activeElement;
+      if (host && (active === host || (active && host.contains(active)))) return;
+      if (active instanceof HTMLAnchorElement && detectKind(active.href, location.href)) return;
+      hide();
+    }, LEAVE_MS);
   }, true);
 
   addEventListener("scroll", (ev) => {

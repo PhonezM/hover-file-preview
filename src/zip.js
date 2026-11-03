@@ -29,12 +29,37 @@
     return -1;
   }
 
-  async function inflate(bytes) {
+  async function inflate(bytes, maxOutput, account) {
     if (typeof DecompressionStream === "undefined") {
       throw new Error("this browser cannot inflate a zip entry");
     }
     var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-    return new Uint8Array(await new Response(stream).arrayBuffer());
+    var reader = new Response(stream).body.getReader();
+    var chunks = [];
+    var total = 0;
+    try {
+      while (true) {
+        var result = await reader.read();
+        if (result.done) break;
+        var chunk = result.value;
+        if (total + chunk.length > maxOutput || !account(chunk.length)) {
+          try { await reader.cancel(); } catch (_) {}
+          throw new Error("zip entry exceeds size limit");
+        }
+        total += chunk.length;
+        chunks.push(chunk);
+      }
+      var output = new Uint8Array(total);
+      var offset = 0;
+      for (var i = 0; i < chunks.length; i++) {
+        output.set(chunks[i], offset);
+        offset += chunks[i].length;
+      }
+      return output;
+    } catch (e) {
+      account(-total);
+      throw e;
+    }
   }
 
   function base64(bytes) {
@@ -51,18 +76,29 @@
     return new TextDecoder("utf-8").decode(bytes);
   }
 
-  async function load(buffer) {
+  async function load(buffer, options) {
+    options = options || {};
+    var maxEntry = options.maxEntry === undefined ? 64 * 1024 * 1024 : options.maxEntry;
+    var maxTotal = options.maxTotal === undefined ? 256 * 1024 * 1024 : options.maxTotal;
+    if (typeof maxEntry !== "number" || !isFinite(maxEntry) || maxEntry < 0 ||
+        typeof maxTotal !== "number" || !isFinite(maxTotal) || maxTotal < 0) {
+      throw new Error("invalid zip size limit");
+    }
     var bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
     var eocd = findEocd(bytes);
     if (eocd < 0) throw new Error("not a zip file");
 
     var count = u16(bytes, eocd + 10);
     var offset = u32(bytes, eocd + 16);
-    var entries = {};
+    if (offset >= bytes.length) throw new Error("bad central directory offset");
+    var entries = Object.create(null);
     var order = [];
+    var declaredTotal = 0;
 
     for (var n = 0; n < count; n++) {
-      if (u32(bytes, offset) !== CENTRAL) break;
+      if (offset + 46 > bytes.length || u32(bytes, offset) !== CENTRAL) {
+        throw new Error("bad central directory");
+      }
       var method = u16(bytes, offset + 10);
       var compressed = u32(bytes, offset + 20);
       var size = u32(bytes, offset + 24);
@@ -70,29 +106,56 @@
       var extraLen = u16(bytes, offset + 30);
       var commentLen = u16(bytes, offset + 32);
       var localAt = u32(bytes, offset + 42);
+      var nextOffset = offset + 46 + nameLen + extraLen + commentLen;
+      if (nextOffset > bytes.length) throw new Error("bad central directory entry");
+      if (method !== 0 && method !== 8) throw new Error("unsupported zip compression method: " + method);
+      if (size > maxEntry) throw new Error("zip entry exceeds size limit");
+      declaredTotal += size;
+      if (declaredTotal > maxTotal) throw new Error("zip exceeds total size limit");
+      if (localAt + 30 > bytes.length) throw new Error("bad local offset");
+      var dataAt = localAt + 30 + u16(bytes, localAt + 26) + u16(bytes, localAt + 28);
+      if (dataAt > bytes.length || dataAt + compressed > bytes.length) {
+        throw new Error("bad local data offset");
+      }
       var name = new TextDecoder("utf-8").decode(bytes.subarray(offset + 46, offset + 46 + nameLen));
 
       entries[name] = { name: name, method: method, compressed: compressed, size: size, localAt: localAt };
       order.push(name);
-      offset += 46 + nameLen + extraLen + commentLen;
+      offset = nextOffset;
     }
 
-    var cache = {};
+    var cache = Object.create(null);
+    var actualTotal = 0;
 
     async function bytesOf(name) {
       if (cache[name]) return cache[name];
       var entry = entries[name];
       if (!entry) throw new Error("no such part: " + name);
-      var at = entry.localAt;
-      if (u32(bytes, at) !== LOCAL) throw new Error("bad local header: " + name);
-      var start = at + 30 + u16(bytes, at + 26) + u16(bytes, at + 28);
-      var raw = bytes.subarray(start, start + entry.compressed);
-      cache[name] = entry.method === 0 ? raw : await inflate(raw);
+      cache[name] = (async function () {
+        var at = entry.localAt;
+        if (at + 30 > bytes.length || u32(bytes, at) !== LOCAL) throw new Error("bad local header: " + name);
+        var start = at + 30 + u16(bytes, at + 26) + u16(bytes, at + 28);
+        var end = start + entry.compressed;
+        if (start > bytes.length || end > bytes.length) throw new Error("bad local data offset: " + name);
+        var raw = bytes.subarray(start, end);
+        if (entry.method === 0) {
+          if (raw.length > maxEntry || actualTotal + raw.length > maxTotal) {
+            throw new Error("zip entry exceeds size limit");
+          }
+          actualTotal += raw.length;
+          return raw;
+        }
+        return inflate(raw, maxEntry, function (length) {
+          if (actualTotal + length > maxTotal) return false;
+          actualTotal += length;
+          return true;
+        });
+      })();
       return cache[name];
     }
 
     /* the same object serves `zip.file(name).async(...)` and `zip.files[name].async(...)` */
-    var files = {};
+    var files = Object.create(null);
     order.forEach(function (name) {
       files[name] = {
         name: name,
