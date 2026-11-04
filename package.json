@@ -1,6 +1,6 @@
 {
   "name": "hover-file-preview",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Firefox/Zen and Chrome extension: hover previews for images, PDF, text, spreadsheets, Word and PowerPoint links.",
   "license": "MIT",

@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.0.2 - 2026-11-04
+
+Dependency refresh; preview behaviour is unchanged.
 
 - Dev dependencies refreshed by Dependabot (#1): ECharts/ZRender 6.1, uuid 14,
   esbuild 0.28, tslib 2.9.
