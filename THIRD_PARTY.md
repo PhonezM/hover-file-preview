@@ -11,9 +11,9 @@ bundles these with it:
 
 | library | version | licence |
 | --- | --- | --- |
-| uuid | 10.x | MIT |
-| tslib | 2.7.x | 0BSD |
-| Apache ECharts + ZRender | 5.5.x | Apache License 2.0 |
+| uuid | 14.x | MIT |
+| tslib | 2.9.x | 0BSD |
+| Apache ECharts + ZRender | 6.1.x | Apache License 2.0 |
 
 The bundled renderer carries no `eval`, so the extension runs under the MV3 CSP
 (`script-src 'self'`).

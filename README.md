@@ -66,7 +66,7 @@ slides; the card identifies the first N of M when a deck is longer.
   isolated world only when a `.pptx` link is previewed. The `http://*/*` and
   `https://*/*` host permissions let the extension inspect matching links and
   fetch their files. Other preview kinds load about 100 KB of scripts; the
-  PowerPoint renderer is about 685 KB.
+  PowerPoint renderer is about 724 KB.
 
 ## Install
 

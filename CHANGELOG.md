@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Dev dependencies refreshed by Dependabot (#1): ECharts/ZRender 6.1, uuid 14,
+  esbuild 0.28, tslib 2.9.
+- Renderer rebuilt with ECharts 6.1: 741,377 bytes minified and a 280,973-byte
+  Chrome package. The demo deck's chart is unchanged apart from antialiasing;
+  unit, size-budget and 6/6 end-to-end checks pass.
+- `build.sh` pins esbuild 0.28.2 so packaging matches the lockfile.
+
 ## 1.0.1 - 2026-11-03
 
 Performance, safety limits, localisation and an end-to-end test. Previews are

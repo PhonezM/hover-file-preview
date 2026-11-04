@@ -27,7 +27,7 @@ done
 
 # pptx.js is the readable bundle; minify it for the package. Falls back to the
 # unminified file when esbuild is not available.
-if timeout 300 npx --yes esbuild@0.24.0 dist/pptx.js --minify --legal-comments=none \
+if timeout 300 npx --yes esbuild@0.28.2 dist/pptx.js --minify --legal-comments=none \
      --outfile=build/firefox/dist/pptx.js >/dev/null 2>&1; then
   echo "renderer minified"
 else

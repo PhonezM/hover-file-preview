@@ -9,9 +9,9 @@ var pptxPreview = (() => {
   };
   var __copyProps = (to, from, except, desc) => {
     if (from && typeof from === "object" || typeof from === "function") {
-      for (let key of __getOwnPropNames(from))
-        if (!__hasOwnProp.call(to, key) && key !== except)
-          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+      for (let key2 of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key2) && key2 !== except)
+          __defProp(to, key2, { get: () => from[key2], enumerable: !(desc = __getOwnPropDesc(from, key2)) || desc.enumerable });
     }
     return to;
   };
@@ -25,47 +25,42 @@ var pptxPreview = (() => {
     init: () => yJe
   });
 
-  // node_modules/uuid/dist/esm-browser/stringify.js
+  // node_modules/uuid/dist/stringify.js
   var byteToHex = [];
-  for (i = 0; i < 256; ++i) {
+  for (let i = 0; i < 256; ++i) {
     byteToHex.push((i + 256).toString(16).slice(1));
   }
-  var i;
   function unsafeStringify(arr, offset = 0) {
     return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
   }
 
-  // node_modules/uuid/dist/esm-browser/rng.js
-  var getRandomValues;
+  // node_modules/uuid/dist/rng.js
   var rnds8 = new Uint8Array(16);
   function rng() {
-    if (!getRandomValues) {
-      getRandomValues = typeof crypto !== "undefined" && crypto.getRandomValues && crypto.getRandomValues.bind(crypto);
-      if (!getRandomValues) {
-        throw new Error("crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported");
-      }
-    }
-    return getRandomValues(rnds8);
+    return crypto.getRandomValues(rnds8);
   }
 
-  // node_modules/uuid/dist/esm-browser/native.js
-  var randomUUID = typeof crypto !== "undefined" && crypto.randomUUID && crypto.randomUUID.bind(crypto);
-  var native_default = {
-    randomUUID
-  };
-
-  // node_modules/uuid/dist/esm-browser/v4.js
+  // node_modules/uuid/dist/v4.js
   function v4(options, buf, offset) {
-    if (native_default.randomUUID && !buf && !options) {
-      return native_default.randomUUID();
+    if (!buf && !options && crypto.randomUUID) {
+      return crypto.randomUUID();
     }
+    return _v4(options, buf, offset);
+  }
+  function _v4(options, buf, offset) {
     options = options || {};
-    var rnds = options.random || (options.rng || rng)();
+    const rnds = options.random ?? options.rng?.() ?? rng();
+    if (rnds.length < 16) {
+      throw new Error("Random bytes length must be >= 16");
+    }
     rnds[6] = rnds[6] & 15 | 64;
     rnds[8] = rnds[8] & 63 | 128;
     if (buf) {
       offset = offset || 0;
-      for (var i = 0; i < 16; ++i) {
+      if (offset < 0 || offset + 16 > buf.length) {
+        throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+      }
+      for (let i = 0; i < 16; ++i) {
         buf[offset + i] = rnds[i];
       }
       return buf;
@@ -94,7 +89,7 @@ var pptxPreview = (() => {
   }
 
   // node_modules/zrender/lib/core/env.js
-  var Browser = /* @__PURE__ */ function() {
+  var Browser = /* @__PURE__ */ (function() {
     function Browser2() {
       this.firefox = false;
       this.ie = false;
@@ -103,8 +98,8 @@ var pptxPreview = (() => {
       this.weChat = false;
     }
     return Browser2;
-  }();
-  var Env = /* @__PURE__ */ function() {
+  })();
+  var Env = /* @__PURE__ */ (function() {
     function Env2() {
       this.browser = new Browser();
       this.node = false;
@@ -119,14 +114,14 @@ var pptxPreview = (() => {
       this.hasGlobalWindow = typeof window !== "undefined";
     }
     return Env2;
-  }();
+  })();
   var env = new Env();
   if (typeof wx === "object" && typeof wx.getSystemInfoSync === "function") {
     env.wxa = true;
     env.touchEventsSupported = true;
   } else if (typeof document === "undefined" && typeof self !== "undefined") {
     env.worker = true;
-  } else if (!env.hasGlobalWindow || "Deno" in window) {
+  } else if (!env.hasGlobalWindow || "Deno" in window || typeof navigator !== "undefined" && typeof navigator.userAgent === "string" && navigator.userAgent.indexOf("Node.js") > -1) {
     env.node = true;
     env.svgSupported = true;
   } else {
@@ -157,10 +152,12 @@ var pptxPreview = (() => {
     env2.svgSupported = typeof SVGRect !== "undefined";
     env2.touchEventsSupported = "ontouchstart" in window && !browser.ie && !browser.edge;
     env2.pointerEventsSupported = "onpointerdown" in window && (browser.edge || browser.ie && +browser.version >= 11);
-    env2.domSupported = typeof document !== "undefined";
-    var style = document.documentElement.style;
-    env2.transform3dSupported = (browser.ie && "transition" in style || browser.edge || "WebKitCSSMatrix" in window && "m11" in new WebKitCSSMatrix() || "MozPerspective" in style) && !("OTransition" in style);
-    env2.transformSupported = env2.transform3dSupported || browser.ie && +browser.version >= 9;
+    var domSupported = env2.domSupported = typeof document !== "undefined";
+    if (domSupported) {
+      var style = document.documentElement.style;
+      env2.transform3dSupported = (browser.ie && "transition" in style || browser.edge || "WebKitCSSMatrix" in window && "m11" in new WebKitCSSMatrix() || "MozPerspective" in style) && !("OTransition" in style);
+      env2.transformSupported = env2.transform3dSupported || browser.ie && +browser.version >= 9;
+    }
   }
   var env_default = env;
 
@@ -188,7 +185,7 @@ var pptxPreview = (() => {
     createCanvas: function() {
       return typeof document !== "undefined" && document.createElement("canvas");
     },
-    measureText: /* @__PURE__ */ function() {
+    measureText: /* @__PURE__ */ (function() {
       var _ctx;
       var _cachedFont;
       return function(text, font) {
@@ -218,13 +215,16 @@ var pptxPreview = (() => {
           return { width };
         }
       };
-    }(),
+    })(),
     loadImage: function(src, onload, onerror) {
       var image = new Image();
       image.onload = onload;
       image.onerror = onerror;
       image.src = src;
       return image;
+    },
+    getTime: function() {
+      return Date.now ? Date.now() : +/* @__PURE__ */ new Date();
     }
   };
 
@@ -267,7 +267,11 @@ var pptxPreview = (() => {
   var protoFunction = ctorFunction ? ctorFunction.prototype : null;
   var protoKey = "__proto__";
   var idStart = 2311;
+  var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
   function guid() {
+    if (idStart >= MAX_SAFE_INTEGER) {
+      idStart = 0;
+    }
     return idStart++;
   }
   function logError() {
@@ -306,9 +310,9 @@ var pptxPreview = (() => {
       }
     } else if (!BUILTIN_OBJECT[typeStr] && !isPrimitive(source) && !isDom(source)) {
       result = {};
-      for (var key in source) {
-        if (source.hasOwnProperty(key) && key !== protoKey) {
-          result[key] = clone(source[key]);
+      for (var key2 in source) {
+        if (source.hasOwnProperty(key2) && key2 !== protoKey) {
+          result[key2] = clone(source[key2]);
         }
       }
     }
@@ -318,14 +322,14 @@ var pptxPreview = (() => {
     if (!isObject(source) || !isObject(target)) {
       return overwrite ? clone(source) : target;
     }
-    for (var key in source) {
-      if (source.hasOwnProperty(key) && key !== protoKey) {
-        var targetProp = target[key];
-        var sourceProp = source[key];
+    for (var key2 in source) {
+      if (source.hasOwnProperty(key2) && key2 !== protoKey) {
+        var targetProp = target[key2];
+        var sourceProp = source[key2];
         if (isObject(sourceProp) && isObject(targetProp) && !isArray(sourceProp) && !isArray(targetProp) && !isDom(sourceProp) && !isDom(targetProp) && !isBuiltInObject(sourceProp) && !isBuiltInObject(targetProp) && !isPrimitive(sourceProp) && !isPrimitive(targetProp)) {
           merge(targetProp, sourceProp, overwrite);
-        } else if (overwrite || !(key in target)) {
-          target[key] = clone(source[key]);
+        } else if (overwrite || !(key2 in target)) {
+          target[key2] = clone(source[key2]);
         }
       }
     }
@@ -335,20 +339,28 @@ var pptxPreview = (() => {
     if (Object.assign) {
       Object.assign(target, source);
     } else {
-      for (var key in source) {
-        if (source.hasOwnProperty(key) && key !== protoKey) {
-          target[key] = source[key];
+      for (var key2 in source) {
+        if (source.hasOwnProperty(key2) && key2 !== protoKey) {
+          target[key2] = source[key2];
         }
       }
     }
     return target;
   }
+  function assignProps(tar, src, props) {
+    tar = tar || {};
+    for (var idx = 0; idx < props.length; idx++) {
+      var prop = props[idx];
+      tar[prop] = src[prop];
+    }
+    return tar;
+  }
   function defaults(target, source, overlay) {
     var keysArr = keys(source);
     for (var i = 0, len2 = keysArr.length; i < len2; i++) {
-      var key = keysArr[i];
-      if (overlay ? source[key] != null : target[key] == null) {
-        target[key] = source[key];
+      var key2 = keysArr[i];
+      if (overlay ? source[key2] != null : target[key2] == null) {
+        target[key2] = source[key2];
       }
     }
     return target;
@@ -387,10 +399,10 @@ var pptxPreview = (() => {
     if (Object.getOwnPropertyNames) {
       var keyList = Object.getOwnPropertyNames(source);
       for (var i = 0; i < keyList.length; i++) {
-        var key = keyList[i];
-        if (key !== "constructor") {
-          if (override ? source[key] != null : target[key] == null) {
-            target[key] = source[key];
+        var key2 = keyList[i];
+        if (key2 !== "constructor") {
+          if (override ? source[key2] != null : target[key2] == null) {
+            target[key2] = source[key2];
           }
         }
       }
@@ -418,9 +430,9 @@ var pptxPreview = (() => {
         cb.call(context, arr[i], i, arr);
       }
     } else {
-      for (var key in arr) {
-        if (arr.hasOwnProperty(key)) {
-          cb.call(context, arr[key], key, arr);
+      for (var key2 in arr) {
+        if (arr.hasOwnProperty(key2)) {
+          cb.call(context, arr[key2], key2, arr);
         }
       }
     }
@@ -470,6 +482,16 @@ var pptxPreview = (() => {
       return result;
     }
   }
+  function find(arr, cb, context) {
+    if (!(arr && cb)) {
+      return;
+    }
+    for (var i = 0, len2 = arr.length; i < len2; i++) {
+      if (cb.call(context, arr[i], i, arr)) {
+        return arr[i];
+      }
+    }
+  }
   function keys(obj) {
     if (!obj) {
       return [];
@@ -478,9 +500,9 @@ var pptxPreview = (() => {
       return Object.keys(obj);
     }
     var keyList = [];
-    for (var key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        keyList.push(key);
+    for (var key2 in obj) {
+      if (obj.hasOwnProperty(key2)) {
+        keyList.push(key2);
       }
     }
     return keyList;
@@ -601,25 +623,25 @@ var pptxPreview = (() => {
   function isPrimitive(obj) {
     return obj[primitiveKey];
   }
-  var MapPolyfill = function() {
+  var MapPolyfill = (function() {
     function MapPolyfill2() {
       this.data = {};
     }
-    MapPolyfill2.prototype["delete"] = function(key) {
-      var existed = this.has(key);
+    MapPolyfill2.prototype["delete"] = function(key2) {
+      var existed = this.has(key2);
       if (existed) {
-        delete this.data[key];
+        delete this.data[key2];
       }
       return existed;
     };
-    MapPolyfill2.prototype.has = function(key) {
-      return this.data.hasOwnProperty(key);
+    MapPolyfill2.prototype.has = function(key2) {
+      return this.data.hasOwnProperty(key2);
     };
-    MapPolyfill2.prototype.get = function(key) {
-      return this.data[key];
+    MapPolyfill2.prototype.get = function(key2) {
+      return this.data[key2];
     };
-    MapPolyfill2.prototype.set = function(key, value) {
-      this.data[key] = value;
+    MapPolyfill2.prototype.set = function(key2, value) {
+      this.data[key2] = value;
       return this;
     };
     MapPolyfill2.prototype.keys = function() {
@@ -627,52 +649,52 @@ var pptxPreview = (() => {
     };
     MapPolyfill2.prototype.forEach = function(callback) {
       var data = this.data;
-      for (var key in data) {
-        if (data.hasOwnProperty(key)) {
-          callback(data[key], key);
+      for (var key2 in data) {
+        if (data.hasOwnProperty(key2)) {
+          callback(data[key2], key2);
         }
       }
     };
     return MapPolyfill2;
-  }();
+  })();
   var isNativeMapSupported = typeof Map === "function";
   function maybeNativeMap() {
     return isNativeMapSupported ? /* @__PURE__ */ new Map() : new MapPolyfill();
   }
-  var HashMap = function() {
+  var HashMap = (function() {
     function HashMap2(obj) {
       var isArr = isArray(obj);
       this.data = maybeNativeMap();
       var thisMap = this;
       obj instanceof HashMap2 ? obj.each(visit) : obj && each(obj, visit);
-      function visit(value, key) {
-        isArr ? thisMap.set(value, key) : thisMap.set(key, value);
+      function visit(value, key2) {
+        isArr ? thisMap.set(value, key2) : thisMap.set(key2, value);
       }
     }
-    HashMap2.prototype.hasKey = function(key) {
-      return this.data.has(key);
+    HashMap2.prototype.hasKey = function(key2) {
+      return this.data.has(key2);
     };
-    HashMap2.prototype.get = function(key) {
-      return this.data.get(key);
+    HashMap2.prototype.get = function(key2) {
+      return this.data.get(key2);
     };
-    HashMap2.prototype.set = function(key, value) {
-      this.data.set(key, value);
+    HashMap2.prototype.set = function(key2, value) {
+      this.data.set(key2, value);
       return value;
     };
     HashMap2.prototype.each = function(cb, context) {
-      this.data.forEach(function(value, key) {
-        cb.call(context, value, key);
+      this.data.forEach(function(value, key2) {
+        cb.call(context, value, key2);
       });
     };
     HashMap2.prototype.keys = function() {
       var keys2 = this.data.keys();
       return isNativeMapSupported ? Array.from(keys2) : keys2;
     };
-    HashMap2.prototype.removeKey = function(key) {
-      this.data["delete"](key);
+    HashMap2.prototype.removeKey = function(key2) {
+      this.data["delete"](key2);
     };
     return HashMap2;
-  }();
+  })();
   function createHashMap(obj) {
     return new HashMap(obj);
   }
@@ -687,14 +709,14 @@ var pptxPreview = (() => {
     }
     return newArray;
   }
-  function createObject(proto2, properties) {
+  function createObject(proto, properties) {
     var obj;
     if (Object.create) {
-      obj = Object.create(proto2);
+      obj = Object.create(proto);
     } else {
       var StyleCtor = function() {
       };
-      StyleCtor.prototype = proto2;
+      StyleCtor.prototype = proto;
       obj = new StyleCtor();
     }
     if (properties) {
@@ -708,6 +730,7 @@ var pptxPreview = (() => {
   function noop() {
   }
   var RADIAN_TO_DEGREE = 180 / Math.PI;
+  var EPSILON = Number.EPSILON || Math.pow(2, -52);
 
   // node_modules/zrender/node_modules/tslib/tslib.es6.js
   var extendStatics2 = function(d, b) {
@@ -740,6 +763,11 @@ var pptxPreview = (() => {
   }
   function clone2(v) {
     return [v[0], v[1]];
+  }
+  function set(out2, a, b) {
+    out2[0] = a;
+    out2[1] = b;
+    return out2;
   }
   function add(out2, v1, v2) {
     out2[0] = v1[0] + v2[0];
@@ -805,14 +833,14 @@ var pptxPreview = (() => {
   }
 
   // node_modules/zrender/lib/mixin/Draggable.js
-  var Param = /* @__PURE__ */ function() {
+  var Param = /* @__PURE__ */ (function() {
     function Param2(target, e2) {
       this.target = target;
       this.topTarget = e2 && e2.topTarget;
     }
     return Param2;
-  }();
-  var Draggable = function() {
+  })();
+  var Draggable = (function() {
     function Draggable2(handler) {
       this.handler = handler;
       handler.on("mousedown", this._dragStart, this);
@@ -869,11 +897,11 @@ var pptxPreview = (() => {
       this._dropTarget = null;
     };
     return Draggable2;
-  }();
+  })();
   var Draggable_default = Draggable;
 
   // node_modules/zrender/lib/core/Eventful.js
-  var Eventful = function() {
+  var Eventful = (function() {
     function Eventful2(eventProcessors) {
       if (eventProcessors) {
         this._$eventProcessor = eventProcessors;
@@ -1022,7 +1050,7 @@ var pptxPreview = (() => {
       return this;
     };
     return Eventful2;
-  }();
+  })();
   var Eventful_default = Eventful;
 
   // node_modules/zrender/lib/core/fourPointsTransform.js
@@ -1089,6 +1117,17 @@ var pptxPreview = (() => {
   function transformLocalCoord(out2, elFrom, elTarget, inX, inY) {
     return transformCoordWithViewport(_calcOut, elFrom, inX, inY, true) && transformCoordWithViewport(out2, elTarget, _calcOut[0], _calcOut[1]);
   }
+  function transformLocalCoordClear(elFrom, elTarget) {
+    elFrom && dealClear(elFrom);
+    elTarget && dealClear(elTarget);
+    function dealClear(el2) {
+      var saved = el2[EVENT_SAVED_PROP];
+      if (saved) {
+        saved.clearMarkers && saved.clearMarkers();
+        delete el2[EVENT_SAVED_PROP];
+      }
+    }
+  }
   function transformCoordWithViewport(out2, el2, inX, inY, inverse) {
     if (el2.getBoundingClientRect && env_default.domSupported && !isCanvasEl(el2)) {
       var saved = el2[EVENT_SAVED_PROP] || (el2[EVENT_SAVED_PROP] = {});
@@ -1132,6 +1171,11 @@ var pptxPreview = (() => {
       el2.appendChild(marker);
       markers.push(marker);
     }
+    saved.clearMarkers = function() {
+      each(markers, function(marker2) {
+        marker2.parentNode && marker2.parentNode.removeChild(marker2);
+      });
+    };
     return markers;
   }
   function preparePointerTransformer(markers, saved, inverse) {
@@ -1258,7 +1302,7 @@ var pptxPreview = (() => {
   };
 
   // node_modules/zrender/lib/core/GestureMgr.js
-  var GestureMgr = function() {
+  var GestureMgr = (function() {
     function GestureMgr2() {
       this._track = [];
     }
@@ -1300,7 +1344,7 @@ var pptxPreview = (() => {
       }
     };
     return GestureMgr2;
-  }();
+  })();
   function dist2(pointPair) {
     var dx = pointPair[1][0] - pointPair[0][0];
     var dy = pointPair[1][1] - pointPair[0][1];
@@ -1435,7 +1479,7 @@ var pptxPreview = (() => {
   }
 
   // node_modules/zrender/lib/core/Point.js
-  var Point = function() {
+  var Point = (function() {
     function Point2(x, y) {
       this.x = x || 0;
       this.y = y || 0;
@@ -1562,20 +1606,28 @@ var pptxPreview = (() => {
       out2.y = onet * p0.y + t * p1.y;
     };
     return Point2;
-  }();
+  })();
   var Point_default = Point;
 
   // node_modules/zrender/lib/core/BoundingRect.js
   var mathMin = Math.min;
   var mathMax = Math.max;
+  var mathAbs = Math.abs;
+  var XY = ["x", "y"];
+  var WH = ["width", "height"];
   var lt = new Point_default();
   var rb = new Point_default();
   var lb = new Point_default();
   var rt = new Point_default();
-  var minTv = new Point_default();
-  var maxTv = new Point_default();
-  var BoundingRect = function() {
+  var _intersectCtx = createIntersectContext();
+  var _minTv = _intersectCtx.minTv;
+  var _maxTv = _intersectCtx.maxTv;
+  var _lenMinMax = [0, 0];
+  var BoundingRect = (function() {
     function BoundingRect2(x, y, width, height) {
+      boundingRectSet(this, x, y, width, height);
+    }
+    BoundingRect2.set = function(target, x, y, width, height) {
       if (width < 0) {
         x = x + width;
         width = -width;
@@ -1584,11 +1636,12 @@ var pptxPreview = (() => {
         y = y + height;
         height = -height;
       }
-      this.x = x;
-      this.y = y;
-      this.width = width;
-      this.height = height;
-    }
+      target.x = x;
+      target.y = y;
+      target.width = width;
+      target.height = height;
+      return target;
+    };
     BoundingRect2.prototype.union = function(other) {
       var x = mathMin(other.x, this.x);
       var y = mathMin(other.y, this.y);
@@ -1609,94 +1662,66 @@ var pptxPreview = (() => {
       BoundingRect2.applyTransform(this, this, m2);
     };
     BoundingRect2.prototype.calculateTransform = function(b) {
-      var a = this;
-      var sx = b.width / a.width;
-      var sy = b.height / a.height;
-      var m2 = create2();
-      translate(m2, m2, [-a.x, -a.y]);
-      scale2(m2, m2, [sx, sy]);
-      translate(m2, m2, [b.x, b.y]);
-      return m2;
+      return boundingRectCalculateTransform(create2(), this, b);
     };
-    BoundingRect2.prototype.intersect = function(b, mtv) {
-      if (!b) {
+    BoundingRect2.prototype.intersect = function(b, mtv, opt) {
+      return BoundingRect2.intersect(this, b, mtv, opt);
+    };
+    BoundingRect2.intersect = function(a, b, mtv, opt) {
+      if (mtv) {
+        Point_default.set(mtv, 0, 0);
+      }
+      var outIntersectRect = opt && opt.outIntersectRect || null;
+      var clamp = opt && opt.clamp;
+      if (outIntersectRect) {
+        outIntersectRect.x = outIntersectRect.y = outIntersectRect.width = outIntersectRect.height = NaN;
+      }
+      if (!a || !b) {
         return false;
       }
+      if (!(a instanceof BoundingRect2)) {
+        a = boundingRectSet(_tmpIntersectA, a.x, a.y, a.width, a.height);
+      }
       if (!(b instanceof BoundingRect2)) {
-        b = BoundingRect2.create(b);
+        b = boundingRectSet(_tmpIntersectB, b.x, b.y, b.width, b.height);
       }
-      var a = this;
-      var ax0 = a.x;
-      var ax1 = a.x + a.width;
-      var ay0 = a.y;
-      var ay1 = a.y + a.height;
-      var bx0 = b.x;
-      var bx1 = b.x + b.width;
-      var by0 = b.y;
-      var by1 = b.y + b.height;
+      var useMTV = !!mtv;
+      _intersectCtx.reset(opt, useMTV);
+      var touchThreshold = _intersectCtx.touchThreshold;
+      var ax0 = a.x + touchThreshold;
+      var ax1 = a.x + a.width - touchThreshold;
+      var ay0 = a.y + touchThreshold;
+      var ay1 = a.y + a.height - touchThreshold;
+      var bx0 = b.x + touchThreshold;
+      var bx1 = b.x + b.width - touchThreshold;
+      var by0 = b.y + touchThreshold;
+      var by1 = b.y + b.height - touchThreshold;
+      if (ax0 > ax1 || ay0 > ay1 || bx0 > bx1 || by0 > by1) {
+        return false;
+      }
       var overlap = !(ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0);
-      if (mtv) {
-        var dMin = Infinity;
-        var dMax = 0;
-        var d0 = Math.abs(ax1 - bx0);
-        var d1 = Math.abs(bx1 - ax0);
-        var d2 = Math.abs(ay1 - by0);
-        var d3 = Math.abs(by1 - ay0);
-        var dx = Math.min(d0, d1);
-        var dy = Math.min(d2, d3);
-        if (ax1 < bx0 || bx1 < ax0) {
-          if (dx > dMax) {
-            dMax = dx;
-            if (d0 < d1) {
-              Point_default.set(maxTv, -d0, 0);
-            } else {
-              Point_default.set(maxTv, d1, 0);
-            }
-          }
-        } else {
-          if (dx < dMin) {
-            dMin = dx;
-            if (d0 < d1) {
-              Point_default.set(minTv, d0, 0);
-            } else {
-              Point_default.set(minTv, -d1, 0);
-            }
-          }
+      if (useMTV || outIntersectRect) {
+        _lenMinMax[0] = Infinity;
+        _lenMinMax[1] = 0;
+        intersectOneDim(ax0, ax1, bx0, bx1, 0, useMTV, outIntersectRect, clamp);
+        intersectOneDim(ay0, ay1, by0, by1, 1, useMTV, outIntersectRect, clamp);
+        if (useMTV) {
+          Point_default.copy(mtv, overlap ? _intersectCtx.useDir ? _intersectCtx.dirMinTv : _minTv : _maxTv);
         }
-        if (ay1 < by0 || by1 < ay0) {
-          if (dy > dMax) {
-            dMax = dy;
-            if (d2 < d3) {
-              Point_default.set(maxTv, 0, -d2);
-            } else {
-              Point_default.set(maxTv, 0, d3);
-            }
-          }
-        } else {
-          if (dx < dMin) {
-            dMin = dx;
-            if (d2 < d3) {
-              Point_default.set(minTv, 0, d2);
-            } else {
-              Point_default.set(minTv, 0, -d3);
-            }
-          }
-        }
-      }
-      if (mtv) {
-        Point_default.copy(mtv, overlap ? minTv : maxTv);
       }
       return overlap;
     };
-    BoundingRect2.prototype.contain = function(x, y) {
-      var rect = this;
+    BoundingRect2.contain = function(rect, x, y) {
       return x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height;
+    };
+    BoundingRect2.prototype.contain = function(x, y) {
+      return BoundingRect2.contain(this, x, y);
     };
     BoundingRect2.prototype.clone = function() {
       return new BoundingRect2(this.x, this.y, this.width, this.height);
     };
     BoundingRect2.prototype.copy = function(other) {
-      BoundingRect2.copy(this, other);
+      boundingRectCopy(this, other);
     };
     BoundingRect2.prototype.plain = function() {
       return {
@@ -1713,18 +1738,19 @@ var pptxPreview = (() => {
       return this.width === 0 || this.height === 0;
     };
     BoundingRect2.create = function(rect) {
-      return new BoundingRect2(rect.x, rect.y, rect.width, rect.height);
+      return new BoundingRect2(rect ? rect.x : 0, rect ? rect.y : 0, rect ? rect.width : 0, rect ? rect.height : 0);
     };
     BoundingRect2.copy = function(target, source) {
       target.x = source.x;
       target.y = source.y;
       target.width = source.width;
       target.height = source.height;
+      return target;
     };
     BoundingRect2.applyTransform = function(target, source, m2) {
       if (!m2) {
         if (target !== source) {
-          BoundingRect2.copy(target, source);
+          boundingRectCopy(target, source);
         }
         return;
       }
@@ -1762,8 +1788,141 @@ var pptxPreview = (() => {
       target.width = maxX - target.x;
       target.height = maxY - target.y;
     };
+    BoundingRect2.calculateTransform = function(out2, a, b) {
+      var sx = b.width / a.width;
+      var sy = b.height / a.height;
+      out2 = identity(out2 || []);
+      translate(out2, out2, set(_tmpCalcTrans, -a.x, -a.y));
+      scale2(out2, out2, set(_tmpCalcTrans, sx, sy));
+      translate(out2, out2, set(_tmpCalcTrans, b.x, b.y));
+      return out2;
+    };
     return BoundingRect2;
-  }();
+  })();
+  var boundingRectCreate = BoundingRect.create;
+  var boundingRectSet = BoundingRect.set;
+  var boundingRectCopy = BoundingRect.copy;
+  var boundingRectCalculateTransform = BoundingRect.calculateTransform;
+  var boundingRectApplyTransform = BoundingRect.applyTransform;
+  var boundingRectContain = BoundingRect.contain;
+  var _tmpIntersectA = new BoundingRect(0, 0, 0, 0);
+  var _tmpIntersectB = new BoundingRect(0, 0, 0, 0);
+  var _tmpCalcTrans = [];
+  function intersectOneDim(a0, a1, b0, b1, updateDimIdx, useMTV, outIntersectRect, clamp) {
+    var d0 = mathAbs(a1 - b0);
+    var d1 = mathAbs(b1 - a0);
+    var d01min = mathMin(d0, d1);
+    var updateDim = XY[updateDimIdx];
+    var zeroDim = XY[1 - updateDimIdx];
+    var wh = WH[updateDimIdx];
+    if (a1 < b0 || b1 < a0) {
+      if (d0 < d1) {
+        if (useMTV) {
+          _maxTv[updateDim] = -d0;
+        }
+        if (clamp) {
+          outIntersectRect[updateDim] = a1;
+          outIntersectRect[wh] = 0;
+        }
+      } else {
+        if (useMTV) {
+          _maxTv[updateDim] = d1;
+        }
+        if (clamp) {
+          outIntersectRect[updateDim] = a0;
+          outIntersectRect[wh] = 0;
+        }
+      }
+    } else {
+      if (outIntersectRect) {
+        outIntersectRect[updateDim] = mathMax(a0, b0);
+        outIntersectRect[wh] = mathMin(a1, b1) - outIntersectRect[updateDim];
+      }
+      if (useMTV) {
+        if (d01min < _lenMinMax[0] || _intersectCtx.useDir) {
+          _lenMinMax[0] = mathMin(d01min, _lenMinMax[0]);
+          if (d0 < d1 || !_intersectCtx.bidirectional) {
+            _minTv[updateDim] = d0;
+            _minTv[zeroDim] = 0;
+            if (_intersectCtx.useDir) {
+              _intersectCtx.calcDirMTV();
+            }
+          }
+          if (d0 >= d1 || !_intersectCtx.bidirectional) {
+            _minTv[updateDim] = -d1;
+            _minTv[zeroDim] = 0;
+            if (_intersectCtx.useDir) {
+              _intersectCtx.calcDirMTV();
+            }
+          }
+        }
+      }
+    }
+  }
+  function createIntersectContext() {
+    var _direction = 0;
+    var _dirCheckVec = new Point_default();
+    var _dirTmp = new Point_default();
+    var _ctx = {
+      minTv: new Point_default(),
+      maxTv: new Point_default(),
+      useDir: false,
+      dirMinTv: new Point_default(),
+      touchThreshold: 0,
+      bidirectional: true,
+      negativeSize: false,
+      reset: function(opt, useMTV) {
+        _ctx.touchThreshold = 0;
+        if (opt && opt.touchThreshold != null) {
+          _ctx.touchThreshold = mathMax(0, opt.touchThreshold);
+        }
+        _ctx.negativeSize = false;
+        if (!useMTV) {
+          return;
+        }
+        _ctx.minTv.set(Infinity, Infinity);
+        _ctx.maxTv.set(0, 0);
+        _ctx.useDir = false;
+        if (opt && opt.direction != null) {
+          _ctx.useDir = true;
+          _ctx.dirMinTv.copy(_ctx.minTv);
+          _dirTmp.copy(_ctx.minTv);
+          _direction = opt.direction;
+          _ctx.bidirectional = opt.bidirectional == null || !!opt.bidirectional;
+          if (!_ctx.bidirectional) {
+            _dirCheckVec.set(Math.cos(_direction), Math.sin(_direction));
+          }
+        }
+      },
+      calcDirMTV: function() {
+        var minTv = _ctx.minTv;
+        var dirMinTv = _ctx.dirMinTv;
+        var squareMag = minTv.y * minTv.y + minTv.x * minTv.x;
+        var dirSin = Math.sin(_direction);
+        var dirCos = Math.cos(_direction);
+        var dotProd = dirSin * minTv.y + dirCos * minTv.x;
+        if (nearZero2(dotProd)) {
+          if (nearZero2(minTv.x) && nearZero2(minTv.y)) {
+            dirMinTv.set(0, 0);
+          }
+          return;
+        }
+        _dirTmp.x = squareMag * dirCos / dotProd;
+        _dirTmp.y = squareMag * dirSin / dotProd;
+        if (nearZero2(_dirTmp.x) && nearZero2(_dirTmp.y)) {
+          dirMinTv.set(0, 0);
+          return;
+        }
+        if ((_ctx.bidirectional || _dirCheckVec.dot(_dirTmp) > 0) && _dirTmp.len() < dirMinTv.len()) {
+          dirMinTv.copy(_dirTmp);
+        }
+      }
+    };
+    function nearZero2(val) {
+      return mathAbs(val) < 1e-10;
+    }
+    return _ctx;
+  }
   var BoundingRect_default = BoundingRect;
 
   // node_modules/zrender/lib/Handler.js
@@ -1790,7 +1949,7 @@ var pptxPreview = (() => {
   function stopEvent() {
     stop(this.event);
   }
-  var EmptyProxy = function(_super) {
+  var EmptyProxy = (function(_super) {
     __extends2(EmptyProxy2, _super);
     function EmptyProxy2() {
       var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -1802,14 +1961,14 @@ var pptxPreview = (() => {
     EmptyProxy2.prototype.setCursor = function() {
     };
     return EmptyProxy2;
-  }(Eventful_default);
-  var HoveredResult = /* @__PURE__ */ function() {
+  })(Eventful_default);
+  var HoveredResult = /* @__PURE__ */ (function() {
     function HoveredResult2(x, y) {
       this.x = x;
       this.y = y;
     }
     return HoveredResult2;
-  }();
+  })();
   var handlerNames = [
     "click",
     "dblclick",
@@ -1821,7 +1980,7 @@ var pptxPreview = (() => {
     "contextmenu"
   ];
   var tmpRect = new BoundingRect_default(0, 0, 0, 0);
-  var Handler = function(_super) {
+  var Handler = (function(_super) {
     __extends2(Handler2, _super);
     function Handler2(storage, painter, proxy, painterRoot, pointerSize) {
       var _this = _super.call(this) || this;
@@ -1982,7 +2141,7 @@ var pptxPreview = (() => {
       }
     };
     return Handler2;
-  }(Eventful_default);
+  })(Eventful_default);
   each(["click", "mousedown", "mouseup", "mousewheel", "dblclick", "contextmenu"], function(name) {
     Handler.prototype[name] = function(event) {
       var x = event.zrX;
@@ -2028,7 +2187,7 @@ var pptxPreview = (() => {
           isSilent = true;
         }
         var hostEl = el2.__hostTarget;
-        el2 = hostEl ? hostEl : el2.parent;
+        el2 = hostEl ? el2.ignoreHostSilent ? null : hostEl : el2.parent;
       }
       return isSilent ? SILENT : true;
     }
@@ -2585,7 +2744,7 @@ var pptxPreview = (() => {
     }
     return a.zlevel - b.zlevel;
   }
-  var Storage = function() {
+  var Storage = (function() {
     function Storage2() {
       this._roots = [];
       this._displayList = [];
@@ -2615,7 +2774,7 @@ var pptxPreview = (() => {
       displayList.length = this._displayListLen;
       sort(displayList, shapeCompareFunc);
     };
-    Storage2.prototype._updateAndAddDisplayable = function(el2, clipPaths, includeIgnore) {
+    Storage2.prototype._updateAndAddDisplayable = function(el2, parentClipPaths, includeIgnore) {
       if (el2.ignore && !includeIgnore) {
         return;
       }
@@ -2623,23 +2782,30 @@ var pptxPreview = (() => {
       el2.update();
       el2.afterUpdate();
       var userSetClipPath = el2.getClipPath();
-      if (el2.ignoreClip) {
-        clipPaths = null;
-      } else if (userSetClipPath) {
-        if (clipPaths) {
-          clipPaths = clipPaths.slice();
-        } else {
-          clipPaths = [];
+      var parentHasClipPaths = parentClipPaths && parentClipPaths.length;
+      var clipPathIdx = 0;
+      var thisClipPaths = el2.__clipPaths;
+      if (!el2.ignoreClip && (parentHasClipPaths || userSetClipPath)) {
+        if (!thisClipPaths) {
+          thisClipPaths = el2.__clipPaths = [];
+        }
+        if (parentHasClipPaths) {
+          for (var idx = 0; idx < parentClipPaths.length; idx++) {
+            thisClipPaths[clipPathIdx++] = parentClipPaths[idx];
+          }
         }
         var currentClipPath = userSetClipPath;
         var parentClipPath = el2;
         while (currentClipPath) {
           currentClipPath.parent = parentClipPath;
           currentClipPath.updateTransform();
-          clipPaths.push(currentClipPath);
+          thisClipPaths[clipPathIdx++] = currentClipPath;
           parentClipPath = currentClipPath;
           currentClipPath = currentClipPath.getClipPath();
         }
+      }
+      if (thisClipPaths) {
+        thisClipPaths.length = clipPathIdx;
       }
       if (el2.childrenRef) {
         var children = el2.childrenRef();
@@ -2648,16 +2814,11 @@ var pptxPreview = (() => {
           if (el2.__dirty) {
             child.__dirty |= REDRAW_BIT;
           }
-          this._updateAndAddDisplayable(child, clipPaths, includeIgnore);
+          this._updateAndAddDisplayable(child, thisClipPaths, includeIgnore);
         }
         el2.__dirty = 0;
       } else {
         var disp = el2;
-        if (clipPaths && clipPaths.length) {
-          disp.__clipPaths = clipPaths;
-        } else if (disp.__clipPaths && disp.__clipPaths.length > 0) {
-          disp.__clipPaths = [];
-        }
         if (isNaN(disp.z)) {
           logInvalidZError();
           disp.z = 0;
@@ -2674,15 +2835,15 @@ var pptxPreview = (() => {
       }
       var decalEl = el2.getDecalElement && el2.getDecalElement();
       if (decalEl) {
-        this._updateAndAddDisplayable(decalEl, clipPaths, includeIgnore);
+        this._updateAndAddDisplayable(decalEl, thisClipPaths, includeIgnore);
       }
       var textGuide = el2.getTextGuideLine();
       if (textGuide) {
-        this._updateAndAddDisplayable(textGuide, clipPaths, includeIgnore);
+        this._updateAndAddDisplayable(textGuide, thisClipPaths, includeIgnore);
       }
       var textEl = el2.getTextContent();
       if (textEl) {
-        this._updateAndAddDisplayable(textEl, clipPaths, includeIgnore);
+        this._updateAndAddDisplayable(textEl, thisClipPaths, includeIgnore);
       }
     };
     Storage2.prototype.addRoot = function(el2) {
@@ -2717,7 +2878,7 @@ var pptxPreview = (() => {
       this._roots = null;
     };
     return Storage2;
-  }();
+  })();
   var Storage_default = Storage;
 
   // node_modules/zrender/lib/animation/requestAnimationFrame.js
@@ -2917,7 +3078,7 @@ var pptxPreview = (() => {
   // node_modules/zrender/lib/core/curve.js
   var mathPow = Math.pow;
   var mathSqrt = Math.sqrt;
-  var EPSILON = 1e-8;
+  var EPSILON2 = 1e-8;
   var EPSILON_NUMERIC = 1e-4;
   var THREE_SQRT = mathSqrt(3);
   var ONE_THIRD = 1 / 3;
@@ -2925,10 +3086,10 @@ var pptxPreview = (() => {
   var _v1 = create();
   var _v2 = create();
   function isAroundZero(val) {
-    return val > -EPSILON && val < EPSILON;
+    return val > -EPSILON2 && val < EPSILON2;
   }
   function isNotAroundZero(val) {
-    return val > EPSILON || val < -EPSILON;
+    return val > EPSILON2 || val < -EPSILON2;
   }
   function cubicAt(p0, p1, p2, p3, t) {
     var onet = 1 - t;
@@ -3264,7 +3425,7 @@ var pptxPreview = (() => {
   }
 
   // node_modules/zrender/lib/animation/Clip.js
-  var Clip = function() {
+  var Clip = (function() {
     function Clip2(opts) {
       this._inited = false;
       this._startTime = 0;
@@ -3320,17 +3481,17 @@ var pptxPreview = (() => {
       this.easingFunc = isFunction(easing) ? easing : easing_default[easing] || createCubicEasingFunc(easing);
     };
     return Clip2;
-  }();
+  })();
   var Clip_default = Clip;
 
   // node_modules/zrender/lib/core/LRU.js
-  var Entry = /* @__PURE__ */ function() {
+  var Entry = /* @__PURE__ */ (function() {
     function Entry2(val) {
       this.value = val;
     }
     return Entry2;
-  }();
-  var LinkedList = function() {
+  })();
+  var LinkedList = (function() {
     function LinkedList2() {
       this._len = 0;
     }
@@ -3374,19 +3535,19 @@ var pptxPreview = (() => {
       this._len = 0;
     };
     return LinkedList2;
-  }();
-  var LRU = function() {
+  })();
+  var LRU = (function() {
     function LRU2(maxSize) {
       this._list = new LinkedList();
       this._maxSize = 10;
       this._map = {};
       this._maxSize = maxSize;
     }
-    LRU2.prototype.put = function(key, value) {
+    LRU2.prototype.put = function(key2, value) {
       var list = this._list;
       var map3 = this._map;
       var removed = null;
-      if (map3[key] == null) {
+      if (map3[key2] == null) {
         var len2 = list.len();
         var entry = this._lastRemovedEntry;
         if (len2 >= this._maxSize && len2 > 0) {
@@ -3401,14 +3562,14 @@ var pptxPreview = (() => {
         } else {
           entry = new Entry(value);
         }
-        entry.key = key;
+        entry.key = key2;
         list.insertEntry(entry);
-        map3[key] = entry;
+        map3[key2] = entry;
       }
       return removed;
     };
-    LRU2.prototype.get = function(key) {
-      var entry = this._map[key];
+    LRU2.prototype.get = function(key2) {
+      var entry = this._map[key2];
       var list = this._list;
       if (entry != null) {
         if (entry !== list.tail) {
@@ -3426,7 +3587,7 @@ var pptxPreview = (() => {
       return this._list.len();
     };
     return LRU2;
-  }();
+  })();
   var LRU_default = LRU;
 
   // node_modules/zrender/lib/tool/color.js
@@ -3584,6 +3745,10 @@ var pptxPreview = (() => {
     i = Math.round(i);
     return i < 0 ? 0 : i > 255 ? 255 : i;
   }
+  function clampCssAngle(i) {
+    i = Math.round(i);
+    return i < 0 ? 0 : i > 360 ? 360 : i;
+  }
   function clampCssFloat(f) {
     return f < 0 ? 0 : f > 1 ? 1 : f;
   }
@@ -3740,8 +3905,53 @@ var pptxPreview = (() => {
     }
     return rgba;
   }
-  function lift(color, level) {
-    var colorArr = parse(color);
+  function rgba2hsla(rgba) {
+    if (!rgba) {
+      return;
+    }
+    var R = rgba[0] / 255;
+    var G = rgba[1] / 255;
+    var B = rgba[2] / 255;
+    var vMin = Math.min(R, G, B);
+    var vMax = Math.max(R, G, B);
+    var delta = vMax - vMin;
+    var L = (vMax + vMin) / 2;
+    var H;
+    var S;
+    if (delta === 0) {
+      H = 0;
+      S = 0;
+    } else {
+      if (L < 0.5) {
+        S = delta / (vMax + vMin);
+      } else {
+        S = delta / (2 - vMax - vMin);
+      }
+      var deltaR = ((vMax - R) / 6 + delta / 2) / delta;
+      var deltaG = ((vMax - G) / 6 + delta / 2) / delta;
+      var deltaB = ((vMax - B) / 6 + delta / 2) / delta;
+      if (R === vMax) {
+        H = deltaB - deltaG;
+      } else if (G === vMax) {
+        H = 1 / 3 + deltaR - deltaB;
+      } else if (B === vMax) {
+        H = 2 / 3 + deltaG - deltaR;
+      }
+      if (H < 0) {
+        H += 1;
+      }
+      if (H > 1) {
+        H -= 1;
+      }
+    }
+    var hsla = [H * 360, S, L];
+    if (rgba[3] != null) {
+      hsla.push(rgba[3]);
+    }
+    return hsla;
+  }
+  function lift(color3, level) {
+    var colorArr = parse(color3);
     if (colorArr) {
       for (var i = 0; i < 3; i++) {
         if (level < 0) {
@@ -3768,18 +3978,28 @@ var pptxPreview = (() => {
     var leftColor = parse(colors[leftIndex]);
     var rightColor = parse(colors[rightIndex]);
     var dv = value - leftIndex;
-    var color = stringify([
+    var color3 = stringify([
       clampCssByte(lerpNumber(leftColor[0], rightColor[0], dv)),
       clampCssByte(lerpNumber(leftColor[1], rightColor[1], dv)),
       clampCssByte(lerpNumber(leftColor[2], rightColor[2], dv)),
       clampCssFloat(lerpNumber(leftColor[3], rightColor[3], dv))
     ], "rgba");
     return fullOutput ? {
-      color,
+      color: color3,
       leftIndex,
       rightIndex,
       value
-    } : color;
+    } : color3;
+  }
+  function modifyHSL(color3, h, s, l) {
+    var colorArr = parse(color3);
+    if (color3) {
+      colorArr = rgba2hsla(colorArr);
+      h != null && (colorArr[0] = clampCssAngle(isFunction(h) ? h(colorArr[0]) : h));
+      s != null && (colorArr[1] = parseCssFloat(isFunction(s) ? s(colorArr[1]) : s));
+      l != null && (colorArr[2] = parseCssFloat(isFunction(l) ? l(colorArr[2]) : l));
+      return stringify(hsla2rgba(colorArr), "rgba");
+    }
   }
   function stringify(arrColor, type) {
     if (!arrColor || !arrColor.length) {
@@ -3791,22 +4011,22 @@ var pptxPreview = (() => {
     }
     return type + "(" + colorStr + ")";
   }
-  function lum(color, backgroundLum) {
-    var arr = parse(color);
+  function lum(color3, backgroundLum) {
+    var arr = parse(color3);
     return arr ? (0.299 * arr[0] + 0.587 * arr[1] + 0.114 * arr[2]) * arr[3] / 255 + (1 - arr[3]) * backgroundLum : 0;
   }
   var liftedColorCache = new LRU_default(100);
-  function liftColor(color) {
-    if (isString(color)) {
-      var liftedColor = liftedColorCache.get(color);
+  function liftColor(color3) {
+    if (isString(color3)) {
+      var liftedColor = liftedColorCache.get(color3);
       if (!liftedColor) {
-        liftedColor = lift(color, -0.1);
-        liftedColorCache.put(color, liftedColor);
+        liftedColor = lift(color3, -0.1);
+        liftedColorCache.put(color3, liftedColor);
       }
       return liftedColor;
-    } else if (isGradientObject(color)) {
-      var ret = extend({}, color);
-      ret.colorStops = map(color.colorStops, function(stop2) {
+    } else if (isGradientObject(color3)) {
+      var ret = extend({}, color3);
+      ret.colorStops = map(color3.colorStops, function(stop2) {
         return {
           offset: stop2.offset,
           color: lift(stop2.color, -0.1)
@@ -3814,30 +4034,30 @@ var pptxPreview = (() => {
       });
       return ret;
     }
-    return color;
+    return color3;
   }
 
   // node_modules/zrender/lib/svg/helper.js
   var mathRound = Math.round;
-  function normalizeColor(color) {
+  function normalizeColor(color3) {
     var opacity;
-    if (!color || color === "transparent") {
-      color = "none";
-    } else if (typeof color === "string" && color.indexOf("rgba") > -1) {
-      var arr = parse(color);
+    if (!color3 || color3 === "transparent") {
+      color3 = "none";
+    } else if (typeof color3 === "string" && color3.indexOf("rgba") > -1) {
+      var arr = parse(color3);
       if (arr) {
-        color = "rgb(" + arr[0] + "," + arr[1] + "," + arr[2] + ")";
+        color3 = "rgb(" + arr[0] + "," + arr[1] + "," + arr[2] + ")";
         opacity = arr[3];
       }
     }
     return {
-      color,
+      color: color3,
       opacity: opacity == null ? 1 : opacity
     };
   }
-  var EPSILON2 = 1e-4;
+  var EPSILON3 = 1e-4;
   function isAroundZero2(transform) {
-    return transform < EPSILON2 && transform > -EPSILON2;
+    return transform < EPSILON3 && transform > -EPSILON3;
   }
   function round3(transform) {
     return mathRound(transform * 1e3) / 1e3;
@@ -3899,8 +4119,8 @@ var pptxPreview = (() => {
     return "url(#" + id + ")";
   }
   function getPathPrecision(el2) {
-    var scale4 = el2.getGlobalScale();
-    var size = Math.max(scale4[0], scale4[1]);
+    var scale3 = el2.getGlobalScale();
+    var size = Math.max(scale3[0], scale3[1]);
     return Math.max(Math.ceil(Math.log(size) / Math.log(10)), 1);
   }
   function getSRTTransformString(transform) {
@@ -3926,15 +4146,15 @@ var pptxPreview = (() => {
     }
     return res.join(" ");
   }
-  var encodeBase64 = function() {
-    if (env_default.hasGlobalWindow && isFunction(window.btoa)) {
-      return function(str) {
-        return window.btoa(unescape(encodeURIComponent(str)));
-      };
-    }
-    if (typeof Buffer !== "undefined") {
+  var encodeBase64 = (function() {
+    if (typeof Buffer !== "undefined" && typeof Buffer.from === "function") {
       return function(str) {
         return Buffer.from(str).toString("base64");
+      };
+    }
+    if (typeof btoa === "function" && typeof unescape === "function" && typeof encodeURIComponent === "function") {
+      return function(str) {
+        return btoa(unescape(encodeURIComponent(str)));
       };
     }
     return function(str) {
@@ -3943,7 +4163,7 @@ var pptxPreview = (() => {
       }
       return null;
     };
-  }();
+  })();
 
   // node_modules/zrender/lib/animation/Animator.js
   var arraySlice = Array.prototype.slice;
@@ -4074,7 +4294,7 @@ var pptxPreview = (() => {
     return valType === VALUE_TYPE_1D_ARRAY || valType === VALUE_TYPE_2D_ARRAY;
   }
   var tmpRgba = [0, 0, 0, 0];
-  var Track = function() {
+  var Track = (function() {
     function Track2(propName) {
       this.keyframes = [];
       this.discrete = false;
@@ -4216,7 +4436,7 @@ var pptxPreview = (() => {
       var isValueColor = valType === VALUE_TYPE_COLOR;
       var frameIdx;
       var lastFrame = this._lastFr;
-      var mathMin8 = Math.min;
+      var mathMin9 = Math.min;
       var frame;
       var nextFrame;
       if (kfsNum === 1) {
@@ -4225,20 +4445,20 @@ var pptxPreview = (() => {
         if (percent < 0) {
           frameIdx = 0;
         } else if (percent < this._lastFrP) {
-          var start2 = mathMin8(lastFrame + 1, kfsNum - 1);
+          var start2 = mathMin9(lastFrame + 1, kfsNum - 1);
           for (frameIdx = start2; frameIdx >= 0; frameIdx--) {
             if (keyframes[frameIdx].percent <= percent) {
               break;
             }
           }
-          frameIdx = mathMin8(frameIdx, kfsNum - 2);
+          frameIdx = mathMin9(frameIdx, kfsNum - 2);
         } else {
           for (frameIdx = lastFrame; frameIdx < kfsNum; frameIdx++) {
             if (keyframes[frameIdx].percent > percent) {
               break;
             }
           }
-          frameIdx = mathMin8(frameIdx - 1, kfsNum - 2);
+          frameIdx = mathMin9(frameIdx - 1, kfsNum - 2);
         }
         nextFrame = keyframes[frameIdx + 1];
         frame = keyframes[frameIdx];
@@ -4249,7 +4469,7 @@ var pptxPreview = (() => {
       this._lastFr = frameIdx;
       this._lastFrP = percent;
       var interval = nextFrame.percent - frame.percent;
-      var w = interval === 0 ? 1 : mathMin8((percent - frame.percent) / interval, 1);
+      var w = interval === 0 ? 1 : mathMin9((percent - frame.percent) / interval, 1);
       if (nextFrame.easingFunc) {
         w = nextFrame.easingFunc(w);
       }
@@ -4318,8 +4538,8 @@ var pptxPreview = (() => {
       }
     };
     return Track2;
-  }();
-  var Animator = function() {
+  })();
+  var Animator = (function() {
     function Animator2(target, loop, allowDiscreteAnimation, additiveTo) {
       this._tracks = {};
       this._trackKeys = [];
@@ -4568,8 +4788,8 @@ var pptxPreview = (() => {
     };
     Animator2.prototype.getTracks = function() {
       var _this = this;
-      return map(this._trackKeys, function(key) {
-        return _this._tracks[key];
+      return map(this._trackKeys, function(key2) {
+        return _this._tracks[key2];
       });
     };
     Animator2.prototype.stopTracks = function(propNames, forwardToLast) {
@@ -4636,14 +4856,14 @@ var pptxPreview = (() => {
       }
     };
     return Animator2;
-  }();
+  })();
   var Animator_default = Animator;
 
   // node_modules/zrender/lib/animation/Animation.js
   function getTime() {
     return (/* @__PURE__ */ new Date()).getTime();
   }
-  var Animation = function(_super) {
+  var Animation = (function(_super) {
     __extends2(Animation2, _super);
     function Animation2(opts) {
       var _this = _super.call(this) || this;
@@ -4777,13 +4997,13 @@ var pptxPreview = (() => {
       return animator;
     };
     return Animation2;
-  }(Eventful_default);
+  })(Eventful_default);
   var Animation_default = Animation;
 
   // node_modules/zrender/lib/dom/HandlerProxy.js
   var TOUCH_CLICK_DELAY = 300;
   var globalEventSupported = env_default.domSupported;
-  var localNativeListenerNames = function() {
+  var localNativeListenerNames = (function() {
     var mouseHandlerNames = [
       "click",
       "dblclick",
@@ -4815,7 +5035,7 @@ var pptxPreview = (() => {
       touch: touchHandlerNames,
       pointer: pointerHandlerNames
     };
-  }();
+  })();
   var globalNativeListenerNames = {
     mouse: ["mousemove", "mouseup"],
     pointer: ["pointermove", "pointerup"]
@@ -4850,7 +5070,7 @@ var pptxPreview = (() => {
     }
     return isLocal;
   }
-  var FakeGlobalEvent = /* @__PURE__ */ function() {
+  var FakeGlobalEvent = /* @__PURE__ */ (function() {
     function FakeGlobalEvent2(instance, event) {
       this.stopPropagation = noop;
       this.stopImmediatePropagation = noop;
@@ -4862,7 +5082,7 @@ var pptxPreview = (() => {
       this.clientY = event.clientY;
     }
     return FakeGlobalEvent2;
-  }();
+  })();
   var localDOMHandlers = {
     mousedown: function(event) {
       event = normalizeEvent(this.dom, event);
@@ -5030,7 +5250,7 @@ var pptxPreview = (() => {
     }
     scope.mounted = {};
   }
-  var DOMHandlerScope = /* @__PURE__ */ function() {
+  var DOMHandlerScope = /* @__PURE__ */ (function() {
     function DOMHandlerScope2(domTarget, domHandlers) {
       this.mounted = {};
       this.listenerOpts = {};
@@ -5039,8 +5259,8 @@ var pptxPreview = (() => {
       this.domHandlers = domHandlers;
     }
     return DOMHandlerScope2;
-  }();
-  var HandlerDomProxy = function(_super) {
+  })();
+  var HandlerDomProxy = (function(_super) {
     __extends2(HandlerDomProxy2, _super);
     function HandlerDomProxy2(dom, painterRoot) {
       var _this = _super.call(this) || this;
@@ -5072,7 +5292,7 @@ var pptxPreview = (() => {
       }
     };
     return HandlerDomProxy2;
-  }(Eventful_default);
+  })(Eventful_default);
   var HandlerProxy_default = HandlerDomProxy;
 
   // node_modules/zrender/lib/config.js
@@ -5088,19 +5308,19 @@ var pptxPreview = (() => {
 
   // node_modules/zrender/lib/core/Transformable.js
   var mIdentity = identity;
-  var EPSILON3 = 5e-5;
+  var EPSILON4 = 5e-5;
   function isNotAroundZero2(val) {
-    return val > EPSILON3 || val < -EPSILON3;
+    return val > EPSILON4 || val < -EPSILON4;
   }
   var scaleTmp = [];
   var tmpTransform = [];
   var originTransform = create2();
   var abs = Math.abs;
-  var Transformable = function() {
+  var Transformable = (function() {
     function Transformable2() {
     }
     Transformable2.prototype.getLocalTransform = function(m2) {
-      return Transformable2.getLocalTransform(this, m2);
+      return transformableGetLocalTransform(this, m2);
     };
     Transformable2.prototype.setPosition = function(arr) {
       this.x = arr[0];
@@ -5147,6 +5367,8 @@ var pptxPreview = (() => {
       }
       this.transform = m2;
       this._resolveGlobalScaleRatio(m2);
+      this.invTransform = this.invTransform || create2();
+      invert(this.invTransform, m2);
     };
     Transformable2.prototype._resolveGlobalScaleRatio = function(m2) {
       var globalScaleRatio = this.globalScaleRatio;
@@ -5161,8 +5383,6 @@ var pptxPreview = (() => {
         m2[2] *= sy;
         m2[3] *= sy;
       }
-      this.invTransform = this.invTransform || create2();
-      invert(this.invTransform, m2);
     };
     Transformable2.prototype.getComputedTransform = function() {
       var transformNode = this;
@@ -5290,13 +5510,14 @@ var pptxPreview = (() => {
       m2[5] += oy + y;
       return m2;
     };
-    Transformable2.initDefaultProps = function() {
-      var proto2 = Transformable2.prototype;
-      proto2.scaleX = proto2.scaleY = proto2.globalScaleRatio = 1;
-      proto2.x = proto2.y = proto2.originX = proto2.originY = proto2.skewX = proto2.skewY = proto2.rotation = proto2.anchorX = proto2.anchorY = 0;
-    }();
+    Transformable2.initDefaultProps = (function() {
+      var proto = Transformable2.prototype;
+      proto.scaleX = proto.scaleY = proto.globalScaleRatio = 1;
+      proto.x = proto.y = proto.originX = proto.originY = proto.skewX = proto.skewY = proto.rotation = proto.anchorX = proto.anchorY = 0;
+    })();
     return Transformable2;
-  }();
+  })();
+  var transformableGetLocalTransform = Transformable.getLocalTransform;
   var TRANSFORMABLE_PROPS = [
     "x",
     "y",
@@ -5311,30 +5532,69 @@ var pptxPreview = (() => {
     "skewY"
   ];
   function copyTransform(target, source) {
-    for (var i = 0; i < TRANSFORMABLE_PROPS.length; i++) {
-      var propName = TRANSFORMABLE_PROPS[i];
-      target[propName] = source[propName];
-    }
+    return assignProps(target, source, TRANSFORMABLE_PROPS);
   }
   var Transformable_default = Transformable;
 
   // node_modules/zrender/lib/contain/text.js
-  var textWidthCache = {};
-  function getWidth(text, font) {
-    font = font || DEFAULT_FONT;
-    var cacheOfFont = textWidthCache[font];
-    if (!cacheOfFont) {
-      cacheOfFont = textWidthCache[font] = new LRU_default(500);
+  function ensureFontMeasureInfo(font) {
+    if (!_fontMeasureInfoCache) {
+      _fontMeasureInfoCache = new LRU_default(100);
     }
-    var width = cacheOfFont.get(text);
+    font = font || DEFAULT_FONT;
+    var measureInfo = _fontMeasureInfoCache.get(font);
+    if (!measureInfo) {
+      measureInfo = {
+        font,
+        strWidthCache: new LRU_default(500),
+        asciiWidthMap: null,
+        asciiWidthMapTried: false,
+        stWideCharWidth: platformApi.measureText("\u56FD", font).width,
+        asciiCharWidth: platformApi.measureText("a", font).width
+      };
+      _fontMeasureInfoCache.put(font, measureInfo);
+    }
+    return measureInfo;
+  }
+  var _fontMeasureInfoCache;
+  function tryCreateASCIIWidthMap(font) {
+    if (_getASCIIWidthMapLongCount >= GET_ASCII_WIDTH_LONG_COUNT_MAX) {
+      return;
+    }
+    font = font || DEFAULT_FONT;
+    var asciiWidthMap = [];
+    var start2 = +/* @__PURE__ */ new Date();
+    for (var code = 0; code <= 127; code++) {
+      asciiWidthMap[code] = platformApi.measureText(String.fromCharCode(code), font).width;
+    }
+    var cost = +/* @__PURE__ */ new Date() - start2;
+    if (cost > 16) {
+      _getASCIIWidthMapLongCount = GET_ASCII_WIDTH_LONG_COUNT_MAX;
+    } else if (cost > 2) {
+      _getASCIIWidthMapLongCount++;
+    }
+    return asciiWidthMap;
+  }
+  var _getASCIIWidthMapLongCount = 0;
+  var GET_ASCII_WIDTH_LONG_COUNT_MAX = 5;
+  function measureCharWidth(fontMeasureInfo, charCode) {
+    if (!fontMeasureInfo.asciiWidthMapTried) {
+      fontMeasureInfo.asciiWidthMap = tryCreateASCIIWidthMap(fontMeasureInfo.font);
+      fontMeasureInfo.asciiWidthMapTried = true;
+    }
+    return 0 <= charCode && charCode <= 127 ? fontMeasureInfo.asciiWidthMap != null ? fontMeasureInfo.asciiWidthMap[charCode] : fontMeasureInfo.asciiCharWidth : fontMeasureInfo.stWideCharWidth;
+  }
+  function measureWidth(fontMeasureInfo, text) {
+    var strWidthCache = fontMeasureInfo.strWidthCache;
+    var width = strWidthCache.get(text);
     if (width == null) {
-      width = platformApi.measureText(text, font).width;
-      cacheOfFont.put(text, width);
+      width = platformApi.measureText(text, fontMeasureInfo.font).width;
+      strWidthCache.put(text, width);
     }
     return width;
   }
   function innerGetBoundingRect(text, font, textAlign, textBaseline) {
-    var width = getWidth(text, font);
+    var width = measureWidth(ensureFontMeasureInfo(font), text);
     var height = getLineHeight(font);
     var x = adjustTextX(0, width, textAlign);
     var y = adjustTextY2(0, height, textBaseline);
@@ -5355,24 +5615,24 @@ var pptxPreview = (() => {
       return uniondRect;
     }
   }
-  function adjustTextX(x, width, textAlign) {
+  function adjustTextX(x, width, textAlign, inverse) {
     if (textAlign === "right") {
-      x -= width;
+      !inverse ? x -= width : x += width;
     } else if (textAlign === "center") {
-      x -= width / 2;
+      !inverse ? x -= width / 2 : x += width / 2;
     }
     return x;
   }
-  function adjustTextY2(y, height, verticalAlign) {
+  function adjustTextY2(y, height, verticalAlign, inverse) {
     if (verticalAlign === "middle") {
-      y -= height / 2;
+      !inverse ? y -= height / 2 : y += height / 2;
     } else if (verticalAlign === "bottom") {
-      y -= height;
+      !inverse ? y -= height : y += height;
     }
     return y;
   }
   function getLineHeight(font) {
-    return getWidth("\u56FD", font);
+    return ensureFontMeasureInfo(font).stWideCharWidth;
   }
   function parsePercent(value, maxValue) {
     if (typeof value === "string") {
@@ -5483,13 +5743,16 @@ var pptxPreview = (() => {
   // node_modules/zrender/lib/Element.js
   var PRESERVED_NORMAL_STATE = "__zr_normal__";
   var PRIMARY_STATES_KEYS = TRANSFORMABLE_PROPS.concat(["ignore"]);
-  var DEFAULT_ANIMATABLE_MAP = reduce(TRANSFORMABLE_PROPS, function(obj, key) {
-    obj[key] = true;
+  var DEFAULT_ANIMATABLE_MAP = reduce(TRANSFORMABLE_PROPS, function(obj, key2) {
+    obj[key2] = true;
     return obj;
   }, { ignore: false });
   var tmpTextPosCalcRes = {};
   var tmpBoundingRect = new BoundingRect_default(0, 0, 0, 0);
-  var Element = function() {
+  var tmpInnerTextTrans = [];
+  var IN_HOVER_LAYER_KIND_NO = 0;
+  var IN_HOVER_LAYER_KIND_ONLY_STYLE_CHANGE = 1;
+  var Element = (function() {
     function Element2(props) {
       this.id = guid();
       this.animators = [];
@@ -5543,8 +5806,11 @@ var pptxPreview = (() => {
         innerTransformable.parent = isLocal ? this : null;
         var innerOrigin = false;
         innerTransformable.copyTransform(textEl);
-        if (textConfig.position != null) {
-          var layoutRect = tmpBoundingRect;
+        var hasPosition = textConfig.position != null;
+        var autoOverflowArea = textConfig.autoOverflowArea;
+        var layoutRect = void 0;
+        if (autoOverflowArea || hasPosition) {
+          layoutRect = tmpBoundingRect;
           if (textConfig.layoutRect) {
             layoutRect.copy(textConfig.layoutRect);
           } else {
@@ -5553,6 +5819,8 @@ var pptxPreview = (() => {
           if (!isLocal) {
             layoutRect.applyTransform(this.transform);
           }
+        }
+        if (hasPosition) {
           if (this.calculateTextPosition) {
             this.calculateTextPosition(tmpTextPosCalcRes, textConfig, layoutRect);
           } else {
@@ -5590,8 +5858,17 @@ var pptxPreview = (() => {
             innerTransformable.originY = -textOffset[1];
           }
         }
-        var isInside = textConfig.inside == null ? typeof textConfig.position === "string" && textConfig.position.indexOf("inside") >= 0 : textConfig.inside;
         var innerTextDefaultStyle = this._innerTextDefaultStyle || (this._innerTextDefaultStyle = {});
+        if (autoOverflowArea) {
+          var overflowRect = innerTextDefaultStyle.overflowRect = innerTextDefaultStyle.overflowRect || new BoundingRect_default(0, 0, 0, 0);
+          innerTransformable.getLocalTransform(tmpInnerTextTrans);
+          invert(tmpInnerTextTrans, tmpInnerTextTrans);
+          BoundingRect_default.copy(overflowRect, layoutRect);
+          overflowRect.applyTransform(tmpInnerTextTrans);
+        } else {
+          innerTextDefaultStyle.overflowRect = null;
+        }
+        var isInside = textConfig.inside == null ? typeof textConfig.position === "string" && textConfig.position.indexOf("inside") >= 0 : textConfig.inside;
         var textFill = void 0;
         var textStroke = void 0;
         var autoStroke = void 0;
@@ -5660,18 +5937,18 @@ var pptxPreview = (() => {
     };
     Element2.prototype.traverse = function(cb, context) {
     };
-    Element2.prototype.attrKV = function(key, value) {
-      if (key === "textConfig") {
+    Element2.prototype.attrKV = function(key2, value) {
+      if (key2 === "textConfig") {
         this.setTextConfig(value);
-      } else if (key === "textContent") {
+      } else if (key2 === "textContent") {
         this.setTextContent(value);
-      } else if (key === "clipPath") {
+      } else if (key2 === "clipPath") {
         this.setClipPath(value);
-      } else if (key === "extra") {
+      } else if (key2 === "extra") {
         this.extra = this.extra || {};
         extend(this.extra, value);
       } else {
-        this[key] = value;
+        this[key2] = value;
       }
     };
     Element2.prototype.hide = function() {
@@ -5689,8 +5966,8 @@ var pptxPreview = (() => {
         var obj = keyOrObj;
         var keysArr = keys(obj);
         for (var i = 0; i < keysArr.length; i++) {
-          var key = keysArr[i];
-          this.attrKV(key, keyOrObj[key]);
+          var key2 = keysArr[i];
+          this.attrKV(key2, keyOrObj[key2]);
         }
       }
       this.markRedraw();
@@ -5722,9 +5999,9 @@ var pptxPreview = (() => {
     };
     Element2.prototype._savePrimaryToNormal = function(toState, normalState, primaryKeys) {
       for (var i = 0; i < primaryKeys.length; i++) {
-        var key = primaryKeys[i];
-        if (toState[key] != null && !(key in normalState)) {
-          normalState[key] = this[key];
+        var key2 = primaryKeys[i];
+        if (toState[key2] != null && !(key2 in normalState)) {
+          normalState[key2] = this[key2];
         }
       }
     };
@@ -5769,18 +6046,18 @@ var pptxPreview = (() => {
       if (!toNormalState) {
         this.saveCurrentToNormalState(state);
       }
-      var useHoverLayer = !!(state && state.hoverLayer || forceUseHoverLayer);
-      if (useHoverLayer) {
-        this._toggleHoverLayerFlag(true);
-      }
-      this._applyStateObj(stateName, state, this._normalState, keepCurrentStates, !noAnimation && !this.__inHover && animationCfg && animationCfg.duration > 0, animationCfg);
       var textContent = this._textContent;
+      var useHoverLayer = shouldUseHoverLayer(this, textContent, state, forceUseHoverLayer);
+      if (useHoverLayer && !this.__inHover) {
+        this.__inHover = useHoverLayer;
+      }
+      this._applyStateObj(stateName, state, this._normalState, keepCurrentStates, canTransition(this, noAnimation, animationCfg), animationCfg);
       var textGuide = this._textGuide;
       if (textContent) {
-        textContent.useState(stateName, keepCurrentStates, noAnimation, useHoverLayer);
+        textContent.useState(stateName, keepCurrentStates, noAnimation, !!useHoverLayer);
       }
       if (textGuide) {
-        textGuide.useState(stateName, keepCurrentStates, noAnimation, useHoverLayer);
+        textGuide.useState(stateName, keepCurrentStates, noAnimation, !!useHoverLayer);
       }
       if (toNormalState) {
         this.currentStates = [];
@@ -5795,7 +6072,7 @@ var pptxPreview = (() => {
       this._updateAnimationTargets();
       this.markRedraw();
       if (!useHoverLayer && this.__inHover) {
-        this._toggleHoverLayerFlag(false);
+        this.__inHover = IN_HOVER_LAYER_KIND_NO;
         this.__dirty &= ~REDRAW_BIT;
       }
       return state;
@@ -5833,42 +6110,41 @@ var pptxPreview = (() => {
           }
         }
         var lastStateObj = stateObjects[len2 - 1];
-        var useHoverLayer = !!(lastStateObj && lastStateObj.hoverLayer || forceUseHoverLayer);
-        if (useHoverLayer) {
-          this._toggleHoverLayerFlag(true);
+        var textContent = this._textContent;
+        var useHoverLayer = shouldUseHoverLayer(this, textContent, lastStateObj, forceUseHoverLayer);
+        if (useHoverLayer && !this.__inHover) {
+          this.__inHover = useHoverLayer;
         }
         var mergedState = this._mergeStates(stateObjects);
         var animationCfg = this.stateTransition;
         this.saveCurrentToNormalState(mergedState);
-        this._applyStateObj(states.join(","), mergedState, this._normalState, false, !noAnimation && !this.__inHover && animationCfg && animationCfg.duration > 0, animationCfg);
-        var textContent = this._textContent;
+        this._applyStateObj(states.join(","), mergedState, this._normalState, false, canTransition(this, noAnimation, animationCfg), animationCfg);
         var textGuide = this._textGuide;
         if (textContent) {
-          textContent.useStates(states, noAnimation, useHoverLayer);
+          textContent.useStates(states, noAnimation, !!useHoverLayer);
         }
         if (textGuide) {
-          textGuide.useStates(states, noAnimation, useHoverLayer);
+          textGuide.useStates(states, noAnimation, !!useHoverLayer);
         }
         this._updateAnimationTargets();
         this.currentStates = states.slice();
         this.markRedraw();
         if (!useHoverLayer && this.__inHover) {
-          this._toggleHoverLayerFlag(false);
+          this.__inHover = IN_HOVER_LAYER_KIND_NO;
           this.__dirty &= ~REDRAW_BIT;
         }
       }
     };
     Element2.prototype.isSilent = function() {
-      var isSilent = this.silent;
-      var ancestor = this.parent;
-      while (!isSilent && ancestor) {
-        if (ancestor.silent) {
-          isSilent = true;
-          break;
+      var el2 = this;
+      while (el2) {
+        if (el2.silent) {
+          return true;
         }
-        ancestor = ancestor.parent;
+        var hostEl = el2.__hostTarget;
+        el2 = hostEl ? el2.ignoreHostSilent ? null : hostEl : el2.parent;
       }
-      return isSilent;
+      return false;
     };
     Element2.prototype._updateAnimationTargets = function() {
       for (var i = 0; i < this.animators.length; i++) {
@@ -5925,6 +6201,9 @@ var pptxPreview = (() => {
       return mergedState;
     };
     Element2.prototype._applyStateObj = function(stateName, state, normalState, keepCurrentStates, transition, animationCfg) {
+      if (this.__inHover === IN_HOVER_LAYER_KIND_ONLY_STYLE_CHANGE) {
+        return;
+      }
       var needsRestoreToNormal = !(state && keepCurrentStates);
       if (state && state.textConfig) {
         this.textConfig = extend({}, keepCurrentStates ? this.textConfig : normalState.textConfig);
@@ -5937,22 +6216,22 @@ var pptxPreview = (() => {
       var transitionTarget = {};
       var hasTransition = false;
       for (var i = 0; i < PRIMARY_STATES_KEYS.length; i++) {
-        var key = PRIMARY_STATES_KEYS[i];
-        var propNeedsTransition = transition && DEFAULT_ANIMATABLE_MAP[key];
-        if (state && state[key] != null) {
+        var key2 = PRIMARY_STATES_KEYS[i];
+        var propNeedsTransition = transition && DEFAULT_ANIMATABLE_MAP[key2];
+        if (state && state[key2] != null) {
           if (propNeedsTransition) {
             hasTransition = true;
-            transitionTarget[key] = state[key];
+            transitionTarget[key2] = state[key2];
           } else {
-            this[key] = state[key];
+            this[key2] = state[key2];
           }
         } else if (needsRestoreToNormal) {
-          if (normalState[key] != null) {
+          if (normalState[key2] != null) {
             if (propNeedsTransition) {
               hasTransition = true;
-              transitionTarget[key] = normalState[key];
+              transitionTarget[key2] = normalState[key2];
             } else {
-              this[key] = normalState[key];
+              this[key2] = normalState[key2];
             }
           }
         }
@@ -6094,17 +6373,6 @@ var pptxPreview = (() => {
     Element2.prototype.dirty = function() {
       this.markRedraw();
     };
-    Element2.prototype._toggleHoverLayerFlag = function(inHover) {
-      this.__inHover = inHover;
-      var textContent = this._textContent;
-      var textGuide = this._textGuide;
-      if (textContent) {
-        textContent.__inHover = inHover;
-      }
-      if (textGuide) {
-        textGuide.__inHover = inHover;
-      }
-    };
     Element2.prototype.addSelfToZr = function(zr) {
       if (this.__zr === zr) {
         return;
@@ -6147,24 +6415,24 @@ var pptxPreview = (() => {
         this._textGuide.removeSelfFromZr(zr);
       }
     };
-    Element2.prototype.animate = function(key, loop, allowDiscreteAnimation) {
-      var target = key ? this[key] : this;
+    Element2.prototype.animate = function(key2, loop, allowDiscreteAnimation) {
+      var target = key2 ? this[key2] : this;
       if (true) {
         if (!target) {
-          logError('Property "' + key + '" is not existed in element ' + this.id);
+          logError('Property "' + key2 + '" is not existed in element ' + this.id);
           return;
         }
       }
       var animator = new Animator_default(target, loop, allowDiscreteAnimation);
-      key && (animator.targetName = key);
-      this.addAnimator(animator, key);
+      key2 && (animator.targetName = key2);
+      this.addAnimator(animator, key2);
       return animator;
     };
-    Element2.prototype.addAnimator = function(animator, key) {
+    Element2.prototype.addAnimator = function(animator, key2) {
       var zr = this.__zr;
       var el2 = this;
       animator.during(function() {
-        el2.updateDuringAnimation(key);
+        el2.updateDuringAnimation(key2);
       }).done(function() {
         var animators = el2.animators;
         var idx = indexOf(animators, animator);
@@ -6178,7 +6446,7 @@ var pptxPreview = (() => {
       }
       zr && zr.wakeUp();
     };
-    Element2.prototype.updateDuringAnimation = function(key) {
+    Element2.prototype.updateDuringAnimation = function(key2) {
       this.markRedraw();
     };
     Element2.prototype.stopAnimation = function(scope, forwardToLast) {
@@ -6214,24 +6482,25 @@ var pptxPreview = (() => {
     Element2.prototype.getPaintRect = function() {
       return null;
     };
-    Element2.initDefaultProps = function() {
+    Element2.initDefaultProps = (function() {
       var elProto = Element2.prototype;
       elProto.type = "element";
       elProto.name = "";
-      elProto.ignore = elProto.silent = elProto.isGroup = elProto.draggable = elProto.dragging = elProto.ignoreClip = elProto.__inHover = false;
+      elProto.ignore = elProto.silent = elProto.ignoreHostSilent = elProto.isGroup = elProto.draggable = elProto.dragging = elProto.ignoreClip = false;
+      elProto.__inHover = IN_HOVER_LAYER_KIND_NO;
       elProto.__dirty = REDRAW_BIT;
       var logs = {};
-      function logDeprecatedError(key, xKey, yKey) {
-        if (!logs[key + xKey + yKey]) {
-          console.warn("DEPRECATED: '" + key + "' has been deprecated. use '" + xKey + "', '" + yKey + "' instead");
-          logs[key + xKey + yKey] = true;
+      function logDeprecatedError(key2, xKey, yKey) {
+        if (!logs[key2 + xKey + yKey]) {
+          console.warn("DEPRECATED: '" + key2 + "' has been deprecated. use '" + xKey + "', '" + yKey + "' instead");
+          logs[key2 + xKey + yKey] = true;
         }
       }
-      function createLegacyProperty(key, privateKey, xKey, yKey) {
-        Object.defineProperty(elProto, key, {
+      function createLegacyProperty(key2, privateKey, xKey, yKey) {
+        Object.defineProperty(elProto, key2, {
           get: function() {
             if (true) {
-              logDeprecatedError(key, xKey, yKey);
+              logDeprecatedError(key2, xKey, yKey);
             }
             if (!this[privateKey]) {
               var pos = this[privateKey] = [];
@@ -6241,7 +6510,7 @@ var pptxPreview = (() => {
           },
           set: function(pos) {
             if (true) {
-              logDeprecatedError(key, xKey, yKey);
+              logDeprecatedError(key2, xKey, yKey);
             }
             this[xKey] = pos[0];
             this[yKey] = pos[1];
@@ -6273,9 +6542,9 @@ var pptxPreview = (() => {
         createLegacyProperty("scale", "_legacyScale", "scaleX", "scaleY");
         createLegacyProperty("origin", "_legacyOrigin", "originX", "originY");
       }
-    }();
+    })();
     return Element2;
-  }();
+  })();
   mixin(Element, Eventful_default);
   mixin(Element, Transformable_default);
   function animateTo(animatable, target, cfg, animationProps, reverse) {
@@ -6330,20 +6599,20 @@ var pptxPreview = (() => {
   function is2DArray(value) {
     return isArrayLike(value[0]);
   }
-  function copyValue(target, source, key) {
-    if (isArrayLike(source[key])) {
-      if (!isArrayLike(target[key])) {
-        target[key] = [];
+  function copyValue(target, source, key2) {
+    if (isArrayLike(source[key2])) {
+      if (!isArrayLike(target[key2])) {
+        target[key2] = [];
       }
-      if (isTypedArray(source[key])) {
-        var len2 = source[key].length;
-        if (target[key].length !== len2) {
-          target[key] = new source[key].constructor(len2);
-          copyArrShallow(target[key], source[key], len2);
+      if (isTypedArray(source[key2])) {
+        var len2 = source[key2].length;
+        if (target[key2].length !== len2) {
+          target[key2] = new source[key2].constructor(len2);
+          copyArrShallow(target[key2], source[key2], len2);
         }
       } else {
-        var sourceArr = source[key];
-        var targetArr = target[key];
+        var sourceArr = source[key2];
+        var targetArr = target[key2];
         var len0 = sourceArr.length;
         if (is2DArray(sourceArr)) {
           var len1 = sourceArr[0].length;
@@ -6360,7 +6629,7 @@ var pptxPreview = (() => {
         targetArr.length = sourceArr.length;
       }
     } else {
-      target[key] = source[key];
+      target[key2] = source[key2];
     }
   }
   function isValueSame(val1, val2) {
@@ -6423,8 +6692,8 @@ var pptxPreview = (() => {
       }
     }
     if (!cfg.force) {
-      animationKeys = filter(animationKeys, function(key) {
-        return !isValueSame(target[key], animateObj[key]);
+      animationKeys = filter(animationKeys, function(key2) {
+        return !isValueSame(target[key2], animateObj[key2]);
       });
       keyLen = animationKeys.length;
     }
@@ -6472,10 +6741,19 @@ var pptxPreview = (() => {
       animators.push(animator);
     }
   }
+  function shouldUseHoverLayer(el2, textContent, nextState, forceUseHoverLayer) {
+    return !(nextState && nextState.hoverLayer || forceUseHoverLayer) || isTextRelatedEl(el2) || textContent && isTextRelatedEl(textContent) ? IN_HOVER_LAYER_KIND_NO : IN_HOVER_LAYER_KIND_ONLY_STYLE_CHANGE;
+  }
+  function isTextRelatedEl(el2) {
+    return el2.type === "text" || el2.type === "tspan";
+  }
+  function canTransition(el2, noAnimation, animationCfg) {
+    return !noAnimation && !el2.__inHover && animationCfg && animationCfg.duration > 0;
+  }
   var Element_default = Element;
 
   // node_modules/zrender/lib/graphic/Group.js
-  var Group = function(_super) {
+  var Group = (function(_super) {
     __extends2(Group4, _super);
     function Group4(opts) {
       var _this = _super.call(this) || this;
@@ -6645,7 +6923,7 @@ var pptxPreview = (() => {
       return rect || tmpRect3;
     };
     return Group4;
-  }(Element_default);
+  })(Element_default);
   Group.prototype.type = "group";
   var Group_default = Group;
 
@@ -6673,13 +6951,13 @@ var pptxPreview = (() => {
     }
     return false;
   }
-  var ZRender = function() {
+  var ZRender = (function() {
     function ZRender2(id, dom, opts) {
       var _this = this;
       this._sleepAfterStill = 10;
       this._stillFrameAccum = 0;
       this._needsRefresh = true;
-      this._needsRefreshHover = true;
+      this._needsRefreshHover = false;
       this._darkMode = false;
       opts = opts || {};
       this.dom = dom;
@@ -6711,7 +6989,7 @@ var pptxPreview = (() => {
       this.animation = new Animation_default({
         stage: {
           update: ssrMode ? null : function() {
-            return _this._flush(true);
+            return _this._flush(false);
           }
         }
       });
@@ -6764,16 +7042,26 @@ var pptxPreview = (() => {
     ZRender2.prototype.isDarkMode = function() {
       return this._darkMode;
     };
-    ZRender2.prototype.refreshImmediately = function(fromInside) {
+    ZRender2.prototype.refreshImmediately = function(noAnimationUpdate) {
       if (this._disposed) {
         return;
       }
-      if (!fromInside) {
+      this._refresh({
+        animUpdate: !noAnimationUpdate,
+        refresh: true,
+        refreshHover: false
+      });
+    };
+    ZRender2.prototype._refresh = function(opt) {
+      if (opt.animUpdate) {
         this.animation.update(true);
       }
-      this._needsRefresh = false;
-      this.painter.refresh();
-      this._needsRefresh = false;
+      this._needsRefresh = this._needsRefreshHover = false;
+      this.painter.refresh({
+        refresh: opt.refresh,
+        refreshHover: opt.refreshHover
+      });
+      this._needsRefresh = this._needsRefreshHover = false;
     };
     ZRender2.prototype.refresh = function() {
       if (this._disposed) {
@@ -6786,18 +7074,20 @@ var pptxPreview = (() => {
       if (this._disposed) {
         return;
       }
-      this._flush(false);
+      this._flush(true);
     };
-    ZRender2.prototype._flush = function(fromInside) {
+    ZRender2.prototype._flush = function(animationUpdate) {
       var triggerRendered;
       var start2 = getTime();
-      if (this._needsRefresh) {
+      var needsRefresh = this._needsRefresh;
+      var needsRefreshHover = this._needsRefreshHover;
+      if (needsRefresh || needsRefreshHover) {
         triggerRendered = true;
-        this.refreshImmediately(fromInside);
-      }
-      if (this._needsRefreshHover) {
-        triggerRendered = true;
-        this.refreshHoverImmediately();
+        this._refresh({
+          animUpdate: animationUpdate,
+          refresh: needsRefresh,
+          refreshHover: needsRefreshHover
+        });
       }
       var end2 = getTime();
       if (triggerRendered) {
@@ -6829,10 +7119,11 @@ var pptxPreview = (() => {
       if (this._disposed) {
         return;
       }
-      this._needsRefreshHover = false;
-      if (this.painter.refreshHover && this.painter.getType() === "canvas") {
-        this.painter.refreshHover();
-      }
+      this._refresh({
+        animUpdate: false,
+        refresh: false,
+        refreshHover: true
+      });
     };
     ZRender2.prototype.resize = function(opts) {
       if (this._disposed) {
@@ -6917,7 +7208,7 @@ var pptxPreview = (() => {
       delInstance(this.id);
     };
     return ZRender2;
-  }();
+  })();
   function init(dom, opts) {
     var zr = new ZRender(guid(), dom, opts);
     instances[zr.id] = zr;
@@ -6938,11 +7229,22 @@ var pptxPreview = (() => {
 
   // node_modules/echarts/lib/util/number.js
   var RADIAN_EPSILON = 1e-4;
-  var ROUND_SUPPORTED_PRECISION_MAX = 20;
+  var TO_FIXED_SUPPORTED_PRECISION_MAX = 20;
   function _trim(str) {
     return str.replace(/^\s+|\s+$/g, "");
   }
-  function linearMap(val, domain, range, clamp2) {
+  var mathMin2 = Math.min;
+  var mathMax2 = Math.max;
+  var mathAbs2 = Math.abs;
+  var mathRound2 = Math.round;
+  var mathFloor = Math.floor;
+  var mathCeil = Math.ceil;
+  var mathPow2 = Math.pow;
+  var mathLog = Math.log;
+  var mathLN10 = Math.LN10;
+  var mathPI = Math.PI;
+  var mathRandom = Math.random;
+  function linearMap(val, domain, range, clamp) {
     var d0 = domain[0];
     var d1 = domain[1];
     var r0 = range[0];
@@ -6952,7 +7254,7 @@ var pptxPreview = (() => {
     if (subDomain === 0) {
       return subRange === 0 ? r0 : (r0 + r1) / 2;
     }
-    if (clamp2) {
+    if (clamp) {
       if (subDomain > 0) {
         if (val <= d0) {
           return r0;
@@ -6976,36 +7278,52 @@ var pptxPreview = (() => {
     }
     return (val - d0) / subDomain * subRange + r0;
   }
-  function parsePercent2(percent, all) {
-    switch (percent) {
+  var parsePercent2 = parsePositionOption;
+  function parsePositionOption(option, percentBase, percentOffset) {
+    switch (option) {
       case "center":
       case "middle":
-        percent = "50%";
+        option = "50%";
         break;
       case "left":
       case "top":
-        percent = "0%";
+        option = "0%";
         break;
       case "right":
       case "bottom":
-        percent = "100%";
+        option = "100%";
         break;
     }
-    if (isString(percent)) {
-      if (_trim(percent).match(/%$/)) {
-        return parseFloat(percent) / 100 * all;
+    return parsePositionSizeOption(option, percentBase, percentOffset);
+  }
+  function parsePositionSizeOption(option, percentBase, percentOffset) {
+    if (isString(option)) {
+      if (isOptionStringPercent(option)) {
+        return parseFloat(option) / 100 * percentBase + (percentOffset || 0);
       }
-      return parseFloat(percent);
+      return parseFloat(option);
     }
-    return percent == null ? NaN : +percent;
+    return option == null ? NaN : +option;
+  }
+  function isOptionStringPercent(option) {
+    return !!_trim(option).match(/%$/);
   }
   function round(x, precision, returnStr) {
-    if (precision == null) {
-      precision = 10;
+    if (true) {
+      assert(precision != null);
     }
-    precision = Math.min(Math.max(0, precision), ROUND_SUPPORTED_PRECISION_MAX);
+    if (isNaN(precision)) {
+      return returnStr ? "" + x : +x;
+    }
+    precision = mathMin2(mathMax2(0, precision), TO_FIXED_SUPPORTED_PRECISION_MAX);
     x = (+x).toFixed(precision);
     return returnStr ? x : +x;
+  }
+  function asc(arr) {
+    arr.sort(function(a, b) {
+      return a - b;
+    });
+    return arr;
   }
   function getPrecision(val) {
     val = +val;
@@ -7015,7 +7333,7 @@ var pptxPreview = (() => {
     if (val > 1e-14) {
       var e2 = 1;
       for (var i = 0; i < 15; i++, e2 *= 10) {
-        if (Math.round(val * e2) / e2 === val) {
+        if (mathRound2(val * e2) / e2 === val) {
           return i;
         }
       }
@@ -7029,15 +7347,20 @@ var pptxPreview = (() => {
     var significandPartLen = eIndex > 0 ? eIndex : str.length;
     var dotIndex = str.indexOf(".");
     var decimalPartLen = dotIndex < 0 ? 0 : significandPartLen - 1 - dotIndex;
-    return Math.max(0, decimalPartLen - exp);
+    return mathMax2(0, decimalPartLen - exp);
   }
-  function getPixelPrecision(dataExtent, pixelExtent) {
-    var log2 = Math.log;
-    var LN10 = Math.LN10;
-    var dataQuantity = Math.floor(log2(dataExtent[1] - dataExtent[0]) / LN10);
-    var sizeQuantity = Math.round(log2(Math.abs(pixelExtent[1] - pixelExtent[0])) / LN10);
-    var precision = Math.min(Math.max(-dataQuantity + sizeQuantity, 0), 20);
-    return !isFinite(precision) ? 20 : precision;
+  function getAcceptableTickPrecision(dataExtent, pxSpan, pxDiffAcceptable) {
+    var dataSpan = mathAbs2(dataExtent[1] - dataExtent[0]);
+    if (!isFinite(dataSpan) || dataSpan === 0) {
+      return NaN;
+    }
+    var dataExp2 = mathLog(2 * mathAbs2(pxDiffAcceptable || 1) * mathAbs2(dataSpan)) / mathLN10;
+    var pxExp = mathLog(mathAbs2(pxSpan)) / mathLN10;
+    var precision = mathMax2(0, mathCeil(-dataExp2 + pxExp));
+    if (!isFinite(precision)) {
+      precision = NaN;
+    }
+    return precision;
   }
   function getPercentSeats(valueList, precision) {
     var sum = reduce(valueList, function(acc, val) {
@@ -7046,13 +7369,13 @@ var pptxPreview = (() => {
     if (sum === 0) {
       return [];
     }
-    var digits = Math.pow(10, precision);
+    var digits = mathPow2(10, precision);
     var votesPerQuota = map(valueList, function(val) {
       return (isNaN(val) ? 0 : val) / sum * digits * 100;
     });
     var targetSeats = digits * 100;
     var seats = map(votesPerQuota, function(votes) {
-      return Math.floor(votes);
+      return mathFloor(votes);
     });
     var currentSum = reduce(seats, function(acc, val) {
       return acc + val;
@@ -7078,12 +7401,13 @@ var pptxPreview = (() => {
     });
   }
   function addSafe(val0, val1) {
-    var maxPrecision = Math.max(getPrecision(val0), getPrecision(val1));
+    var maxPrecision = mathMax2(getPrecision(val0), getPrecision(val1));
     var sum = val0 + val1;
-    return maxPrecision > ROUND_SUPPORTED_PRECISION_MAX ? sum : round(sum, maxPrecision);
+    return maxPrecision > TO_FIXED_SUPPORTED_PRECISION_MAX ? sum : round(sum, maxPrecision);
   }
+  var MAX_SAFE_INTEGER2 = mathPow2(2, 53) - 1;
   function remRadian(radian) {
-    var pi2 = Math.PI * 2;
+    var pi2 = mathPI * 2;
     return (radian % pi2 + pi2) % pi2;
   }
   function isRadianAroundZero(val) {
@@ -7110,27 +7434,30 @@ var pptxPreview = (() => {
     } else if (value == null) {
       return /* @__PURE__ */ new Date(NaN);
     }
-    return new Date(Math.round(value));
+    return new Date(mathRound2(value));
   }
   function quantity(val) {
-    return Math.pow(10, quantityExponent(val));
+    return mathPow2(10, quantityExponent(val));
   }
   function quantityExponent(val) {
     if (val === 0) {
       return 0;
     }
-    var exp = Math.floor(Math.log(val) / Math.LN10);
-    if (val / Math.pow(10, exp) >= 10) {
+    var exp = mathFloor(mathLog(val) / mathLN10);
+    if (val / mathPow2(10, exp) >= 10) {
       exp++;
     }
     return exp;
   }
-  function nice(val, round6) {
+  var NICE_MODE_MIN = 2;
+  function nice(val, mode) {
     var exponent = quantityExponent(val);
-    var exp10 = Math.pow(10, exponent);
+    var exp10 = mathPow2(10, exponent);
     var f = val / exp10;
     var nf;
-    if (round6) {
+    if (mode === NICE_MODE_MIN) {
+      nf = 1;
+    } else if (mode) {
       if (f < 1.5) {
         nf = 1;
       } else if (f < 2.5) {
@@ -7156,7 +7483,7 @@ var pptxPreview = (() => {
       }
     }
     val = nf * exp10;
-    return exponent >= -20 ? +val.toFixed(exponent < 0 ? -exponent : 0) : val;
+    return round(val, -exponent);
   }
   function numericToNumber(val) {
     var valFloat = parseFloat(val);
@@ -7166,7 +7493,7 @@ var pptxPreview = (() => {
     return !isNaN(numericToNumber(val));
   }
   function getRandomIdBase() {
-    return Math.round(Math.random() * 9);
+    return mathRound2(mathRandom() * 9);
   }
   function getGreatestCommonDividor(a, b) {
     if (b === 0) {
@@ -7182,6 +7509,9 @@ var pptxPreview = (() => {
       return a;
     }
     return a * b / getGreatestCommonDividor(a, b);
+  }
+  function isNullableNumberFinite(val) {
+    return val != null && isFinite(val);
   }
 
   // node_modules/echarts/lib/util/log.js
@@ -7215,7 +7545,7 @@ var pptxPreview = (() => {
   }
   function deprecateReplaceLog(oldOpt, newOpt, scope) {
     if (true) {
-      deprecateLog((scope ? "[" + scope + "]" : "") + (oldOpt + " is deprecated, use " + newOpt + " instead."));
+      deprecateLog((scope ? "[" + scope + "]" : "") + (oldOpt + " is deprecated; use " + newOpt + " instead."));
     }
   }
   function makePrintable() {
@@ -7265,15 +7595,15 @@ var pptxPreview = (() => {
   function normalizeToArray(value) {
     return value instanceof Array ? value : value == null ? [] : [value];
   }
-  function defaultEmphasis(opt, key, subOpts) {
+  function defaultEmphasis(opt, key2, subOpts) {
     if (opt) {
-      opt[key] = opt[key] || {};
+      opt[key2] = opt[key2] || {};
       opt.emphasis = opt.emphasis || {};
-      opt.emphasis[key] = opt.emphasis[key] || {};
+      opt.emphasis[key2] = opt.emphasis[key2] || {};
       for (var i = 0, len2 = subOpts.length; i < len2; i++) {
         var subOptName = subOpts[i];
-        if (!opt.emphasis[key].hasOwnProperty(subOptName) && opt[key].hasOwnProperty(subOptName)) {
-          opt.emphasis[key][subOptName] = opt[key][subOptName];
+        if (!opt.emphasis[key2].hasOwnProperty(subOptName) && opt[key2].hasOwnProperty(subOptName)) {
+          opt.emphasis[key2][subOptName] = opt[key2][subOptName];
         }
       }
     }
@@ -7503,9 +7833,9 @@ var pptxPreview = (() => {
     }
   }
   function makeInner() {
-    var key = "__ec_inner_" + innerUniqueIndex++;
+    var key2 = "__ec_inner_" + innerUniqueIndex++;
     return function(hostObj) {
-      return hostObj[key] || (hostObj[key] = {});
+      return hostObj[key2] || (hostObj[key2] = {});
     };
   }
   var innerUniqueIndex = getRandomIdBase();
@@ -7539,12 +7869,12 @@ var pptxPreview = (() => {
     var queryOptionMap = createHashMap();
     var others = {};
     var mainTypeSpecified = false;
-    each(finder, function(value, key) {
-      if (key === "dataIndex" || key === "dataIndexInside") {
-        others[key] = value;
+    each(finder, function(value, key2) {
+      if (key2 === "dataIndex" || key2 === "dataIndexInside") {
+        others[key2] = value;
         return;
       }
-      var parsedKey = key.match(/^(\w+)(Index|Id|Name)$/) || [];
+      var parsedKey = key2.match(/^(\w+)(Index|Id|Name)$/) || [];
       var mainType = parsedKey[1];
       var queryType = (parsedKey[2] || "").toLowerCase();
       if (!mainType || !queryType || opt && opt.includeMainTypes && indexOf(opt.includeMainTypes, mainType) < 0) {
@@ -7580,13 +7910,25 @@ var pptxPreview = (() => {
       return result;
     }
     if (indexOption === "none" || indexOption === false) {
-      assert(opt.enableNone, '`"none"` or `false` is not a valid value on index option.');
-      result.models = [];
-      return result;
+      if (opt.enableNone) {
+        result.models = [];
+        return result;
+      } else {
+        if (true) {
+          error('`"none"` or `false` is not a valid value on index option.');
+        }
+        indexOption = -1;
+      }
     }
     if (indexOption === "all") {
-      assert(opt.enableAll, '`"all"` is not a valid value on index option.');
-      indexOption = idOption = nameOption = null;
+      if (opt.enableAll) {
+        indexOption = idOption = nameOption = null;
+      } else {
+        if (true) {
+          error('`"all"` is not a valid value on index option.');
+        }
+        indexOption = -1;
+      }
     }
     result.models = ecModel.queryComponents({
       mainType,
@@ -7596,11 +7938,26 @@ var pptxPreview = (() => {
     });
     return result;
   }
-  function setAttribute(dom, key, value) {
-    dom.setAttribute ? dom.setAttribute(key, value) : dom[key] = value;
+  function makeQueryConditionKindA(payload, mainType, subType) {
+    if (true) {
+      assert(mainType);
+    }
+    var query = {};
+    query[mainType + "Id"] = payload[mainType + "Id"];
+    query[mainType + "Index"] = payload[mainType + "Index"];
+    query[mainType + "Name"] = payload[mainType + "Name"];
+    var condition = {
+      mainType,
+      query
+    };
+    subType && (condition.subType = subType);
+    return condition;
   }
-  function getAttribute(dom, key) {
-    return dom.getAttribute ? dom.getAttribute(key) : dom[key];
+  function setAttribute(dom, key2, value) {
+    dom.setAttribute ? dom.setAttribute(key2, value) : dom[key2] = value;
+  }
+  function getAttribute(dom, key2) {
+    return dom.getAttribute ? dom.getAttribute(key2) : dom[key2];
   }
   function getTooltipRenderMode(renderModeOption) {
     if (renderModeOption === "auto") {
@@ -7638,6 +7995,141 @@ var pptxPreview = (() => {
       return interpolated;
     }
   }
+  var ListIterator = (
+    /** @class */
+    (function() {
+      function ListIterator2() {
+      }
+      ListIterator2.prototype.reset = function(list, start2, end2, step) {
+        this._list = list;
+        this._step = step = step || 1;
+        this._idx = start2;
+        this._end = end2 != null ? end2 : step > 0 ? list.length : 0;
+        this.item = null;
+        this.key = NaN;
+        return this;
+      };
+      ListIterator2.prototype.next = function() {
+        if (this._step > 0 ? this._idx < this._end : this._idx >= this._end) {
+          this.item = this._list[this._idx];
+          this.key = this._idx = this._idx + this._step;
+          return true;
+        }
+        return false;
+      };
+      return ListIterator2;
+    })()
+  );
+  function initExtentForUnion() {
+    return [Infinity, -Infinity];
+  }
+  function unionExtentFromNumber(extent, val) {
+    if (isValidNumberForExtent(val)) {
+      val < extent[0] && (extent[0] = val);
+      val > extent[1] && (extent[1] = val);
+    }
+  }
+  function unionExtentStartFromNumber(extent, val) {
+    if (isValidNumberForExtent(val) && val < extent[0]) {
+      extent[0] = val;
+    }
+  }
+  function unionExtentEndFromNumber(extent, val) {
+    if (isValidNumberForExtent(val) && val > extent[1]) {
+      extent[1] = val;
+    }
+  }
+  function unionExtentFromExtent(tarExtent, srcExtent) {
+    if (isValidBoundsForExtent(srcExtent[0], srcExtent[1])) {
+      srcExtent[0] < tarExtent[0] && (tarExtent[0] = srcExtent[0]);
+      srcExtent[1] > tarExtent[1] && (tarExtent[1] = srcExtent[1]);
+    }
+  }
+  function isValidNumberForExtent(val) {
+    return val != null && isFinite(val);
+  }
+  function isValidBoundsForExtent(start2, end2) {
+    return isValidNumberForExtent(start2) && isValidNumberForExtent(end2) && start2 <= end2;
+  }
+  function extentHasValue(extent) {
+    var span = extent[1] - extent[0];
+    return isFinite(span) && span >= 0;
+  }
+  function ensureExtentAscSimply(extent) {
+    if (isValidBoundsForExtent(extent[0], extent[1]) && extent[0] > extent[1]) {
+      extent[0] = extent[1];
+    }
+  }
+  function makeCallOnlyOnce() {
+    var hiddenKey = "__ec_once_" + onceUniqueIndex++;
+    return function(hostObj, cb) {
+      if (true) {
+        assert(hostObj);
+      }
+      if (!hasOwn(hostObj, hiddenKey)) {
+        hostObj[hiddenKey] = 1;
+        cb();
+      }
+    };
+  }
+  var onceUniqueIndex = getRandomIdBase();
+  function removeDuplicates(arr, getKey, resolve) {
+    var dupMap = createHashMap();
+    var writeIdx = 0;
+    each(arr, function(item) {
+      var key2 = getKey(item);
+      if (true) {
+        assert(isString(key2));
+      }
+      var count = dupMap.get(key2) || 0;
+      if (resolve) {
+        resolve(item, count);
+      }
+      if (!count && !resolve) {
+        arr[writeIdx++] = item;
+      }
+      dupMap.set(key2, count + 1);
+    });
+    if (!resolve) {
+      arr.length = writeIdx;
+    }
+  }
+  function removeDuplicatesGetKeyFromValueProp(item) {
+    if (true) {
+      assert(item.value != null);
+    }
+    return item.value + "";
+  }
+  function removeDuplicatesGetKeyFromItemItself(item) {
+    if (true) {
+      assert(item != null);
+    }
+    return item + "";
+  }
+  function getIncrementalId(seriesModel, useIncremental) {
+    return retrieve2(useIncremental, true) ? seriesModel.seriesIndex + 2 : 0;
+  }
+  function preparePipelineContext(seriesModel, view, pipeline) {
+    var dataLen = seriesModel.getData().count();
+    return {
+      progressiveRender: pipeline.progressiveEnabled && view.incrementalPrepareRender && dataLen >= pipeline.threshold,
+      large: seriesModel.get("large") && dataLen >= seriesModel.get("largeThreshold"),
+      // TODO: modDataCount should not updated if `appendData`, otherwise cause whole repaint.
+      // see `test/candlestick-large3.html`
+      modDataCount: seriesModel.get("progressiveChunkMode") === "mod" ? seriesModel.getData().count() : null
+    };
+  }
+  function createSimpleOverallStageHandler(seriesType2, overallReset) {
+    return {
+      seriesType: seriesType2,
+      overallReset
+    };
+  }
+  function createSimpleOverallStageHandler2(overallReset) {
+    return {
+      overallReset
+    };
+  }
 
   // node_modules/echarts/lib/util/clazz.js
   var TYPE_DELIMITER = ".";
@@ -7663,11 +8155,11 @@ var pptxPreview = (() => {
   }
   function enableClassExtend(rootClz, mandatoryMethods) {
     rootClz.$constructor = rootClz;
-    rootClz.extend = function(proto2) {
+    rootClz.extend = function(proto) {
       if (true) {
         each(mandatoryMethods, function(method) {
-          if (!proto2[method]) {
-            console.warn("Method `" + method + "` should be implemented" + (proto2.type ? " in " + proto2.type : "") + ".");
+          if (!proto[method]) {
+            console.warn("Method `" + method + "` should be implemented" + (proto.type ? " in " + proto.type : "") + ".");
           }
         });
       }
@@ -7675,20 +8167,20 @@ var pptxPreview = (() => {
       var ExtendedClass;
       if (isESClass(superClass)) {
         ExtendedClass = /** @class */
-        function(_super) {
+        (function(_super) {
           __extends(class_1, _super);
           function class_1() {
             return _super.apply(this, arguments) || this;
           }
           return class_1;
-        }(superClass);
+        })(superClass);
       } else {
         ExtendedClass = function() {
-          (proto2.$constructor || superClass).apply(this, arguments);
+          (proto.$constructor || superClass).apply(this, arguments);
         };
         inherits(ExtendedClass, this);
       }
-      extend(ExtendedClass.prototype, proto2);
+      extend(ExtendedClass.prototype, proto);
       ExtendedClass[IS_EXTENDED_CLASS] = true;
       ExtendedClass.extend = this.extend;
       ExtendedClass.superCall = superCall;
@@ -7833,14 +8325,14 @@ var pptxPreview = (() => {
   var getAreaStyle = makeStyleMapper(AREA_STYLE_KEY_MAP);
   var AreaStyleMixin = (
     /** @class */
-    function() {
+    (function() {
       function AreaStyleMixin2() {
       }
       AreaStyleMixin2.prototype.getAreaStyle = function(excludes, includes) {
         return getAreaStyle(this, excludes, includes);
       };
       return AreaStyleMixin2;
-    }()
+    })()
   );
 
   // node_modules/zrender/lib/graphic/helper/image.js
@@ -7916,18 +8408,17 @@ var pptxPreview = (() => {
   function prepareTruncateOptions(containerWidth, font, ellipsis, options) {
     options = options || {};
     var preparedOpts = extend({}, options);
-    preparedOpts.font = font;
     ellipsis = retrieve2(ellipsis, "...");
     preparedOpts.maxIterations = retrieve2(options.maxIterations, 2);
     var minChar = preparedOpts.minChar = retrieve2(options.minChar, 0);
-    preparedOpts.cnCharWidth = getWidth("\u56FD", font);
-    var ascCharWidth = preparedOpts.ascCharWidth = getWidth("a", font);
+    var fontMeasureInfo = preparedOpts.fontMeasureInfo = ensureFontMeasureInfo(font);
+    var ascCharWidth = fontMeasureInfo.asciiCharWidth;
     preparedOpts.placeholder = retrieve2(options.placeholder, "");
     var contentWidth = containerWidth = Math.max(0, containerWidth - 1);
     for (var i = 0; i < minChar && contentWidth >= ascCharWidth; i++) {
       contentWidth -= ascCharWidth;
     }
-    var ellipsisWidth = getWidth(ellipsis, font);
+    var ellipsisWidth = measureWidth(fontMeasureInfo, ellipsis);
     if (ellipsisWidth > contentWidth) {
       ellipsis = "";
       ellipsisWidth = 0;
@@ -7941,14 +8432,14 @@ var pptxPreview = (() => {
   }
   function truncateSingleLine(out2, textLine, options) {
     var containerWidth = options.containerWidth;
-    var font = options.font;
     var contentWidth = options.contentWidth;
+    var fontMeasureInfo = options.fontMeasureInfo;
     if (!containerWidth) {
       out2.textLine = "";
       out2.isTruncated = false;
       return;
     }
-    var lineWidth = getWidth(textLine, font);
+    var lineWidth = measureWidth(fontMeasureInfo, textLine);
     if (lineWidth <= containerWidth) {
       out2.textLine = textLine;
       out2.isTruncated = false;
@@ -7959,9 +8450,9 @@ var pptxPreview = (() => {
         textLine += options.ellipsis;
         break;
       }
-      var subLength = j === 0 ? estimateLength(textLine, contentWidth, options.ascCharWidth, options.cnCharWidth) : lineWidth > 0 ? Math.floor(textLine.length * contentWidth / lineWidth) : 0;
+      var subLength = j === 0 ? estimateLength(textLine, contentWidth, fontMeasureInfo) : lineWidth > 0 ? Math.floor(textLine.length * contentWidth / lineWidth) : 0;
       textLine = textLine.substr(0, subLength);
-      lineWidth = getWidth(textLine, font);
+      lineWidth = measureWidth(fontMeasureInfo, textLine);
     }
     if (textLine === "") {
       textLine = options.placeholder;
@@ -7969,27 +8460,34 @@ var pptxPreview = (() => {
     out2.textLine = textLine;
     out2.isTruncated = true;
   }
-  function estimateLength(text, contentWidth, ascCharWidth, cnCharWidth) {
+  function estimateLength(text, contentWidth, fontMeasureInfo) {
     var width = 0;
     var i = 0;
     for (var len2 = text.length; i < len2 && width < contentWidth; i++) {
-      var charCode = text.charCodeAt(i);
-      width += 0 <= charCode && charCode <= 127 ? ascCharWidth : cnCharWidth;
+      width += measureCharWidth(fontMeasureInfo, text.charCodeAt(i));
     }
     return i;
   }
-  function parsePlainText(text, style) {
-    text != null && (text += "");
+  function parsePlainText(rawText, style, defaultOuterWidth, defaultOuterHeight) {
+    var text = formatText(rawText);
     var overflow = style.overflow;
     var padding = style.padding;
+    var paddingH = padding ? padding[1] + padding[3] : 0;
+    var paddingV = padding ? padding[0] + padding[2] : 0;
     var font = style.font;
     var truncate = overflow === "truncate";
     var calculatedLineHeight = getLineHeight(font);
     var lineHeight = retrieve2(style.lineHeight, calculatedLineHeight);
-    var bgColorDrawn = !!style.backgroundColor;
     var truncateLineOverflow = style.lineOverflow === "truncate";
     var isTruncated = false;
     var width = style.width;
+    if (width == null && defaultOuterWidth != null) {
+      width = defaultOuterWidth - paddingH;
+    }
+    var height = style.height;
+    if (height == null && defaultOuterHeight != null) {
+      height = defaultOuterHeight - paddingV;
+    }
     var lines;
     if (width != null && (overflow === "break" || overflow === "breakAll")) {
       lines = text ? wrapText(text, style.font, width, overflow === "breakAll", 0).lines : [];
@@ -7997,11 +8495,14 @@ var pptxPreview = (() => {
       lines = text ? text.split("\n") : [];
     }
     var contentHeight = lines.length * lineHeight;
-    var height = retrieve2(style.height, contentHeight);
+    if (height == null) {
+      height = contentHeight;
+    }
     if (contentHeight > height && truncateLineOverflow) {
       var lineCount = Math.floor(height / lineHeight);
       isTruncated = isTruncated || lines.length > lineCount;
       lines = lines.slice(0, lineCount);
+      contentHeight = lines.length * lineHeight;
     }
     if (text && truncate && width != null) {
       var options = prepareTruncateOptions(width, font, style.ellipsis, {
@@ -8017,21 +8518,16 @@ var pptxPreview = (() => {
     }
     var outerHeight = height;
     var contentWidth = 0;
+    var fontMeasureInfo = ensureFontMeasureInfo(font);
     for (var i = 0; i < lines.length; i++) {
-      contentWidth = Math.max(getWidth(lines[i], font), contentWidth);
+      contentWidth = Math.max(measureWidth(fontMeasureInfo, lines[i]), contentWidth);
     }
     if (width == null) {
       width = contentWidth;
     }
-    var outerWidth = contentWidth;
-    if (padding) {
-      outerHeight += padding[0] + padding[2];
-      outerWidth += padding[1] + padding[3];
-      width += padding[1] + padding[3];
-    }
-    if (bgColorDrawn) {
-      outerWidth = width;
-    }
+    var outerWidth = width;
+    outerHeight += paddingV;
+    outerWidth += paddingH;
     return {
       lines,
       height,
@@ -8045,21 +8541,21 @@ var pptxPreview = (() => {
       isTruncated
     };
   }
-  var RichTextToken = /* @__PURE__ */ function() {
+  var RichTextToken = /* @__PURE__ */ (function() {
     function RichTextToken2() {
     }
     return RichTextToken2;
-  }();
-  var RichTextLine = /* @__PURE__ */ function() {
-    function RichTextLine2(tokens) {
+  })();
+  var RichTextLine = /* @__PURE__ */ (function() {
+    function RichTextLine2(tokens2) {
       this.tokens = [];
-      if (tokens) {
-        this.tokens = tokens;
+      if (tokens2) {
+        this.tokens = tokens2;
       }
     }
     return RichTextLine2;
-  }();
-  var RichTextContentBlock = /* @__PURE__ */ function() {
+  })();
+  var RichTextContentBlock = /* @__PURE__ */ (function() {
     function RichTextContentBlock2() {
       this.width = 0;
       this.height = 0;
@@ -8071,15 +8567,24 @@ var pptxPreview = (() => {
       this.isTruncated = false;
     }
     return RichTextContentBlock2;
-  }();
-  function parseRichText(text, style) {
+  })();
+  function parseRichText(rawText, style, defaultOuterWidth, defaultOuterHeight, topTextAlign) {
     var contentBlock = new RichTextContentBlock();
-    text != null && (text += "");
+    var text = formatText(rawText);
     if (!text) {
       return contentBlock;
     }
+    var stlPadding = style.padding;
+    var stlPaddingH = stlPadding ? stlPadding[1] + stlPadding[3] : 0;
+    var stlPaddingV = stlPadding ? stlPadding[0] + stlPadding[2] : 0;
     var topWidth = style.width;
+    if (topWidth == null && defaultOuterWidth != null) {
+      topWidth = defaultOuterWidth - stlPaddingH;
+    }
     var topHeight = style.height;
+    if (topHeight == null && defaultOuterHeight != null) {
+      topHeight = defaultOuterHeight - stlPaddingV;
+    }
     var overflow = style.overflow;
     var wrapInfo = (overflow === "break" || overflow === "breakAll") && topWidth != null ? { width: topWidth, accumWidth: 0, breakAll: overflow === "breakAll" } : null;
     var lastIndex = STYLE_REG.lastIndex = 0;
@@ -8098,7 +8603,6 @@ var pptxPreview = (() => {
     var pendingList = [];
     var calculatedHeight = 0;
     var calculatedWidth = 0;
-    var stlPadding = style.padding;
     var truncate = overflow === "truncate";
     var truncateLine = style.lineOverflow === "truncate";
     var tmpTruncateOut = {};
@@ -8124,7 +8628,7 @@ var pptxPreview = (() => {
         textPadding && (tokenHeight += textPadding[0] + textPadding[2]);
         token.height = tokenHeight;
         token.lineHeight = retrieve3(tokenStyle.lineHeight, style.lineHeight, tokenHeight);
-        token.align = tokenStyle && tokenStyle.align || style.align;
+        token.align = tokenStyle && tokenStyle.align || topTextAlign;
         token.verticalAlign = tokenStyle && tokenStyle.verticalAlign || "middle";
         if (truncateLine && topHeight != null && calculatedHeight + token.lineHeight > topHeight) {
           var originalLength = contentBlock.lines.length;
@@ -8143,7 +8647,7 @@ var pptxPreview = (() => {
         if (typeof styleTokenWidth === "string" && styleTokenWidth.charAt(styleTokenWidth.length - 1) === "%") {
           token.percentWidth = styleTokenWidth;
           pendingList.push(token);
-          token.contentWidth = getWidth(token.text, font);
+          token.contentWidth = measureWidth(ensureFontMeasureInfo(font), token.text);
         } else {
           if (tokenWidthNotSpecified) {
             var textBackgroundColor = tokenStyle.backgroundColor;
@@ -8164,10 +8668,10 @@ var pptxPreview = (() => {
               truncateText2(tmpTruncateOut, token.text, remainTruncWidth - paddingH, font, style.ellipsis, { minChar: style.truncateMinChar });
               token.text = tmpTruncateOut.text;
               contentBlock.isTruncated = contentBlock.isTruncated || tmpTruncateOut.isTruncated;
-              token.width = token.contentWidth = getWidth(token.text, font);
+              token.width = token.contentWidth = measureWidth(ensureFontMeasureInfo(font), token.text);
             }
           } else {
-            token.contentWidth = getWidth(token.text, font);
+            token.contentWidth = measureWidth(ensureFontMeasureInfo(font), token.text);
           }
         }
         token.width += paddingH;
@@ -8180,10 +8684,8 @@ var pptxPreview = (() => {
     contentBlock.outerHeight = contentBlock.height = retrieve2(topHeight, calculatedHeight);
     contentBlock.contentHeight = calculatedHeight;
     contentBlock.contentWidth = calculatedWidth;
-    if (stlPadding) {
-      contentBlock.outerWidth += stlPadding[1] + stlPadding[3];
-      contentBlock.outerHeight += stlPadding[0] + stlPadding[2];
-    }
+    contentBlock.outerWidth += stlPaddingH;
+    contentBlock.outerHeight += stlPaddingV;
     for (var i = 0; i < pendingList.length; i++) {
       var token = pendingList[i];
       var percentWidth = token.percentWidth;
@@ -8217,9 +8719,11 @@ var pptxPreview = (() => {
         linesWidths = res.linesWidths;
         strLines = res.lines;
       }
-    } else {
+    }
+    if (!strLines) {
       strLines = str.split("\n");
     }
+    var fontMeasureInfo = ensureFontMeasureInfo(font);
     for (var i = 0; i < strLines.length; i++) {
       var text = strLines[i];
       var token = new RichTextToken();
@@ -8229,12 +8733,12 @@ var pptxPreview = (() => {
       if (typeof tokenStyle.width === "number") {
         token.width = tokenStyle.width;
       } else {
-        token.width = linesWidths ? linesWidths[i] : getWidth(text, font);
+        token.width = linesWidths ? linesWidths[i] : measureWidth(fontMeasureInfo, text);
       }
       if (!i && !newLine) {
-        var tokens = (lines[lines.length - 1] || (lines[0] = new RichTextLine())).tokens;
-        var tokensLen = tokens.length;
-        tokensLen === 1 && tokens[0].isLineHolder ? tokens[0] = token : (text || !tokensLen || isEmptyStr) && tokens.push(token);
+        var tokens2 = (lines[lines.length - 1] || (lines[0] = new RichTextLine())).tokens;
+        var tokensLen = tokens2.length;
+        tokensLen === 1 && tokens2[0].isLineHolder ? tokens2[0] = token : (text || !tokensLen || isEmptyStr) && tokens2.push(token);
       } else {
         lines.push(new RichTextLine([token]));
       }
@@ -8264,6 +8768,7 @@ var pptxPreview = (() => {
     var currentWord = "";
     var currentWordWidth = 0;
     var accumWidth = 0;
+    var fontMeasureInfo = ensureFontMeasureInfo(font);
     for (var i = 0; i < text.length; i++) {
       var ch = text.charAt(i);
       if (ch === "\n") {
@@ -8279,7 +8784,7 @@ var pptxPreview = (() => {
         accumWidth = 0;
         continue;
       }
-      var chWidth = getWidth(ch, font);
+      var chWidth = measureCharWidth(fontMeasureInfo, ch.charCodeAt(0));
       var inWord = isBreakAll ? false : !isWordBreakChar(ch);
       if (!lines.length ? lastAccumWidth + accumWidth + chWidth > lineWidth : accumWidth + chWidth > lineWidth) {
         if (!accumWidth) {
@@ -8333,11 +8838,6 @@ var pptxPreview = (() => {
         line += ch;
       }
     }
-    if (!lines.length && !line) {
-      line = text;
-      currentWord = "";
-      currentWordWidth = 0;
-    }
     if (currentWord) {
       line += currentWord;
     }
@@ -8353,6 +8853,50 @@ var pptxPreview = (() => {
       lines,
       linesWidths
     };
+  }
+  function calcInnerTextOverflowArea(out2, overflowRect, baseX, baseY, textAlign, textVerticalAlign) {
+    out2.baseX = baseX;
+    out2.baseY = baseY;
+    out2.outerWidth = out2.outerHeight = null;
+    if (!overflowRect) {
+      return;
+    }
+    var textWidth = overflowRect.width * 2;
+    var textHeight = overflowRect.height * 2;
+    BoundingRect_default.set(tmpCITCTextRect, adjustTextX(baseX, textWidth, textAlign), adjustTextY2(baseY, textHeight, textVerticalAlign), textWidth, textHeight);
+    BoundingRect_default.intersect(overflowRect, tmpCITCTextRect, null, tmpCITCIntersectRectOpt);
+    var outIntersectRect = tmpCITCIntersectRectOpt.outIntersectRect;
+    out2.outerWidth = outIntersectRect.width;
+    out2.outerHeight = outIntersectRect.height;
+    out2.baseX = adjustTextX(outIntersectRect.x, outIntersectRect.width, textAlign, true);
+    out2.baseY = adjustTextY2(outIntersectRect.y, outIntersectRect.height, textVerticalAlign, true);
+  }
+  var tmpCITCTextRect = new BoundingRect_default(0, 0, 0, 0);
+  var tmpCITCIntersectRectOpt = { outIntersectRect: {}, clamp: true };
+  function formatText(text) {
+    return text != null ? text += "" : text = "";
+  }
+  function tSpanCreateBoundingRect(style) {
+    var text = formatText(style.text);
+    var font = style.font;
+    var contentWidth = measureWidth(ensureFontMeasureInfo(font), text);
+    var contentHeight = getLineHeight(font);
+    return tSpanCreateBoundingRect2(style, contentWidth, contentHeight, null);
+  }
+  function tSpanCreateBoundingRect2(style, contentWidth, contentHeight, forceLineWidth) {
+    var rect = new BoundingRect_default(adjustTextX(style.x || 0, contentWidth, style.textAlign), adjustTextY2(style.y || 0, contentHeight, style.textBaseline), contentWidth, contentHeight);
+    var lineWidth = forceLineWidth != null ? forceLineWidth : tSpanHasStroke(style) ? style.lineWidth : 0;
+    if (lineWidth > 0) {
+      rect.x -= lineWidth / 2;
+      rect.y -= lineWidth / 2;
+      rect.width += lineWidth;
+      rect.height += lineWidth;
+    }
+    return rect;
+  }
+  function tSpanHasStroke(style) {
+    var stroke = style.stroke;
+    return stroke != null && stroke !== "none" && style.lineWidth > 0;
   }
 
   // node_modules/zrender/lib/graphic/Displayable.js
@@ -8377,7 +8921,7 @@ var pptxPreview = (() => {
   DEFAULT_COMMON_STYLE[STYLE_MAGIC_KEY] = true;
   var PRIMARY_STATES_KEYS2 = ["z", "z2", "invisible"];
   var PRIMARY_STATES_KEYS_IN_HOVER_LAYER = ["invisible"];
-  var Displayable = function(_super) {
+  var Displayable = (function(_super) {
     __extends2(Displayable2, _super);
     function Displayable2(props) {
       return _super.call(this, props) || this;
@@ -8385,18 +8929,18 @@ var pptxPreview = (() => {
     Displayable2.prototype._init = function(props) {
       var keysArr = keys(props);
       for (var i = 0; i < keysArr.length; i++) {
-        var key = keysArr[i];
-        if (key === "style") {
-          this.useStyle(props[key]);
+        var key2 = keysArr[i];
+        if (key2 === "style") {
+          this.useStyle(props[key2]);
         } else {
-          _super.prototype.attrKV.call(this, key, props[key]);
+          _super.prototype.attrKV.call(this, key2, props[key2]);
         }
       }
       if (!this.style) {
         this.useStyle({});
       }
     };
-    Displayable2.prototype.beforeBrush = function() {
+    Displayable2.prototype.beforeBrush = function(param) {
     };
     Displayable2.prototype.afterBrush = function() {
     };
@@ -8409,7 +8953,7 @@ var pptxPreview = (() => {
       if (this.ignore || this.invisible || this.style.opacity === 0 || this.culling && isDisplayableCulled(this, viewWidth, viewHeight) || m2 && !m2[0] && !m2[3]) {
         return false;
       }
-      if (considerClipPath && this.__clipPaths) {
+      if (considerClipPath && this.__clipPaths && this.__clipPaths.length) {
         for (var i = 0; i < this.__clipPaths.length; ++i) {
           if (this.__clipPaths[i].isZeroArea()) {
             return false;
@@ -8490,9 +9034,9 @@ var pptxPreview = (() => {
         this.markRedraw();
       }
     };
-    Displayable2.prototype.attrKV = function(key, value) {
-      if (key !== "style") {
-        _super.prototype.attrKV.call(this, key, value);
+    Displayable2.prototype.attrKV = function(key2, value) {
+      if (key2 !== "style") {
+        _super.prototype.attrKV.call(this, key2, value);
       } else {
         if (!this.style) {
           this.useStyle(value);
@@ -8535,12 +9079,11 @@ var pptxPreview = (() => {
       if (!obj[STYLE_MAGIC_KEY]) {
         obj = this.createStyle(obj);
       }
-      if (this.__inHover) {
-        this.__hoverStyle = obj;
-      } else {
-        this.style = obj;
-      }
+      this.style = obj;
       this.dirtyStyle();
+    };
+    Displayable2.prototype._useHoverStyle = function(obj) {
+      this.__hoverStyle = obj;
     };
     Displayable2.prototype.isStyleObject = function(obj) {
       return obj[STYLE_MAGIC_KEY];
@@ -8556,6 +9099,7 @@ var pptxPreview = (() => {
     Displayable2.prototype._applyStateObj = function(stateName, state, normalState, keepCurrentStates, transition, animationCfg) {
       _super.prototype._applyStateObj.call(this, stateName, state, normalState, keepCurrentStates, transition, animationCfg);
       var needsRestoreToNormal = !(state && keepCurrentStates);
+      var inHoverOnlyStyleChange = this.__inHover === IN_HOVER_LAYER_KIND_ONLY_STYLE_CHANGE;
       var targetStyle;
       if (state && state.style) {
         if (transition) {
@@ -8579,33 +9123,39 @@ var pptxPreview = (() => {
           if (needsRestoreToNormal) {
             var changedKeys = keys(sourceStyle);
             for (var i = 0; i < changedKeys.length; i++) {
-              var key = changedKeys[i];
-              if (key in targetStyle) {
-                targetStyle[key] = targetStyle[key];
-                this.style[key] = sourceStyle[key];
+              var key2 = changedKeys[i];
+              if (key2 in targetStyle) {
+                targetStyle[key2] = targetStyle[key2];
+                this.style[key2] = sourceStyle[key2];
               }
             }
           }
           var targetKeys = keys(targetStyle);
           for (var i = 0; i < targetKeys.length; i++) {
-            var key = targetKeys[i];
-            this.style[key] = this.style[key];
+            var key2 = targetKeys[i];
+            this.style[key2] = this.style[key2];
           }
           this._transitionState(stateName, {
             style: targetStyle
           }, animationCfg, this.getAnimationStyleProps());
         } else {
-          this.useStyle(targetStyle);
+          if (inHoverOnlyStyleChange) {
+            this._useHoverStyle(targetStyle);
+          } else {
+            this.useStyle(targetStyle);
+          }
         }
       }
-      var statesKeys = this.__inHover ? PRIMARY_STATES_KEYS_IN_HOVER_LAYER : PRIMARY_STATES_KEYS2;
-      for (var i = 0; i < statesKeys.length; i++) {
-        var key = statesKeys[i];
-        if (state && state[key] != null) {
-          this[key] = state[key];
-        } else if (needsRestoreToNormal) {
-          if (normalState[key] != null) {
-            this[key] = normalState[key];
+      if (!inHoverOnlyStyleChange) {
+        var statesKeys = this.__inHover ? PRIMARY_STATES_KEYS_IN_HOVER_LAYER : PRIMARY_STATES_KEYS2;
+        for (var i = 0; i < statesKeys.length; i++) {
+          var key2 = statesKeys[i];
+          if (state && state[key2] != null) {
+            this[key2] = state[key2];
+          } else if (needsRestoreToNormal) {
+            if (normalState[key2] != null) {
+              this[key2] = normalState[key2];
+            }
           }
         }
       }
@@ -8632,7 +9182,7 @@ var pptxPreview = (() => {
     Displayable2.prototype.getAnimationStyleProps = function() {
       return DEFAULT_COMMON_ANIMATION_PROPS;
     };
-    Displayable2.initDefaultProps = function() {
+    Displayable2.initDefaultProps = (function() {
       var dispProto = Displayable2.prototype;
       dispProto.type = "displayable";
       dispProto.invisible = false;
@@ -8642,13 +9192,13 @@ var pptxPreview = (() => {
       dispProto.culling = false;
       dispProto.cursor = "pointer";
       dispProto.rectHover = false;
-      dispProto.incremental = false;
+      dispProto.incremental = 0;
       dispProto._rect = null;
       dispProto.dirtyRectTolerance = 0;
       dispProto.__dirty = REDRAW_BIT | STYLE_CHANGED_BIT;
-    }();
+    })();
     return Displayable2;
-  }(Element_default);
+  })(Element_default);
   var tmpRect2 = new BoundingRect_default(0, 0, 0, 0);
   var viewRect = new BoundingRect_default(0, 0, 0, 0);
   function isDisplayableCulled(el2, width, height) {
@@ -8663,8 +9213,8 @@ var pptxPreview = (() => {
   var Displayable_default = Displayable;
 
   // node_modules/zrender/lib/core/bbox.js
-  var mathMin2 = Math.min;
-  var mathMax2 = Math.max;
+  var mathMin3 = Math.min;
+  var mathMax3 = Math.max;
   var mathSin = Math.sin;
   var mathCos = Math.cos;
   var PI2 = Math.PI * 2;
@@ -8672,10 +9222,10 @@ var pptxPreview = (() => {
   var end = create();
   var extremity = create();
   function fromLine(x0, y0, x1, y1, min3, max3) {
-    min3[0] = mathMin2(x0, x1);
-    min3[1] = mathMin2(y0, y1);
-    max3[0] = mathMax2(x0, x1);
-    max3[1] = mathMax2(y0, y1);
+    min3[0] = mathMin3(x0, x1);
+    min3[1] = mathMin3(y0, y1);
+    max3[0] = mathMax3(x0, x1);
+    max3[1] = mathMax3(y0, y1);
   }
   var xDim = [];
   var yDim = [];
@@ -8689,35 +9239,35 @@ var pptxPreview = (() => {
     max3[1] = -Infinity;
     for (var i = 0; i < n; i++) {
       var x = cubicAt2(x0, x1, x2, x3, xDim[i]);
-      min3[0] = mathMin2(x, min3[0]);
-      max3[0] = mathMax2(x, max3[0]);
+      min3[0] = mathMin3(x, min3[0]);
+      max3[0] = mathMax3(x, max3[0]);
     }
     n = cubicExtrema2(y0, y1, y2, y3, yDim);
     for (var i = 0; i < n; i++) {
       var y = cubicAt2(y0, y1, y2, y3, yDim[i]);
-      min3[1] = mathMin2(y, min3[1]);
-      max3[1] = mathMax2(y, max3[1]);
+      min3[1] = mathMin3(y, min3[1]);
+      max3[1] = mathMax3(y, max3[1]);
     }
-    min3[0] = mathMin2(x0, min3[0]);
-    max3[0] = mathMax2(x0, max3[0]);
-    min3[0] = mathMin2(x3, min3[0]);
-    max3[0] = mathMax2(x3, max3[0]);
-    min3[1] = mathMin2(y0, min3[1]);
-    max3[1] = mathMax2(y0, max3[1]);
-    min3[1] = mathMin2(y3, min3[1]);
-    max3[1] = mathMax2(y3, max3[1]);
+    min3[0] = mathMin3(x0, min3[0]);
+    max3[0] = mathMax3(x0, max3[0]);
+    min3[0] = mathMin3(x3, min3[0]);
+    max3[0] = mathMax3(x3, max3[0]);
+    min3[1] = mathMin3(y0, min3[1]);
+    max3[1] = mathMax3(y0, max3[1]);
+    min3[1] = mathMin3(y3, min3[1]);
+    max3[1] = mathMax3(y3, max3[1]);
   }
   function fromQuadratic(x0, y0, x1, y1, x2, y2, min3, max3) {
     var quadraticExtremum2 = quadraticExtremum;
     var quadraticAt2 = quadraticAt;
-    var tx = mathMax2(mathMin2(quadraticExtremum2(x0, x1, x2), 1), 0);
-    var ty = mathMax2(mathMin2(quadraticExtremum2(y0, y1, y2), 1), 0);
+    var tx = mathMax3(mathMin3(quadraticExtremum2(x0, x1, x2), 1), 0);
+    var ty = mathMax3(mathMin3(quadraticExtremum2(y0, y1, y2), 1), 0);
     var x = quadraticAt2(x0, x1, x2, tx);
     var y = quadraticAt2(y0, y1, y2, ty);
-    min3[0] = mathMin2(x0, x2, x);
-    min3[1] = mathMin2(y0, y2, y);
-    max3[0] = mathMax2(x0, x2, x);
-    max3[1] = mathMax2(y0, y2, y);
+    min3[0] = mathMin3(x0, x2, x);
+    min3[1] = mathMin3(y0, y2, y);
+    max3[0] = mathMax3(x0, x2, x);
+    max3[1] = mathMax3(y0, y2, y);
   }
   function fromArc(x, y, rx, ry, startAngle, endAngle, anticlockwise, min3, max3) {
     var vec2Min = min;
@@ -8780,11 +9330,11 @@ var pptxPreview = (() => {
   var max2 = [];
   var min22 = [];
   var max22 = [];
-  var mathMin3 = Math.min;
-  var mathMax3 = Math.max;
+  var mathMin4 = Math.min;
+  var mathMax4 = Math.max;
   var mathCos2 = Math.cos;
   var mathSin2 = Math.sin;
-  var mathAbs = Math.abs;
+  var mathAbs3 = Math.abs;
   var PI = Math.PI;
   var PI22 = PI * 2;
   var hasTypedArray = typeof Float32Array !== "undefined";
@@ -8813,7 +9363,7 @@ var pptxPreview = (() => {
     angles[0] = newStartAngle;
     angles[1] = newEndAngle;
   }
-  var PathProxy = function() {
+  var PathProxy = (function() {
     function PathProxy2(notSaveData) {
       this.dpr = 1;
       this._xi = 0;
@@ -8837,8 +9387,8 @@ var pptxPreview = (() => {
     PathProxy2.prototype.setScale = function(sx, sy, segmentIgnoreThreshold) {
       segmentIgnoreThreshold = segmentIgnoreThreshold || 0;
       if (segmentIgnoreThreshold > 0) {
-        this._ux = mathAbs(segmentIgnoreThreshold / devicePixelRatio / sx) || 0;
-        this._uy = mathAbs(segmentIgnoreThreshold / devicePixelRatio / sy) || 0;
+        this._ux = mathAbs3(segmentIgnoreThreshold / devicePixelRatio / sx) || 0;
+        this._uy = mathAbs3(segmentIgnoreThreshold / devicePixelRatio / sy) || 0;
       }
     };
     PathProxy2.prototype.setDPR = function(dpr2) {
@@ -8876,8 +9426,8 @@ var pptxPreview = (() => {
       return this;
     };
     PathProxy2.prototype.lineTo = function(x, y) {
-      var dx = mathAbs(x - this._xi);
-      var dy = mathAbs(y - this._yi);
+      var dx = mathAbs3(x - this._xi);
+      var dy = mathAbs3(y - this._yi);
       var exceedUnit = dx > this._ux || dy > this._uy;
       this.addData(CMD.L, x, y);
       if (this._ctx && exceedUnit) {
@@ -8969,6 +9519,9 @@ var pptxPreview = (() => {
       return this._len;
     };
     PathProxy2.prototype.setData = function(data) {
+      if (!this._saveData) {
+        return;
+      }
       var len2 = data.length;
       if (!(this.data && this.data.length === len2) && hasTypedArray) {
         this.data = new Float32Array(len2);
@@ -8979,6 +9532,9 @@ var pptxPreview = (() => {
       this._len = len2;
     };
     PathProxy2.prototype.appendPath = function(path) {
+      if (!this._saveData) {
+        return;
+      }
       if (!(path instanceof Array)) {
         path = [path];
       }
@@ -8988,8 +9544,14 @@ var pptxPreview = (() => {
       for (var i = 0; i < len2; i++) {
         appendSize += path[i].len();
       }
-      if (hasTypedArray && this.data instanceof Float32Array) {
+      var oldData = this.data;
+      if (hasTypedArray && (oldData instanceof Float32Array || !oldData)) {
         this.data = new Float32Array(offset + appendSize);
+        if (offset > 0 && oldData) {
+          for (var k = 0; k < offset; k++) {
+            this.data[k] = oldData[k];
+          }
+        }
       }
       for (var i = 0; i < len2; i++) {
         var appendPathData = path[i].data;
@@ -9154,7 +9716,7 @@ var pptxPreview = (() => {
             var y2 = data[i++];
             var dx = x2 - xi;
             var dy = y2 - yi;
-            if (mathAbs(dx) > ux || mathAbs(dy) > uy || i === len2 - 1) {
+            if (mathAbs3(dx) > ux || mathAbs3(dy) > uy || i === len2 - 1) {
               l = Math.sqrt(dx * dx + dy * dy);
               xi = x2;
               yi = y2;
@@ -9196,7 +9758,7 @@ var pptxPreview = (() => {
               x0 = mathCos2(startAngle) * rx + cx;
               y0 = mathSin2(startAngle) * ry + cy;
             }
-            l = mathMax3(rx, ry) * mathMin3(PI22, Math.abs(delta));
+            l = mathMax4(rx, ry) * mathMin4(PI22, Math.abs(delta));
             xi = mathCos2(endAngle) * rx + cx;
             yi = mathSin2(endAngle) * ry + cy;
             break;
@@ -9278,8 +9840,8 @@ var pptxPreview = (() => {
           case CMD.L: {
             x = d[i++];
             y = d[i++];
-            var dx = mathAbs(x - xi);
-            var dy = mathAbs(y - yi);
+            var dx = mathAbs3(x - xi);
+            var dy = mathAbs3(y - yi);
             if (dx > ux || dy > uy) {
               if (drawPart) {
                 var l = pathSegLen[segCount++];
@@ -9358,7 +9920,7 @@ var pptxPreview = (() => {
             var psi = d[i++];
             var anticlockwise = !d[i++];
             var r = rx > ry ? rx : ry;
-            var isEllipse = mathAbs(rx - ry) > 1e-3;
+            var isEllipse = mathAbs3(rx - ry) > 1e-3;
             var endAngle = startAngle + delta;
             var breakBuild = false;
             if (drawPart) {
@@ -9396,18 +9958,18 @@ var pptxPreview = (() => {
               if (accumLength + l > displayedLength) {
                 var d_1 = displayedLength - accumLength;
                 ctx.moveTo(x, y);
-                ctx.lineTo(x + mathMin3(d_1, width), y);
+                ctx.lineTo(x + mathMin4(d_1, width), y);
                 d_1 -= width;
                 if (d_1 > 0) {
-                  ctx.lineTo(x + width, y + mathMin3(d_1, height));
+                  ctx.lineTo(x + width, y + mathMin4(d_1, height));
                 }
                 d_1 -= height;
                 if (d_1 > 0) {
-                  ctx.lineTo(x + mathMax3(width - d_1, 0), y + height);
+                  ctx.lineTo(x + mathMax4(width - d_1, 0), y + height);
                 }
                 d_1 -= width;
                 if (d_1 > 0) {
-                  ctx.lineTo(x, y + mathMax3(height - d_1, 0));
+                  ctx.lineTo(x, y + mathMax4(height - d_1, 0));
                 }
                 break lo;
               }
@@ -9438,17 +10000,20 @@ var pptxPreview = (() => {
       newProxy._len = this._len;
       return newProxy;
     };
+    PathProxy2.prototype.canSave = function() {
+      return !!this._saveData;
+    };
     PathProxy2.CMD = CMD;
-    PathProxy2.initDefaultProps = function() {
-      var proto2 = PathProxy2.prototype;
-      proto2._saveData = true;
-      proto2._ux = 0;
-      proto2._uy = 0;
-      proto2._pendingPtDist = 0;
-      proto2._version = 0;
-    }();
+    PathProxy2.initDefaultProps = (function() {
+      var proto = PathProxy2.prototype;
+      proto._saveData = true;
+      proto._ux = 0;
+      proto._uy = 0;
+      proto._pendingPtDist = 0;
+      proto._version = 0;
+    })();
     return PathProxy2;
-  }();
+  })();
   var PathProxy_default = PathProxy;
 
   // node_modules/zrender/lib/contain/line.js
@@ -9563,9 +10128,9 @@ var pptxPreview = (() => {
   // node_modules/zrender/lib/contain/path.js
   var CMD2 = PathProxy_default.CMD;
   var PI25 = Math.PI * 2;
-  var EPSILON4 = 1e-4;
+  var EPSILON5 = 1e-4;
   function isAroundEqual(a, b) {
-    return Math.abs(a - b) < EPSILON4;
+    return Math.abs(a - b) < EPSILON5;
   }
   var roots = [-1, -1, -1];
   var extrema = [-1, -1];
@@ -9874,7 +10439,7 @@ var pptxPreview = (() => {
     "zlevel",
     "parent"
   ]);
-  var Path = function(_super) {
+  var Path = (function(_super) {
     __extends2(Path2, _super);
     function Path2(opts) {
       return _super.call(this, opts) || this;
@@ -9892,9 +10457,9 @@ var pptxPreview = (() => {
         }
         decalEl.silent = true;
         var decalElStyle = decalEl.style;
-        for (var key in style) {
-          if (decalElStyle[key] !== style[key]) {
-            decalElStyle[key] = style[key];
+        for (var key2 in style) {
+          if (decalElStyle[key2] !== style[key2]) {
+            decalElStyle[key2] = style[key2];
           }
         }
         decalElStyle.fill = style.fill ? style.decal : null;
@@ -9920,18 +10485,18 @@ var pptxPreview = (() => {
         this.useStyle(defaultStyle);
       }
       for (var i = 0; i < keysArr.length; i++) {
-        var key = keysArr[i];
-        var value = props[key];
-        if (key === "style") {
+        var key2 = keysArr[i];
+        var value = props[key2];
+        if (key2 === "style") {
           if (!this.style) {
             this.useStyle(value);
           } else {
             extend(this.style, value);
           }
-        } else if (key === "shape") {
+        } else if (key2 === "shape") {
           extend(this.shape, value);
         } else {
-          _super.prototype.attrKV.call(this, key, value);
+          _super.prototype.attrKV.call(this, key2, value);
         }
       }
       if (!this.style) {
@@ -10091,11 +10656,11 @@ var pptxPreview = (() => {
         this.markRedraw();
       }
     };
-    Path2.prototype.attrKV = function(key, value) {
-      if (key === "shape") {
+    Path2.prototype.attrKV = function(key2, value) {
+      if (key2 === "shape") {
         this.setShape(value);
       } else {
-        _super.prototype.attrKV.call(this, key, value);
+        _super.prototype.attrKV.call(this, key2, value);
       }
     };
     Path2.prototype.setShape = function(keyOrObj, value) {
@@ -10126,6 +10691,9 @@ var pptxPreview = (() => {
     };
     Path2.prototype._applyStateObj = function(stateName, state, normalState, keepCurrentStates, transition, animationCfg) {
       _super.prototype._applyStateObj.call(this, stateName, state, normalState, keepCurrentStates, transition, animationCfg);
+      if (this.__inHover === IN_HOVER_LAYER_KIND_ONLY_STYLE_CHANGE) {
+        return;
+      }
       var needsRestoreToNormal = !(state && keepCurrentStates);
       var targetShape;
       if (state && state.shape) {
@@ -10149,11 +10717,11 @@ var pptxPreview = (() => {
           var targetShapePrimaryProps = {};
           var shapeKeys = keys(targetShape);
           for (var i = 0; i < shapeKeys.length; i++) {
-            var key = shapeKeys[i];
-            if (typeof targetShape[key] === "object") {
-              this.shape[key] = targetShape[key];
+            var key2 = shapeKeys[i];
+            if (typeof targetShape[key2] === "object") {
+              this.shape[key2] = targetShape[key2];
             } else {
-              targetShapePrimaryProps[key] = targetShape[key];
+              targetShapePrimaryProps[key2] = targetShape[key2];
             }
           }
           this._transitionState(stateName, {
@@ -10187,7 +10755,7 @@ var pptxPreview = (() => {
       return false;
     };
     Path2.extend = function(defaultProps) {
-      var Sub = function(_super2) {
+      var Sub = (function(_super2) {
         __extends2(Sub2, _super2);
         function Sub2(opts) {
           var _this = _super2.call(this, opts) || this;
@@ -10201,15 +10769,15 @@ var pptxPreview = (() => {
           return clone(defaultProps.shape);
         };
         return Sub2;
-      }(Path2);
-      for (var key in defaultProps) {
-        if (typeof defaultProps[key] === "function") {
-          Sub.prototype[key] = defaultProps[key];
+      })(Path2);
+      for (var key2 in defaultProps) {
+        if (typeof defaultProps[key2] === "function") {
+          Sub.prototype[key2] = defaultProps[key2];
         }
       }
       return Sub;
     };
-    Path2.initDefaultProps = function() {
+    Path2.initDefaultProps = (function() {
       var pathProto = Path2.prototype;
       pathProto.type = "path";
       pathProto.strokeContainThreshold = 5;
@@ -10217,9 +10785,9 @@ var pptxPreview = (() => {
       pathProto.subPixelOptimize = false;
       pathProto.autoBatch = false;
       pathProto.__dirty = REDRAW_BIT | STYLE_CHANGED_BIT | SHAPE_CHANGED_BIT;
-    }();
+    })();
     return Path2;
-  }(Displayable_default);
+  })(Displayable_default);
   var Path_default = Path;
 
   // node_modules/zrender/lib/graphic/TSpan.js
@@ -10232,15 +10800,13 @@ var pptxPreview = (() => {
     textBaseline: "top",
     miterLimit: 2
   }, DEFAULT_PATH_STYLE);
-  var TSpan = function(_super) {
+  var TSpan = (function(_super) {
     __extends2(TSpan2, _super);
     function TSpan2() {
       return _super !== null && _super.apply(this, arguments) || this;
     }
     TSpan2.prototype.hasStroke = function() {
-      var style = this.style;
-      var stroke = style.stroke;
-      return stroke != null && stroke !== "none" && style.lineWidth > 0;
+      return tSpanHasStroke(this.style);
     };
     TSpan2.prototype.hasFill = function() {
       var style = this.style;
@@ -10254,30 +10820,17 @@ var pptxPreview = (() => {
       this._rect = rect;
     };
     TSpan2.prototype.getBoundingRect = function() {
-      var style = this.style;
       if (!this._rect) {
-        var text = style.text;
-        text != null ? text += "" : text = "";
-        var rect = getBoundingRect(text, style.font, style.textAlign, style.textBaseline);
-        rect.x += style.x || 0;
-        rect.y += style.y || 0;
-        if (this.hasStroke()) {
-          var w = style.lineWidth;
-          rect.x -= w / 2;
-          rect.y -= w / 2;
-          rect.width += w;
-          rect.height += w;
-        }
-        this._rect = rect;
+        this._rect = tSpanCreateBoundingRect(this.style);
       }
       return this._rect;
     };
-    TSpan2.initDefaultProps = function() {
+    TSpan2.initDefaultProps = (function() {
       var tspanProto = TSpan2.prototype;
       tspanProto.dirtyRectTolerance = 10;
-    }();
+    })();
     return TSpan2;
-  }(Displayable_default);
+  })(Displayable_default);
   TSpan.prototype.type = "tspan";
   var TSpan_default = TSpan;
 
@@ -10301,7 +10854,7 @@ var pptxPreview = (() => {
   function isImageLike(source) {
     return !!(source && typeof source !== "string" && source.width && source.height);
   }
-  var ZRImage = function(_super) {
+  var ZRImage = (function(_super) {
     __extends2(ZRImage2, _super);
     function ZRImage2() {
       return _super !== null && _super.apply(this, arguments) || this;
@@ -10344,7 +10897,7 @@ var pptxPreview = (() => {
       return this._rect;
     };
     return ZRImage2;
-  }(Displayable_default);
+  })(Displayable_default);
   ZRImage.prototype.type = "image";
   var Image_default = ZRImage;
 
@@ -10418,6 +10971,7 @@ var pptxPreview = (() => {
     r4 !== 0 && ctx.arc(x + r4, y + height - r4, r4, Math.PI / 2, Math.PI);
     ctx.lineTo(x, y + r1);
     r1 !== 0 && ctx.arc(x + r1, y + r1, r1, Math.PI, Math.PI * 1.5);
+    ctx.closePath();
   }
 
   // node_modules/zrender/lib/graphic/helper/subPixelOptimize.js
@@ -10477,7 +11031,7 @@ var pptxPreview = (() => {
   }
 
   // node_modules/zrender/lib/graphic/shape/Rect.js
-  var RectShape = /* @__PURE__ */ function() {
+  var RectShape = /* @__PURE__ */ (function() {
     function RectShape2() {
       this.x = 0;
       this.y = 0;
@@ -10485,9 +11039,9 @@ var pptxPreview = (() => {
       this.height = 0;
     }
     return RectShape2;
-  }();
+  })();
   var subPixelOptimizeOutputShape = {};
-  var Rect = function(_super) {
+  var Rect = (function(_super) {
     __extends2(Rect2, _super);
     function Rect2(opts) {
       return _super.call(this, opts) || this;
@@ -10524,7 +11078,7 @@ var pptxPreview = (() => {
       return !this.shape.width || !this.shape.height;
     };
     return Rect2;
-  }(Path_default);
+  })(Path_default);
   Rect.prototype.type = "rect";
   var Rect_default = Rect;
 
@@ -10533,6 +11087,7 @@ var pptxPreview = (() => {
     fill: "#000"
   };
   var DEFAULT_STROKE_LINE_WIDTH = 2;
+  var tmpCITOverflowAreaOut = {};
   var DEFAULT_TEXT_ANIMATION_PROPS = {
     style: defaults({
       fill: true,
@@ -10555,7 +11110,7 @@ var pptxPreview = (() => {
       borderRadius: true
     }, DEFAULT_COMMON_ANIMATION_PROPS.style)
   };
-  var ZRText = function(_super) {
+  var ZRText = (function(_super) {
     __extends2(ZRText2, _super);
     function ZRText2(opts) {
       var _this = _super.call(this) || this;
@@ -10699,21 +11254,23 @@ var pptxPreview = (() => {
       var style = this.style;
       var textFont = style.font || DEFAULT_FONT;
       var textPadding = style.padding;
-      var text = getStyleText(style);
-      var contentBlock = parsePlainText(text, style);
-      var needDrawBg = needDrawBackground(style);
-      var bgColorDrawn = !!style.backgroundColor;
-      var outerHeight = contentBlock.outerHeight;
-      var outerWidth = contentBlock.outerWidth;
-      var contentWidth = contentBlock.contentWidth;
-      var textLines = contentBlock.lines;
-      var lineHeight = contentBlock.lineHeight;
       var defaultStyle = this._defaultStyle;
-      this.isTruncated = !!contentBlock.isTruncated;
       var baseX = style.x || 0;
       var baseY = style.y || 0;
       var textAlign = style.align || defaultStyle.align || "left";
       var verticalAlign = style.verticalAlign || defaultStyle.verticalAlign || "top";
+      calcInnerTextOverflowArea(tmpCITOverflowAreaOut, defaultStyle.overflowRect, baseX, baseY, textAlign, verticalAlign);
+      baseX = tmpCITOverflowAreaOut.baseX;
+      baseY = tmpCITOverflowAreaOut.baseY;
+      var text = getStyleText(style);
+      var contentBlock = parsePlainText(text, style, tmpCITOverflowAreaOut.outerWidth, tmpCITOverflowAreaOut.outerHeight);
+      var needDrawBg = needDrawBackground(style);
+      var bgColorDrawn = !!style.backgroundColor;
+      var outerHeight = contentBlock.outerHeight;
+      var outerWidth = contentBlock.outerWidth;
+      var textLines = contentBlock.lines;
+      var lineHeight = contentBlock.lineHeight;
+      this.isTruncated = !!contentBlock.isTruncated;
       var textX = baseX;
       var textY = adjustTextY2(baseY, contentBlock.contentHeight, verticalAlign);
       if (needDrawBg || textPadding) {
@@ -10731,12 +11288,11 @@ var pptxPreview = (() => {
         }
       }
       var defaultLineWidth = 0;
+      var usingDefaultStroke = false;
       var useDefaultFill = false;
       var textFill = getFill("fill" in style ? style.fill : (useDefaultFill = true, defaultStyle.fill));
-      var textStroke = getStroke("stroke" in style ? style.stroke : !bgColorDrawn && (!defaultStyle.autoStroke || useDefaultFill) ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, defaultStyle.stroke) : null);
+      var textStroke = getStroke("stroke" in style ? style.stroke : !bgColorDrawn && (!defaultStyle.autoStroke || useDefaultFill) ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, usingDefaultStroke = true, defaultStyle.stroke) : null);
       var hasShadow2 = style.textShadowBlur > 0;
-      var fixedBoundingRect = style.width != null && (style.overflow === "truncate" || style.overflow === "break" || style.overflow === "breakAll");
-      var calculatedLineHeight = contentBlock.calculatedLineHeight;
       for (var i = 0; i < textLines.length; i++) {
         var el2 = this._getOrCreateChild(TSpan_default);
         var subElStyle = el2.createStyle();
@@ -10766,24 +11322,25 @@ var pptxPreview = (() => {
         subElStyle.font = textFont;
         setSeparateFont(subElStyle, style);
         textY += lineHeight;
-        if (fixedBoundingRect) {
-          el2.setBoundingRect(new BoundingRect_default(adjustTextX(subElStyle.x, contentWidth, subElStyle.textAlign), adjustTextY2(subElStyle.y, calculatedLineHeight, subElStyle.textBaseline), contentWidth, calculatedLineHeight));
-        }
+        el2.setBoundingRect(tSpanCreateBoundingRect2(subElStyle, contentBlock.contentWidth, contentBlock.calculatedLineHeight, usingDefaultStroke ? 0 : null));
       }
     };
     ZRText2.prototype._updateRichTexts = function() {
       var style = this.style;
+      var defaultStyle = this._defaultStyle;
+      var textAlign = style.align || defaultStyle.align;
+      var verticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
+      var baseX = style.x || 0;
+      var baseY = style.y || 0;
+      calcInnerTextOverflowArea(tmpCITOverflowAreaOut, defaultStyle.overflowRect, baseX, baseY, textAlign, verticalAlign);
+      baseX = tmpCITOverflowAreaOut.baseX;
+      baseY = tmpCITOverflowAreaOut.baseY;
       var text = getStyleText(style);
-      var contentBlock = parseRichText(text, style);
+      var contentBlock = parseRichText(text, style, tmpCITOverflowAreaOut.outerWidth, tmpCITOverflowAreaOut.outerHeight, textAlign);
       var contentWidth = contentBlock.width;
       var outerWidth = contentBlock.outerWidth;
       var outerHeight = contentBlock.outerHeight;
       var textPadding = style.padding;
-      var baseX = style.x || 0;
-      var baseY = style.y || 0;
-      var defaultStyle = this._defaultStyle;
-      var textAlign = style.align || defaultStyle.align;
-      var verticalAlign = style.verticalAlign || defaultStyle.verticalAlign;
       this.isTruncated = !!contentBlock.isTruncated;
       var boxX = adjustTextX(baseX, outerWidth, textAlign);
       var boxY = adjustTextY2(baseY, outerHeight, verticalAlign);
@@ -10800,8 +11357,8 @@ var pptxPreview = (() => {
       var bgColorDrawn = !!style.backgroundColor;
       for (var i = 0; i < contentBlock.lines.length; i++) {
         var line = contentBlock.lines[i];
-        var tokens = line.tokens;
-        var tokenCount = tokens.length;
+        var tokens2 = line.tokens;
+        var tokenCount = tokens2.length;
         var lineHeight = line.lineHeight;
         var remainedWidth = line.width;
         var leftIndex = 0;
@@ -10809,13 +11366,13 @@ var pptxPreview = (() => {
         var lineXRight = xRight;
         var rightIndex = tokenCount - 1;
         var token = void 0;
-        while (leftIndex < tokenCount && (token = tokens[leftIndex], !token.align || token.align === "left")) {
+        while (leftIndex < tokenCount && (token = tokens2[leftIndex], !token.align || token.align === "left")) {
           this._placeToken(token, style, lineHeight, lineTop, lineXLeft, "left", bgColorDrawn);
           remainedWidth -= token.width;
           lineXLeft += token.width;
           leftIndex++;
         }
-        while (rightIndex >= 0 && (token = tokens[rightIndex], token.align === "right")) {
+        while (rightIndex >= 0 && (token = tokens2[rightIndex], token.align === "right")) {
           this._placeToken(token, style, lineHeight, lineTop, lineXRight, "right", bgColorDrawn);
           remainedWidth -= token.width;
           lineXRight -= token.width;
@@ -10823,7 +11380,7 @@ var pptxPreview = (() => {
         }
         lineXLeft += (contentWidth - (lineXLeft - xLeft) - (xRight - lineXRight) - remainedWidth) / 2;
         while (leftIndex <= rightIndex) {
-          token = tokens[leftIndex];
+          token = tokens2[leftIndex];
           this._placeToken(token, style, lineHeight, lineTop, lineXLeft + token.width / 2, "center", bgColorDrawn);
           lineXLeft += token.width;
           leftIndex++;
@@ -10855,8 +11412,9 @@ var pptxPreview = (() => {
       var defaultStyle = this._defaultStyle;
       var useDefaultFill = false;
       var defaultLineWidth = 0;
+      var usingDefaultStroke = false;
       var textFill = getFill("fill" in tokenStyle ? tokenStyle.fill : "fill" in style ? style.fill : (useDefaultFill = true, defaultStyle.fill));
-      var textStroke = getStroke("stroke" in tokenStyle ? tokenStyle.stroke : "stroke" in style ? style.stroke : !bgColorDrawn && !parentBgColorDrawn && (!defaultStyle.autoStroke || useDefaultFill) ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, defaultStyle.stroke) : null);
+      var textStroke = getStroke("stroke" in tokenStyle ? tokenStyle.stroke : "stroke" in style ? style.stroke : !bgColorDrawn && !parentBgColorDrawn && (!defaultStyle.autoStroke || useDefaultFill) ? (defaultLineWidth = DEFAULT_STROKE_LINE_WIDTH, usingDefaultStroke = true, defaultStyle.stroke) : null);
       var hasShadow2 = tokenStyle.textShadowBlur > 0 || style.textShadowBlur > 0;
       subElStyle.text = token.text;
       subElStyle.x = x;
@@ -10881,9 +11439,7 @@ var pptxPreview = (() => {
       if (textFill) {
         subElStyle.fill = textFill;
       }
-      var textWidth = token.contentWidth;
-      var textHeight = token.contentHeight;
-      el2.setBoundingRect(new BoundingRect_default(adjustTextX(subElStyle.x, textWidth, subElStyle.textAlign), adjustTextY2(subElStyle.y, textHeight, subElStyle.textBaseline), textWidth, textHeight));
+      el2.setBoundingRect(tSpanCreateBoundingRect2(subElStyle, token.contentWidth, token.contentHeight, usingDefaultStroke ? 0 : null));
     };
     ZRText2.prototype._renderBackground = function(style, topStyle, x, y, width, height) {
       var textBackgroundColor = style.backgroundColor;
@@ -10956,7 +11512,7 @@ var pptxPreview = (() => {
       return font && trim(font) || style.textFont || style.font;
     };
     return ZRText2;
-  }(Displayable_default);
+  })(Displayable_default);
   var VALID_TEXT_ALIGN = { left: true, right: 1, center: 1 };
   var VALID_TEXT_VERTICAL_ALIGN = { top: 1, bottom: 1, middle: 1 };
   var FONT_PARTS = ["fontStyle", "fontWeight", "fontSize", "fontFamily"];
@@ -11041,6 +11597,56 @@ var pptxPreview = (() => {
     }
   };
 
+  // node_modules/echarts/lib/util/types.js
+  var UNDEFINED_STR = "undefined";
+  var COMPONENT_MAIN_TYPE_SERIES = "series";
+  var VISUAL_DIMENSIONS = createHashMap(["tooltip", "label", "itemName", "itemId", "itemGroupId", "itemChildGroupId", "seriesName"]);
+  var SOURCE_FORMAT_ORIGINAL = "original";
+  var SOURCE_FORMAT_ARRAY_ROWS = "arrayRows";
+  var SOURCE_FORMAT_OBJECT_ROWS = "objectRows";
+  var SOURCE_FORMAT_KEYED_COLUMNS = "keyedColumns";
+  var SOURCE_FORMAT_TYPED_ARRAY = "typedArray";
+  var SOURCE_FORMAT_UNKNOWN = "unknown";
+  var SERIES_LAYOUT_BY_COLUMN = "column";
+  var SERIES_LAYOUT_BY_ROW = "row";
+
+  // node_modules/echarts/lib/core/ExtensionAPI.js
+  var availableMethods = [
+    "getDom",
+    "getZr",
+    "getWidth",
+    "getHeight",
+    "getDevicePixelRatio",
+    "dispatchAction",
+    "isSSR",
+    "isDisposed",
+    "on",
+    "off",
+    "getDataURL",
+    "getConnectedDataURL",
+    // 'getModel',
+    "getOption",
+    // 'getViewOfComponentModel',
+    // 'getViewOfSeriesModel',
+    "getId",
+    "updateLabelLayout"
+  ];
+  var ExtensionAPI = (
+    /** @class */
+    /* @__PURE__ */ (function() {
+      function ExtensionAPI2(ecInstance) {
+        each(availableMethods, function(methodName) {
+          this[methodName] = bind(ecInstance[methodName], ecInstance);
+        }, this);
+      }
+      return ExtensionAPI2;
+    })()
+  );
+  function getViewOfComponentOrSeries(api, componentOrSeries) {
+    return componentOrSeries.mainType === COMPONENT_MAIN_TYPE_SERIES ? api.getViewOfSeriesModel(componentOrSeries) : api.getViewOfComponentModel(componentOrSeries);
+  }
+  var ExtensionAPI_default = ExtensionAPI;
+
   // node_modules/echarts/lib/util/states.js
   var _highlightNextDigit = 1;
   var _highlightKeyMap = {};
@@ -11058,6 +11664,7 @@ var pptxPreview = (() => {
   var SELECT_ACTION_TYPE = "select";
   var UNSELECT_ACTION_TYPE = "unselect";
   var TOGGLE_SELECT_ACTION_TYPE = "toggleSelect";
+  var SELECT_CHANGED_EVENT_TYPE = "selectchanged";
   function hasFillOrStroke(fillOrStroke) {
     return fillOrStroke != null && fillOrStroke !== "none";
   }
@@ -11256,8 +11863,8 @@ var pptxPreview = (() => {
     var allComponentViews = [];
     model.eachComponent(function(componentType, componentModel) {
       var componentStates = getComponentStates(componentModel);
+      var view = getViewOfComponentOrSeries(api, componentModel);
       var isSeries2 = componentType === "series";
-      var view = isSeries2 ? api.getViewOfSeriesModel(componentModel) : api.getViewOfComponentModel(componentModel);
       !isSeries2 && allComponentViews.push(view);
       if (componentStates.isBlured) {
         view.group.traverse(function(child) {
@@ -11572,6 +12179,9 @@ var pptxPreview = (() => {
     CompoundPath: () => CompoundPath_default,
     Ellipse: () => Ellipse_default,
     Group: () => Group_default,
+    HOVER_LAYER_FOR_INCREMENTAL: () => HOVER_LAYER_FOR_INCREMENTAL,
+    HOVER_LAYER_FROM_THRESHOLD: () => HOVER_LAYER_FROM_THRESHOLD,
+    HOVER_LAYER_NO: () => HOVER_LAYER_NO,
     Image: () => Image_default,
     IncrementalDisplayable: () => IncrementalDisplayable_default,
     Line: () => Line_default,
@@ -11586,32 +12196,44 @@ var pptxPreview = (() => {
     Ring: () => Ring_default,
     Sector: () => Sector_default,
     Text: () => Text_default,
+    WH: () => WH2,
+    XY: () => XY2,
     applyTransform: () => applyTransform2,
+    calcZ2Range: () => calcZ2Range,
     clipPointsByRect: () => clipPointsByRect,
     clipRectByRect: () => clipRectByRect,
     createIcon: () => createIcon,
+    decomposeTransform: () => decomposeTransform,
+    ensureCopyRect: () => ensureCopyRect,
+    ensureCopyTransform: () => ensureCopyTransform,
+    expandOrShrinkRect: () => expandOrShrinkRect,
     extendPath: () => extendPath,
     extendShape: () => extendShape,
+    getCurrentCanvasPainter: () => getCurrentCanvasPainter,
     getShapeClass: () => getShapeClass,
     getTransform: () => getTransform,
     groupTransition: () => groupTransition,
     initProps: () => initProps,
+    isBoundingRectAxisAligned: () => isBoundingRectAxisAligned,
     isElementRemoved: () => isElementRemoved,
     lineLineIntersect: () => lineLineIntersect,
     linePolygonIntersect: () => linePolygonIntersect,
     makeImage: () => makeImage,
     makePath: () => makePath,
     mergePath: () => mergePath2,
+    payloadDisableAnimation: () => payloadDisableAnimation,
     registerShape: () => registerShape,
     removeElement: () => removeElement,
     removeElementWithFadeOut: () => removeElementWithFadeOut,
     resizePath: () => resizePath,
+    retrieveZInfo: () => retrieveZInfo,
     setTooltipConfig: () => setTooltipConfig,
     subPixelOptimize: () => subPixelOptimize2,
     subPixelOptimizeLine: () => subPixelOptimizeLine2,
     subPixelOptimizeRect: () => subPixelOptimizeRect2,
     transformDirection: () => transformDirection,
     traverseElements: () => traverseElements,
+    traverseUpdateZ: () => traverseUpdateZ,
     updateProps: () => updateProps
   });
 
@@ -11955,7 +12577,7 @@ var pptxPreview = (() => {
     path.toStatic();
     return path;
   }
-  var SVGPath = function(_super) {
+  var SVGPath = (function(_super) {
     __extends2(SVGPath2, _super);
     function SVGPath2() {
       return _super !== null && _super.apply(this, arguments) || this;
@@ -11963,7 +12585,7 @@ var pptxPreview = (() => {
     SVGPath2.prototype.applyTransform = function(m2) {
     };
     return SVGPath2;
-  }(Path_default);
+  })(Path_default);
   function isPathProxy(path) {
     return path.setData != null;
   }
@@ -11971,15 +12593,18 @@ var pptxPreview = (() => {
     var pathProxy = createPathProxyFromString(str);
     var innerOpts = extend({}, opts);
     innerOpts.buildPath = function(path) {
-      if (isPathProxy(path)) {
-        path.setData(pathProxy.data);
+      var beProxy = isPathProxy(path);
+      if (beProxy && path.canSave()) {
+        path.appendPath(pathProxy);
         var ctx = path.getContext();
         if (ctx) {
           path.rebuildPath(ctx, 1);
         }
       } else {
-        var ctx = path;
-        pathProxy.rebuildPath(ctx, 1);
+        var ctx = beProxy ? path.getContext() : path;
+        if (ctx) {
+          pathProxy.rebuildPath(ctx, 1);
+        }
       }
     };
     innerOpts.applyTransform = function(m2) {
@@ -11993,7 +12618,7 @@ var pptxPreview = (() => {
   }
   function extendFromString(str, defaultOpts) {
     var innerOpts = createPathOptions(str, defaultOpts);
-    var Sub = function(_super) {
+    var Sub = (function(_super) {
       __extends2(Sub2, _super);
       function Sub2(opts) {
         var _this = _super.call(this, opts) || this;
@@ -12002,7 +12627,7 @@ var pptxPreview = (() => {
         return _this;
       }
       return Sub2;
-    }(SVGPath);
+    })(SVGPath);
     return Sub;
   }
   function mergePath(pathEls, opts) {
@@ -12027,15 +12652,15 @@ var pptxPreview = (() => {
   }
 
   // node_modules/zrender/lib/graphic/shape/Circle.js
-  var CircleShape = /* @__PURE__ */ function() {
+  var CircleShape = /* @__PURE__ */ (function() {
     function CircleShape2() {
       this.cx = 0;
       this.cy = 0;
       this.r = 0;
     }
     return CircleShape2;
-  }();
-  var Circle = function(_super) {
+  })();
+  var Circle = (function(_super) {
     __extends2(Circle2, _super);
     function Circle2(opts) {
       return _super.call(this, opts) || this;
@@ -12048,12 +12673,12 @@ var pptxPreview = (() => {
       ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2);
     };
     return Circle2;
-  }(Path_default);
+  })(Path_default);
   Circle.prototype.type = "circle";
   var Circle_default = Circle;
 
   // node_modules/zrender/lib/graphic/shape/Ellipse.js
-  var EllipseShape = /* @__PURE__ */ function() {
+  var EllipseShape = /* @__PURE__ */ (function() {
     function EllipseShape2() {
       this.cx = 0;
       this.cy = 0;
@@ -12061,8 +12686,8 @@ var pptxPreview = (() => {
       this.ry = 0;
     }
     return EllipseShape2;
-  }();
-  var Ellipse = function(_super) {
+  })();
+  var Ellipse = (function(_super) {
     __extends2(Ellipse2, _super);
     function Ellipse2(opts) {
       return _super.call(this, opts) || this;
@@ -12086,7 +12711,7 @@ var pptxPreview = (() => {
       ctx.closePath();
     };
     return Ellipse2;
-  }(Path_default);
+  })(Path_default);
   Ellipse.prototype.type = "ellipse";
   var Ellipse_default = Ellipse;
 
@@ -12097,10 +12722,10 @@ var pptxPreview = (() => {
   var mathCos4 = Math.cos;
   var mathACos = Math.acos;
   var mathATan2 = Math.atan2;
-  var mathAbs2 = Math.abs;
+  var mathAbs4 = Math.abs;
   var mathSqrt4 = Math.sqrt;
-  var mathMax4 = Math.max;
-  var mathMin4 = Math.min;
+  var mathMax5 = Math.max;
+  var mathMin5 = Math.min;
   var e = 1e-4;
   function intersect(x0, y0, x1, y1, x2, y2, x3, y3) {
     var dx10 = x1 - x0;
@@ -12131,7 +12756,7 @@ var pptxPreview = (() => {
     var d2 = dx * dx + dy * dy;
     var r = radius - cr;
     var s = x11 * y10 - x10 * y11;
-    var d = (dy < 0 ? -1 : 1) * mathSqrt4(mathMax4(0, r * r * d2 - s * s));
+    var d = (dy < 0 ? -1 : 1) * mathSqrt4(mathMax5(0, r * r * d2 - s * s));
     var cx0 = (s * dy - dx * d) / d2;
     var cy0 = (-s * dx - dy * d) / d2;
     var cx1 = (s * dy + dx * d) / d2;
@@ -12176,8 +12801,8 @@ var pptxPreview = (() => {
   }
   function buildPath2(ctx, shape) {
     var _a2;
-    var radius = mathMax4(shape.r, 0);
-    var innerRadius = mathMax4(shape.r0 || 0, 0);
+    var radius = mathMax5(shape.r, 0);
+    var innerRadius = mathMax5(shape.r0 || 0, 0);
     var hasRadius = radius > 0;
     var hasInnerRadius = innerRadius > 0;
     if (!hasRadius && !hasInnerRadius) {
@@ -12198,7 +12823,7 @@ var pptxPreview = (() => {
     }
     var cx = shape.cx, cy = shape.cy;
     var clockwise = !!shape.clockwise;
-    var arc = mathAbs2(endAngle - startAngle);
+    var arc = mathAbs4(endAngle - startAngle);
     var mod = arc > PI26 && arc % PI26;
     mod > e && (arc = mod);
     if (!(radius > e)) {
@@ -12237,13 +12862,13 @@ var pptxPreview = (() => {
         if (cornerRadius) {
           _a2 = normalizeCornerRadius(cornerRadius), icrStart = _a2[0], icrEnd = _a2[1], ocrStart = _a2[2], ocrEnd = _a2[3];
         }
-        var halfRd = mathAbs2(radius - innerRadius) / 2;
-        ocrs = mathMin4(halfRd, ocrStart);
-        ocre = mathMin4(halfRd, ocrEnd);
-        icrs = mathMin4(halfRd, icrStart);
-        icre = mathMin4(halfRd, icrEnd);
-        limitedOcrMax = ocrMax = mathMax4(ocrs, ocre);
-        limitedIcrMax = icrMax = mathMax4(icrs, icre);
+        var halfRd = mathAbs4(radius - innerRadius) / 2;
+        ocrs = mathMin5(halfRd, ocrStart);
+        ocre = mathMin5(halfRd, ocrEnd);
+        icrs = mathMin5(halfRd, icrStart);
+        icre = mathMin5(halfRd, icrEnd);
+        limitedOcrMax = ocrMax = mathMax5(ocrs, ocre);
+        limitedIcrMax = icrMax = mathMax5(icrs, icre);
         if (ocrMax > e || icrMax > e) {
           xre = radius * mathCos4(endAngle);
           yre = radius * mathSin4(endAngle);
@@ -12258,8 +12883,8 @@ var pptxPreview = (() => {
               var y1 = yre - it_1[1];
               var a = 1 / mathSin4(mathACos((x0 * x1 + y0 * y1) / (mathSqrt4(x0 * x0 + y0 * y0) * mathSqrt4(x1 * x1 + y1 * y1))) / 2);
               var b = mathSqrt4(it_1[0] * it_1[0] + it_1[1] * it_1[1]);
-              limitedOcrMax = mathMin4(ocrMax, (radius - b) / (a + 1));
-              limitedIcrMax = mathMin4(icrMax, (innerRadius - b) / (a - 1));
+              limitedOcrMax = mathMin5(ocrMax, (radius - b) / (a + 1));
+              limitedIcrMax = mathMin5(icrMax, (innerRadius - b) / (a - 1));
             }
           }
         }
@@ -12267,8 +12892,8 @@ var pptxPreview = (() => {
       if (!hasArc) {
         ctx.moveTo(cx + xrs, cy + yrs);
       } else if (limitedOcrMax > e) {
-        var crStart = mathMin4(ocrStart, limitedOcrMax);
-        var crEnd = mathMin4(ocrEnd, limitedOcrMax);
+        var crStart = mathMin5(ocrStart, limitedOcrMax);
+        var crEnd = mathMin5(ocrEnd, limitedOcrMax);
         var ct0 = computeCornerTangents(xirs, yirs, xrs, yrs, radius, crStart, clockwise);
         var ct1 = computeCornerTangents(xre, yre, xire, yire, radius, crEnd, clockwise);
         ctx.moveTo(cx + ct0.cx + ct0.x0, cy + ct0.cy + ct0.y0);
@@ -12286,8 +12911,8 @@ var pptxPreview = (() => {
       if (!(innerRadius > e) || !hasArc) {
         ctx.lineTo(cx + xire, cy + yire);
       } else if (limitedIcrMax > e) {
-        var crStart = mathMin4(icrStart, limitedIcrMax);
-        var crEnd = mathMin4(icrEnd, limitedIcrMax);
+        var crStart = mathMin5(icrStart, limitedIcrMax);
+        var crEnd = mathMin5(icrEnd, limitedIcrMax);
         var ct0 = computeCornerTangents(xire, yire, xre, yre, innerRadius, -crEnd, clockwise);
         var ct1 = computeCornerTangents(xrs, yrs, xirs, yirs, innerRadius, -crStart, clockwise);
         ctx.lineTo(cx + ct0.cx + ct0.x0, cy + ct0.cy + ct0.y0);
@@ -12307,7 +12932,7 @@ var pptxPreview = (() => {
   }
 
   // node_modules/zrender/lib/graphic/shape/Sector.js
-  var SectorShape = /* @__PURE__ */ function() {
+  var SectorShape = /* @__PURE__ */ (function() {
     function SectorShape2() {
       this.cx = 0;
       this.cy = 0;
@@ -12319,8 +12944,8 @@ var pptxPreview = (() => {
       this.cornerRadius = 0;
     }
     return SectorShape2;
-  }();
-  var Sector = function(_super) {
+  })();
+  var Sector = (function(_super) {
     __extends2(Sector2, _super);
     function Sector2(opts) {
       return _super.call(this, opts) || this;
@@ -12335,12 +12960,12 @@ var pptxPreview = (() => {
       return this.shape.startAngle === this.shape.endAngle || this.shape.r === this.shape.r0;
     };
     return Sector2;
-  }(Path_default);
+  })(Path_default);
   Sector.prototype.type = "sector";
   var Sector_default = Sector;
 
   // node_modules/zrender/lib/graphic/shape/Ring.js
-  var RingShape = /* @__PURE__ */ function() {
+  var RingShape = /* @__PURE__ */ (function() {
     function RingShape2() {
       this.cx = 0;
       this.cy = 0;
@@ -12348,8 +12973,8 @@ var pptxPreview = (() => {
       this.r0 = 0;
     }
     return RingShape2;
-  }();
-  var Ring = function(_super) {
+  })();
+  var Ring = (function(_super) {
     __extends2(Ring2, _super);
     function Ring2(opts) {
       return _super.call(this, opts) || this;
@@ -12367,7 +12992,7 @@ var pptxPreview = (() => {
       ctx.arc(x, y, shape.r0, 0, PI210, true);
     };
     return Ring2;
-  }(Path_default);
+  })(Path_default);
   Ring.prototype.type = "ring";
   var Ring_default = Ring;
 
@@ -12459,15 +13084,15 @@ var pptxPreview = (() => {
   }
 
   // node_modules/zrender/lib/graphic/shape/Polygon.js
-  var PolygonShape = /* @__PURE__ */ function() {
+  var PolygonShape = /* @__PURE__ */ (function() {
     function PolygonShape2() {
       this.points = null;
       this.smooth = 0;
       this.smoothConstraint = null;
     }
     return PolygonShape2;
-  }();
-  var Polygon = function(_super) {
+  })();
+  var Polygon = (function(_super) {
     __extends2(Polygon2, _super);
     function Polygon2(opts) {
       return _super.call(this, opts) || this;
@@ -12479,12 +13104,12 @@ var pptxPreview = (() => {
       buildPath3(ctx, shape, true);
     };
     return Polygon2;
-  }(Path_default);
+  })(Path_default);
   Polygon.prototype.type = "polygon";
   var Polygon_default = Polygon;
 
   // node_modules/zrender/lib/graphic/shape/Polyline.js
-  var PolylineShape = /* @__PURE__ */ function() {
+  var PolylineShape = /* @__PURE__ */ (function() {
     function PolylineShape2() {
       this.points = null;
       this.percent = 1;
@@ -12492,8 +13117,8 @@ var pptxPreview = (() => {
       this.smoothConstraint = null;
     }
     return PolylineShape2;
-  }();
-  var Polyline = function(_super) {
+  })();
+  var Polyline = (function(_super) {
     __extends2(Polyline2, _super);
     function Polyline2(opts) {
       return _super.call(this, opts) || this;
@@ -12511,13 +13136,13 @@ var pptxPreview = (() => {
       buildPath3(ctx, shape, false);
     };
     return Polyline2;
-  }(Path_default);
+  })(Path_default);
   Polyline.prototype.type = "polyline";
   var Polyline_default = Polyline;
 
   // node_modules/zrender/lib/graphic/shape/Line.js
   var subPixelOptimizeOutputShape2 = {};
-  var LineShape = /* @__PURE__ */ function() {
+  var LineShape = /* @__PURE__ */ (function() {
     function LineShape2() {
       this.x1 = 0;
       this.y1 = 0;
@@ -12526,8 +13151,8 @@ var pptxPreview = (() => {
       this.percent = 1;
     }
     return LineShape2;
-  }();
-  var Line = function(_super) {
+  })();
+  var Line = (function(_super) {
     __extends2(Line2, _super);
     function Line2(opts) {
       return _super.call(this, opts) || this;
@@ -12577,13 +13202,13 @@ var pptxPreview = (() => {
       ];
     };
     return Line2;
-  }(Path_default);
+  })(Path_default);
   Line.prototype.type = "line";
   var Line_default = Line;
 
   // node_modules/zrender/lib/graphic/shape/BezierCurve.js
   var out = [];
-  var BezierCurveShape = /* @__PURE__ */ function() {
+  var BezierCurveShape = /* @__PURE__ */ (function() {
     function BezierCurveShape2() {
       this.x1 = 0;
       this.y1 = 0;
@@ -12594,7 +13219,7 @@ var pptxPreview = (() => {
       this.percent = 1;
     }
     return BezierCurveShape2;
-  }();
+  })();
   function someVectorAt(shape, t, isTangent) {
     var cpx2 = shape.cpx2;
     var cpy2 = shape.cpy2;
@@ -12610,7 +13235,7 @@ var pptxPreview = (() => {
       ];
     }
   }
-  var BezierCurve = function(_super) {
+  var BezierCurve = (function(_super) {
     __extends2(BezierCurve2, _super);
     function BezierCurve2(opts) {
       return _super.call(this, opts) || this;
@@ -12670,12 +13295,12 @@ var pptxPreview = (() => {
       return normalize(p, p);
     };
     return BezierCurve2;
-  }(Path_default);
+  })(Path_default);
   BezierCurve.prototype.type = "bezier-curve";
   var BezierCurve_default = BezierCurve;
 
   // node_modules/zrender/lib/graphic/shape/Arc.js
-  var ArcShape = /* @__PURE__ */ function() {
+  var ArcShape = /* @__PURE__ */ (function() {
     function ArcShape2() {
       this.cx = 0;
       this.cy = 0;
@@ -12685,8 +13310,8 @@ var pptxPreview = (() => {
       this.clockwise = true;
     }
     return ArcShape2;
-  }();
-  var Arc = function(_super) {
+  })();
+  var Arc = (function(_super) {
     __extends2(Arc2, _super);
     function Arc2(opts) {
       return _super.call(this, opts) || this;
@@ -12713,12 +13338,12 @@ var pptxPreview = (() => {
       ctx.arc(x, y, r, startAngle, endAngle, !clockwise);
     };
     return Arc2;
-  }(Path_default);
+  })(Path_default);
   Arc.prototype.type = "arc";
   var Arc_default = Arc;
 
   // node_modules/zrender/lib/graphic/CompoundPath.js
-  var CompoundPath = function(_super) {
+  var CompoundPath = (function(_super) {
     __extends2(CompoundPath2, _super);
     function CompoundPath2() {
       var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -12738,12 +13363,12 @@ var pptxPreview = (() => {
     CompoundPath2.prototype.beforeBrush = function() {
       this._updatePathDirty();
       var paths = this.shape.paths || [];
-      var scale4 = this.getGlobalScale();
+      var scale3 = this.getGlobalScale();
       for (var i = 0; i < paths.length; i++) {
         if (!paths[i].path) {
           paths[i].createPathProxy();
         }
-        paths[i].path.setScale(scale4[0], scale4[1], paths[i].segmentIgnoreThreshold);
+        paths[i].path.setScale(scale3[0], scale3[1], paths[i].segmentIgnoreThreshold);
       }
     };
     CompoundPath2.prototype.buildPath = function(ctx, shape) {
@@ -12763,26 +13388,26 @@ var pptxPreview = (() => {
       return Path_default.prototype.getBoundingRect.call(this);
     };
     return CompoundPath2;
-  }(Path_default);
+  })(Path_default);
   var CompoundPath_default = CompoundPath;
 
   // node_modules/zrender/lib/graphic/Gradient.js
-  var Gradient = function() {
+  var Gradient = (function() {
     function Gradient2(colorStops) {
       this.colorStops = colorStops || [];
     }
-    Gradient2.prototype.addColorStop = function(offset, color) {
+    Gradient2.prototype.addColorStop = function(offset, color3) {
       this.colorStops.push({
         offset,
-        color
+        color: color3
       });
     };
     return Gradient2;
-  }();
+  })();
   var Gradient_default = Gradient;
 
   // node_modules/zrender/lib/graphic/LinearGradient.js
-  var LinearGradient = function(_super) {
+  var LinearGradient = (function(_super) {
     __extends2(LinearGradient2, _super);
     function LinearGradient2(x, y, x2, y2, colorStops, globalCoord) {
       var _this = _super.call(this, colorStops) || this;
@@ -12795,11 +13420,11 @@ var pptxPreview = (() => {
       return _this;
     }
     return LinearGradient2;
-  }(Gradient_default);
+  })(Gradient_default);
   var LinearGradient_default = LinearGradient;
 
   // node_modules/zrender/lib/graphic/RadialGradient.js
-  var RadialGradient = function(_super) {
+  var RadialGradient = (function(_super) {
     __extends2(RadialGradient2, _super);
     function RadialGradient2(x, y, r, colorStops, globalCoord) {
       var _this = _super.call(this, colorStops) || this;
@@ -12811,15 +13436,19 @@ var pptxPreview = (() => {
       return _this;
     }
     return RadialGradient2;
-  }(Gradient_default);
+  })(Gradient_default);
   var RadialGradient_default = RadialGradient;
 
   // node_modules/zrender/lib/core/OrientedBoundingRect.js
-  var extent = [0, 0];
-  var extent2 = [0, 0];
-  var minTv2 = new Point_default();
-  var maxTv2 = new Point_default();
-  var OrientedBoundingRect = function() {
+  var mathMin6 = Math.min;
+  var mathMax6 = Math.max;
+  var mathAbs5 = Math.abs;
+  var _extent = [0, 0];
+  var _extent2 = [0, 0];
+  var _intersectCtx2 = createIntersectContext();
+  var _minTv2 = _intersectCtx2.minTv;
+  var _maxTv2 = _intersectCtx2.maxTv;
+  var OrientedBoundingRect = (function() {
     function OrientedBoundingRect2(rect, transform) {
       this._corners = [];
       this._axes = [];
@@ -12858,56 +13487,65 @@ var pptxPreview = (() => {
         this._origin[i] = axes[i].dot(corners[0]);
       }
     };
-    OrientedBoundingRect2.prototype.intersect = function(other, mtv) {
+    OrientedBoundingRect2.prototype.intersect = function(other, mtv, opt) {
       var overlapped = true;
       var noMtv = !mtv;
-      minTv2.set(Infinity, Infinity);
-      maxTv2.set(0, 0);
-      if (!this._intersectCheckOneSide(this, other, minTv2, maxTv2, noMtv, 1)) {
+      if (mtv) {
+        Point_default.set(mtv, 0, 0);
+      }
+      _intersectCtx2.reset(opt, !noMtv);
+      if (!this._intersectCheckOneSide(this, other, noMtv, 1)) {
         overlapped = false;
         if (noMtv) {
           return overlapped;
         }
       }
-      if (!this._intersectCheckOneSide(other, this, minTv2, maxTv2, noMtv, -1)) {
+      if (!this._intersectCheckOneSide(other, this, noMtv, -1)) {
         overlapped = false;
         if (noMtv) {
           return overlapped;
         }
       }
-      if (!noMtv) {
-        Point_default.copy(mtv, overlapped ? minTv2 : maxTv2);
+      if (!noMtv && !_intersectCtx2.negativeSize) {
+        Point_default.copy(mtv, overlapped ? _intersectCtx2.useDir ? _intersectCtx2.dirMinTv : _minTv2 : _maxTv2);
       }
       return overlapped;
     };
-    OrientedBoundingRect2.prototype._intersectCheckOneSide = function(self2, other, minTv3, maxTv3, noMtv, inverse) {
+    OrientedBoundingRect2.prototype._intersectCheckOneSide = function(self2, other, noMtv, inverse) {
       var overlapped = true;
       for (var i = 0; i < 2; i++) {
-        var axis = this._axes[i];
-        this._getProjMinMaxOnAxis(i, self2._corners, extent);
-        this._getProjMinMaxOnAxis(i, other._corners, extent2);
-        if (extent[1] < extent2[0] || extent[0] > extent2[1]) {
+        var axis = self2._axes[i];
+        self2._getProjMinMaxOnAxis(i, self2._corners, _extent);
+        self2._getProjMinMaxOnAxis(i, other._corners, _extent2);
+        if (_intersectCtx2.negativeSize || _extent[1] < _extent2[0] || _extent[0] > _extent2[1]) {
           overlapped = false;
-          if (noMtv) {
+          if (_intersectCtx2.negativeSize || noMtv) {
             return overlapped;
           }
-          var dist0 = Math.abs(extent2[0] - extent[1]);
-          var dist1 = Math.abs(extent[0] - extent2[1]);
-          if (Math.min(dist0, dist1) > maxTv3.len()) {
+          var dist0 = mathAbs5(_extent2[0] - _extent[1]);
+          var dist1 = mathAbs5(_extent[0] - _extent2[1]);
+          if (mathMin6(dist0, dist1) > _maxTv2.len()) {
             if (dist0 < dist1) {
-              Point_default.scale(maxTv3, axis, -dist0 * inverse);
+              Point_default.scale(_maxTv2, axis, -dist0 * inverse);
             } else {
-              Point_default.scale(maxTv3, axis, dist1 * inverse);
+              Point_default.scale(_maxTv2, axis, dist1 * inverse);
             }
           }
-        } else if (minTv3) {
-          var dist0 = Math.abs(extent2[0] - extent[1]);
-          var dist1 = Math.abs(extent[0] - extent2[1]);
-          if (Math.min(dist0, dist1) < minTv3.len()) {
-            if (dist0 < dist1) {
-              Point_default.scale(minTv3, axis, dist0 * inverse);
-            } else {
-              Point_default.scale(minTv3, axis, -dist1 * inverse);
+        } else if (!noMtv) {
+          var dist0 = mathAbs5(_extent2[0] - _extent[1]);
+          var dist1 = mathAbs5(_extent[0] - _extent2[1]);
+          if (_intersectCtx2.useDir || mathMin6(dist0, dist1) < _minTv2.len()) {
+            if (dist0 < dist1 || !_intersectCtx2.bidirectional) {
+              Point_default.scale(_minTv2, axis, dist0 * inverse);
+              if (_intersectCtx2.useDir) {
+                _intersectCtx2.calcDirMTV();
+              }
+            }
+            if (dist0 >= dist1 || !_intersectCtx2.bidirectional) {
+              Point_default.scale(_minTv2, axis, -dist1 * inverse);
+              if (_intersectCtx2.useDir) {
+                _intersectCtx2.calcDirMTV();
+              }
             }
           }
         }
@@ -12922,24 +13560,28 @@ var pptxPreview = (() => {
       var max3 = proj;
       for (var i = 1; i < corners.length; i++) {
         var proj_1 = corners[i].dot(axis) + origin[dim];
-        min3 = Math.min(proj_1, min3);
-        max3 = Math.max(proj_1, max3);
+        min3 = mathMin6(proj_1, min3);
+        max3 = mathMax6(proj_1, max3);
       }
-      out2[0] = min3;
-      out2[1] = max3;
+      out2[0] = min3 + _intersectCtx2.touchThreshold;
+      out2[1] = max3 - _intersectCtx2.touchThreshold;
+      _intersectCtx2.negativeSize = out2[1] < out2[0];
     };
     return OrientedBoundingRect2;
-  }();
+  })();
   var OrientedBoundingRect_default = OrientedBoundingRect;
+
+  // node_modules/zrender/lib/core/types.js
+  var INCREMENTAL_ID_TRUE_COMPAT = 1;
 
   // node_modules/zrender/lib/graphic/IncrementalDisplayable.js
   var m = [];
-  var IncrementalDisplayable = function(_super) {
+  var IncrementalDisplayable = (function(_super) {
     __extends2(IncrementalDisplayable2, _super);
     function IncrementalDisplayable2() {
       var _this = _super !== null && _super.apply(this, arguments) || this;
       _this.notClear = true;
-      _this.incremental = true;
+      _this.incremental = INCREMENTAL_ID_TRUE_COMPAT;
       _this._displayables = [];
       _this._temporaryDisplayables = [];
       _this._cursor = 0;
@@ -12950,6 +13592,9 @@ var pptxPreview = (() => {
     };
     IncrementalDisplayable2.prototype.useStyle = function() {
       this.style = {};
+    };
+    IncrementalDisplayable2.prototype._useHoverStyle = function() {
+      this.__hoverStyle = null;
     };
     IncrementalDisplayable2.prototype.getCursor = function() {
       return this._cursor;
@@ -13039,7 +13684,7 @@ var pptxPreview = (() => {
       return false;
     };
     return IncrementalDisplayable2;
-  }(Displayable_default);
+  })(Displayable_default);
   var IncrementalDisplayable_default = IncrementalDisplayable;
 
   // node_modules/echarts/lib/animation/basicTransition.js
@@ -13181,9 +13826,12 @@ var pptxPreview = (() => {
   }
 
   // node_modules/echarts/lib/util/graphic.js
-  var mathMax5 = Math.max;
-  var mathMin5 = Math.min;
   var _customShapeMap = {};
+  var XY2 = ["x", "y"];
+  var WH2 = ["width", "height"];
+  var HOVER_LAYER_NO = 0;
+  var HOVER_LAYER_FROM_THRESHOLD = 1;
+  var HOVER_LAYER_FOR_INCREMENTAL = 2;
   function extendShape(opts) {
     return Path_default.extend(opts);
   }
@@ -13199,17 +13847,17 @@ var pptxPreview = (() => {
       return _customShapeMap[name];
     }
   }
-  function makePath(pathData, opts, rect, layout3) {
+  function makePath(pathData, opts, rect, layout2) {
     var path = createFromString(pathData, opts);
     if (rect) {
-      if (layout3 === "center") {
+      if (layout2 === "center") {
         rect = centerGraphic(rect, path.getBoundingRect());
       }
       resizePath(path, rect);
     }
     return path;
   }
-  function makeImage(imageUrl, rect, layout3) {
+  function makeImage(imageUrl, rect, layout2) {
     var zrImg = new Image_default({
       style: {
         image: imageUrl,
@@ -13219,7 +13867,7 @@ var pptxPreview = (() => {
         height: rect.height
       },
       onload: function(img) {
-        if (layout3 === "center") {
+        if (layout2 === "center") {
           var boundingRect = {
             width: img.width,
             height: img.height
@@ -13264,9 +13912,9 @@ var pptxPreview = (() => {
     });
     return shape;
   }
-  function subPixelOptimizeRect2(param) {
-    subPixelOptimizeRect(param.shape, param.shape, param.style);
-    return param;
+  function subPixelOptimizeRect2(shape, style) {
+    subPixelOptimizeRect(shape, shape, style);
+    return shape;
   }
   var subPixelOptimize2 = subPixelOptimize;
   function getTransform(target, ancestor) {
@@ -13287,11 +13935,11 @@ var pptxPreview = (() => {
     return applyTransform([], target, transform);
   }
   function transformDirection(direction, transform, invert2) {
-    var hBase = transform[4] === 0 || transform[5] === 0 || transform[0] === 0 ? 1 : Math.abs(2 * transform[4] / transform[0]);
-    var vBase = transform[4] === 0 || transform[5] === 0 || transform[2] === 0 ? 1 : Math.abs(2 * transform[4] / transform[2]);
+    var hBase = transform[4] === 0 || transform[5] === 0 || transform[0] === 0 ? 1 : mathAbs2(2 * transform[4] / transform[0]);
+    var vBase = transform[4] === 0 || transform[5] === 0 || transform[2] === 0 ? 1 : mathAbs2(2 * transform[4] / transform[2]);
     var vertex = [direction === "left" ? -hBase : direction === "right" ? hBase : 0, direction === "top" ? -vBase : direction === "bottom" ? vBase : 0];
     vertex = applyTransform2(vertex, transform, invert2);
-    return Math.abs(vertex[0]) > Math.abs(vertex[1]) ? vertex[0] > 0 ? "right" : "left" : vertex[1] > 0 ? "bottom" : "top";
+    return mathAbs2(vertex[0]) > mathAbs2(vertex[1]) ? vertex[0] > 0 ? "right" : "left" : vertex[1] > 0 ? "bottom" : "top";
   }
   function isNotGroup(el2) {
     return !el2.isGroup;
@@ -13319,7 +13967,7 @@ var pptxPreview = (() => {
         rotation: el2.rotation
       };
       if (isPath(el2)) {
-        obj.shape = extend({}, el2.shape);
+        obj.shape = clone(el2.shape);
       }
       return obj;
     }
@@ -13338,19 +13986,19 @@ var pptxPreview = (() => {
   function clipPointsByRect(points2, rect) {
     return map(points2, function(point) {
       var x = point[0];
-      x = mathMax5(x, rect.x);
-      x = mathMin5(x, rect.x + rect.width);
+      x = mathMax2(x, rect.x);
+      x = mathMin2(x, rect.x + rect.width);
       var y = point[1];
-      y = mathMax5(y, rect.y);
-      y = mathMin5(y, rect.y + rect.height);
+      y = mathMax2(y, rect.y);
+      y = mathMin2(y, rect.y + rect.height);
       return [x, y];
     });
   }
   function clipRectByRect(targetRect, rect) {
-    var x = mathMax5(targetRect.x, rect.x);
-    var x2 = mathMin5(targetRect.x + targetRect.width, rect.x + rect.width);
-    var y = mathMax5(targetRect.y, rect.y);
-    var y2 = mathMin5(targetRect.y + targetRect.height, rect.y + rect.height);
+    var x = mathMax2(targetRect.x, rect.x);
+    var x2 = mathMin2(targetRect.x + targetRect.width, rect.x + rect.width);
+    var y = mathMax2(targetRect.y, rect.y);
+    var y2 = mathMin2(targetRect.y + targetRect.height, rect.y + rect.height);
     if (x2 >= x && y2 >= y) {
       return {
         x,
@@ -13413,6 +14061,49 @@ var pptxPreview = (() => {
   function nearZero(val) {
     return val <= 1e-6 && val >= -1e-6;
   }
+  function expandOrShrinkRect(rect, delta, shrinkOrExpand, noNegative, minSize) {
+    if (delta == null) {
+      return rect;
+    } else if (isNumber(delta)) {
+      _tmpExpandRectDelta[0] = _tmpExpandRectDelta[1] = _tmpExpandRectDelta[2] = _tmpExpandRectDelta[3] = delta;
+    } else {
+      if (true) {
+        assert(delta.length === 4);
+      }
+      _tmpExpandRectDelta[0] = delta[0];
+      _tmpExpandRectDelta[1] = delta[1];
+      _tmpExpandRectDelta[2] = delta[2];
+      _tmpExpandRectDelta[3] = delta[3];
+    }
+    if (noNegative) {
+      _tmpExpandRectDelta[0] = mathMax2(0, _tmpExpandRectDelta[0]);
+      _tmpExpandRectDelta[1] = mathMax2(0, _tmpExpandRectDelta[1]);
+      _tmpExpandRectDelta[2] = mathMax2(0, _tmpExpandRectDelta[2]);
+      _tmpExpandRectDelta[3] = mathMax2(0, _tmpExpandRectDelta[3]);
+    }
+    if (shrinkOrExpand) {
+      _tmpExpandRectDelta[0] = -_tmpExpandRectDelta[0];
+      _tmpExpandRectDelta[1] = -_tmpExpandRectDelta[1];
+      _tmpExpandRectDelta[2] = -_tmpExpandRectDelta[2];
+      _tmpExpandRectDelta[3] = -_tmpExpandRectDelta[3];
+    }
+    expandRectOnOneDimension(rect, _tmpExpandRectDelta, "x", "width", 3, 1, minSize && minSize[0] || 0);
+    expandRectOnOneDimension(rect, _tmpExpandRectDelta, "y", "height", 0, 2, minSize && minSize[1] || 0);
+    return rect;
+  }
+  var _tmpExpandRectDelta = [0, 0, 0, 0];
+  function expandRectOnOneDimension(rect, delta, xy, wh, ltIdx, rbIdx, minSize) {
+    var deltaSum = delta[rbIdx] + delta[ltIdx];
+    var oldSize = rect[wh];
+    rect[wh] += deltaSum;
+    minSize = mathMax2(0, mathMin2(minSize, oldSize));
+    if (rect[wh] < minSize) {
+      rect[wh] = minSize;
+      rect[xy] += delta[ltIdx] >= 0 ? -delta[ltIdx] : delta[rbIdx] >= 0 ? oldSize + delta[rbIdx] : mathAbs2(deltaSum) > 1e-8 ? (oldSize - minSize) * delta[ltIdx] / deltaSum : 0;
+    } else {
+      rect[xy] -= delta[ltIdx];
+    }
+  }
   function setTooltipConfig(opt) {
     var itemTooltipOption = opt.itemTooltipOption;
     var componentModel = opt.componentModel;
@@ -13430,10 +14121,10 @@ var pptxPreview = (() => {
     formatterParams[mainType + "Index"] = componentIndex;
     var formatterParamsExtra = opt.formatterParamsExtra;
     if (formatterParamsExtra) {
-      each(keys(formatterParamsExtra), function(key) {
-        if (!hasOwn(formatterParams, key)) {
-          formatterParams[key] = formatterParamsExtra[key];
-          formatterParams.$vars.push(key);
+      each(keys(formatterParamsExtra), function(key2) {
+        if (!hasOwn(formatterParams, key2)) {
+          formatterParams[key2] = formatterParamsExtra[key2];
+          formatterParams.$vars.push(key2);
         }
       });
     }
@@ -13468,6 +14159,112 @@ var pptxPreview = (() => {
         traverseElement(els, cb);
       }
     }
+  }
+  function isBoundingRectAxisAligned(transform) {
+    return !transform || mathAbs2(transform[1]) < AXIS_ALIGN_EPSILON && mathAbs2(transform[2]) < AXIS_ALIGN_EPSILON || mathAbs2(transform[0]) < AXIS_ALIGN_EPSILON && mathAbs2(transform[3]) < AXIS_ALIGN_EPSILON;
+  }
+  var AXIS_ALIGN_EPSILON = 1e-5;
+  function ensureCopyRect(target, source) {
+    return target ? BoundingRect_default.copy(target, source) : source.clone();
+  }
+  function ensureCopyTransform(target, source) {
+    return source ? copy(target || create2(), source) : void 0;
+  }
+  function retrieveZInfo(model) {
+    return {
+      z: model.get("z") || 0,
+      zlevel: model.get("zlevel") || 0
+    };
+  }
+  function calcZ2Range(el2) {
+    var max3 = -Infinity;
+    var min3 = Infinity;
+    traverseElement(el2, function(el3) {
+      visitEl(el3);
+      visitEl(el3.getTextContent());
+      visitEl(el3.getTextGuideLine());
+    });
+    function visitEl(el3) {
+      if (!el3 || el3.isGroup) {
+        return;
+      }
+      var currentStates = el3.currentStates;
+      if (currentStates.length) {
+        for (var idx = 0; idx < currentStates.length; idx++) {
+          calcZ2(el3.states[currentStates[idx]]);
+        }
+      }
+      calcZ2(el3);
+    }
+    function calcZ2(entity) {
+      if (entity) {
+        var z2 = entity.z2;
+        if (z2 > max3) {
+          max3 = z2;
+        }
+        if (z2 < min3) {
+          min3 = z2;
+        }
+      }
+    }
+    if (min3 > max3) {
+      min3 = max3 = 0;
+    }
+    return {
+      min: min3,
+      max: max3
+    };
+  }
+  function traverseUpdateZ(el2, z, zlevel) {
+    doUpdateZ(el2, z, zlevel, -Infinity);
+  }
+  function doUpdateZ(el2, z, zlevel, maxZ2) {
+    if (el2.ignoreModelZ) {
+      return maxZ2;
+    }
+    var label = el2.getTextContent();
+    var labelLine = el2.getTextGuideLine();
+    var isGroup = el2.isGroup;
+    if (isGroup) {
+      var children = el2.childrenRef();
+      for (var i = 0; i < children.length; i++) {
+        maxZ2 = mathMax2(doUpdateZ(children[i], z, zlevel, maxZ2), maxZ2);
+      }
+    } else {
+      el2.z = z;
+      el2.zlevel = zlevel;
+      maxZ2 = mathMax2(el2.z2 || 0, maxZ2);
+    }
+    if (label) {
+      label.z = z;
+      label.zlevel = zlevel;
+      isFinite(maxZ2) && (label.z2 = maxZ2 + 2);
+    }
+    if (labelLine) {
+      var textGuideLineConfig = el2.textGuideLineConfig;
+      labelLine.z = z;
+      labelLine.zlevel = zlevel;
+      isFinite(maxZ2) && (labelLine.z2 = maxZ2 + (textGuideLineConfig && textGuideLineConfig.showAbove ? 1 : -1));
+    }
+    return maxZ2;
+  }
+  function payloadDisableAnimation(payload) {
+    payload.animation = {
+      duration: 0
+    };
+    return payload;
+  }
+  function decomposeTransform(out2, mt) {
+    mt ? copy(tmpDTR.transform, mt) : identity(tmpDTR.transform);
+    tmpDTR.decomposeTransform();
+    copyTransform(out2, tmpDTR);
+    return out2;
+  }
+  var tmpDTR = new Transformable_default();
+  tmpDTR.transform = create2();
+  function getCurrentCanvasPainter(api) {
+    var painter = api.getZr().painter;
+    return painter.getType() === "canvas" ? painter : null;
   }
   registerShape("circle", Circle_default);
   registerShape("ellipse", Ellipse_default);
@@ -13629,6 +14426,12 @@ var pptxPreview = (() => {
       textConfig.distance = labelDistance;
     }
     textConfig.outsideFill = textStyleModel.get("color") === "inherit" ? opt.inheritColor || null : "auto";
+    if (opt.autoOverflowArea != null) {
+      textConfig.autoOverflowArea = opt.autoOverflowArea;
+    }
+    if (opt.layoutRect != null) {
+      textConfig.layoutRect = opt.layoutRect;
+    }
     return textConfig;
   }
   function setTextStyleCommon(textStyle, textStyleModel, opt, isNotNormal, isAttached) {
@@ -13639,10 +14442,12 @@ var pptxPreview = (() => {
     var richResult;
     if (richItemNames) {
       richResult = {};
+      var richInheritPlainLabelOptionName = "richInheritPlainLabel";
+      var richInheritPlainLabel = retrieve2(textStyleModel.get(richInheritPlainLabelOptionName), ecModel ? ecModel.get(richInheritPlainLabelOptionName) : void 0);
       for (var name_1 in richItemNames) {
         if (richItemNames.hasOwnProperty(name_1)) {
           var richTextStyle = textStyleModel.getModel(["rich", name_1]);
-          setTokenTextStyle(richResult[name_1] = {}, richTextStyle, globalTextStyle, opt, isNotNormal, isAttached, false, true);
+          setTokenTextStyle(richResult[name_1] = {}, richTextStyle, globalTextStyle, textStyleModel, richInheritPlainLabel, opt, isNotNormal, isAttached, false, true);
         }
       }
     }
@@ -13653,11 +14458,24 @@ var pptxPreview = (() => {
     if (overflow) {
       textStyle.overflow = overflow;
     }
-    var margin = textStyleModel.get("minMargin");
-    if (margin != null) {
-      textStyle.margin = margin;
+    var lineOverflow = textStyleModel.get("lineOverflow");
+    if (lineOverflow) {
+      textStyle.lineOverflow = lineOverflow;
     }
-    setTokenTextStyle(textStyle, textStyleModel, globalTextStyle, opt, isNotNormal, isAttached, true, false);
+    var labelTextStyle = textStyle;
+    var minMargin = textStyleModel.get("minMargin");
+    if (minMargin != null) {
+      minMargin = !isNumber(minMargin) ? 0 : minMargin / 2;
+      labelTextStyle.margin = [minMargin, minMargin, minMargin, minMargin];
+      labelTextStyle.__marginType = LabelMarginType.minMargin;
+    } else {
+      var textMargin = textStyleModel.get("textMargin");
+      if (textMargin != null) {
+        labelTextStyle.margin = normalizeCssArray(textMargin);
+        labelTextStyle.__marginType = LabelMarginType.textMargin;
+      }
+    }
+    setTokenTextStyle(textStyle, textStyleModel, globalTextStyle, null, null, opt, isNotNormal, isAttached, true, false);
   }
   function getRichItemNames(textStyleModel) {
     var richItemNameMap;
@@ -13678,7 +14496,7 @@ var pptxPreview = (() => {
   var TEXT_PROPS_WITH_GLOBAL = ["fontStyle", "fontWeight", "fontSize", "fontFamily", "textShadowColor", "textShadowBlur", "textShadowOffsetX", "textShadowOffsetY"];
   var TEXT_PROPS_SELF = ["align", "lineHeight", "width", "height", "tag", "verticalAlign", "ellipsis"];
   var TEXT_PROPS_BOX = ["padding", "borderWidth", "borderRadius", "borderDashOffset", "backgroundColor", "borderColor", "shadowColor", "shadowBlur", "shadowOffsetX", "shadowOffsetY"];
-  function setTokenTextStyle(textStyle, textStyleModel, globalTextStyle, opt, isNotNormal, isAttached, isBlock, inRich) {
+  function setTokenTextStyle(textStyle, textStyleModel, globalTextStyle, plainTextModel, richInheritPlainLabel, opt, isNotNormal, isAttached, isBlock, inRich) {
     globalTextStyle = !isNotNormal && globalTextStyle || EMPTY_OBJ;
     var inheritColor = opt && opt.inheritColor;
     var fillColor = textStyleModel.getShallow("color");
@@ -13742,17 +14560,17 @@ var pptxPreview = (() => {
       }
     }
     for (var i = 0; i < TEXT_PROPS_WITH_GLOBAL.length; i++) {
-      var key = TEXT_PROPS_WITH_GLOBAL[i];
-      var val = retrieve2(textStyleModel.getShallow(key), globalTextStyle[key]);
+      var key2 = TEXT_PROPS_WITH_GLOBAL[i];
+      var val = richInheritPlainLabel !== false && plainTextModel ? retrieve3(textStyleModel.getShallow(key2), plainTextModel.getShallow(key2), globalTextStyle[key2]) : retrieve2(textStyleModel.getShallow(key2), globalTextStyle[key2]);
       if (val != null) {
-        textStyle[key] = val;
+        textStyle[key2] = val;
       }
     }
     for (var i = 0; i < TEXT_PROPS_SELF.length; i++) {
-      var key = TEXT_PROPS_SELF[i];
-      var val = textStyleModel.getShallow(key);
+      var key2 = TEXT_PROPS_SELF[i];
+      var val = textStyleModel.getShallow(key2);
       if (val != null) {
-        textStyle[key] = val;
+        textStyle[key2] = val;
       }
     }
     if (textStyle.verticalAlign == null) {
@@ -13763,10 +14581,10 @@ var pptxPreview = (() => {
     }
     if (!isBlock || !opt.disableBox) {
       for (var i = 0; i < TEXT_PROPS_BOX.length; i++) {
-        var key = TEXT_PROPS_BOX[i];
-        var val = textStyleModel.getShallow(key);
+        var key2 = TEXT_PROPS_BOX[i];
+        var val = textStyleModel.getShallow(key2);
         if (val != null) {
-          textStyle[key] = val;
+          textStyle[key2] = val;
         }
       }
       var borderType = textStyleModel.getShallow("borderType");
@@ -13841,6 +14659,10 @@ var pptxPreview = (() => {
       percent: 1
     }, animatableModel, dataIndex, null, during);
   }
+  var LabelMarginType = {
+    minMargin: 1,
+    textMargin: 2
+  };
 
   // node_modules/echarts/lib/model/mixin/textStyle.js
   var PATH_COLOR = ["textStyle", "color"];
@@ -13848,7 +14670,7 @@ var pptxPreview = (() => {
   var tmpText = new Text_default();
   var TextStyleMixin = (
     /** @class */
-    function() {
+    (function() {
       function TextStyleMixin2() {
       }
       TextStyleMixin2.prototype.getTextColor = function(isEmphasis) {
@@ -13876,7 +14698,7 @@ var pptxPreview = (() => {
         return tmpText.getBoundingRect();
       };
       return TextStyleMixin2;
-    }()
+    })()
   );
   var textStyle_default = TextStyleMixin;
 
@@ -13900,14 +14722,14 @@ var pptxPreview = (() => {
   var getLineStyle = makeStyleMapper(LINE_STYLE_KEY_MAP);
   var LineStyleMixin = (
     /** @class */
-    function() {
+    (function() {
       function LineStyleMixin2() {
       }
       LineStyleMixin2.prototype.getLineStyle = function(excludes) {
         return getLineStyle(this, excludes);
       };
       return LineStyleMixin2;
-    }()
+    })()
   );
 
   // node_modules/echarts/lib/model/mixin/itemStyle.js
@@ -13931,20 +14753,20 @@ var pptxPreview = (() => {
   var getItemStyle = makeStyleMapper(ITEM_STYLE_KEY_MAP);
   var ItemStyleMixin = (
     /** @class */
-    function() {
+    (function() {
       function ItemStyleMixin2() {
       }
       ItemStyleMixin2.prototype.getItemStyle = function(excludes, includes) {
         return getItemStyle(this, excludes, includes);
       };
       return ItemStyleMixin2;
-    }()
+    })()
   );
 
   // node_modules/echarts/lib/model/Model.js
   var Model = (
     /** @class */
-    function() {
+    (function() {
       function Model2(option, parentModel, ecModel) {
         this.parentModel = parentModel;
         this.ecModel = ecModel;
@@ -13965,13 +14787,13 @@ var pptxPreview = (() => {
         }
         return this._doGet(this.parsePath(path), !ignoreParent && this.parentModel);
       };
-      Model2.prototype.getShallow = function(key, ignoreParent) {
+      Model2.prototype.getShallow = function(key2, ignoreParent) {
         var option = this.option;
-        var val = option == null ? option : option[key];
+        var val = option == null ? option : option[key2];
         if (val == null && !ignoreParent) {
           var parentModel = this.parentModel;
           if (parentModel) {
-            val = parentModel.getShallow(key);
+            val = parentModel.getShallow(key2);
           }
         }
         return val;
@@ -14030,7 +14852,7 @@ var pptxPreview = (() => {
         return obj;
       };
       return Model2;
-    }()
+    })()
   );
   enableClassExtend(Model);
   enableClassCheck(Model);
@@ -14381,13 +15203,10 @@ var pptxPreview = (() => {
   var DEFAULT_LOCALE = LOCALE_EN;
   var localeStorage = {};
   var localeModels = {};
-  var SYSTEM_LANG = !env_default.domSupported ? DEFAULT_LOCALE : function() {
-    var langStr = (
-      /* eslint-disable-next-line */
-      (document.documentElement.lang || navigator.language || navigator.browserLanguage || DEFAULT_LOCALE).toUpperCase()
-    );
+  var SYSTEM_LANG = !env_default.domSupported ? DEFAULT_LOCALE : (function() {
+    var langStr = (document.documentElement.lang || navigator.language || navigator.browserLanguage || DEFAULT_LOCALE).toUpperCase();
     return langStr.indexOf(LOCALE_ZH) > -1 ? LOCALE_ZH : DEFAULT_LOCALE;
-  }();
+  })();
   function registerLocale(locale, localeObj) {
     locale = locale.toUpperCase();
     localeModels[locale] = new Model_default(localeObj);
@@ -14414,34 +15233,106 @@ var pptxPreview = (() => {
   registerLocale(LOCALE_EN, langEN_default);
   registerLocale(LOCALE_ZH, langZH_default);
 
+  // node_modules/echarts/lib/scale/break.js
+  var _impl = null;
+  function getScaleBreakHelper() {
+    return _impl;
+  }
+  function simplyParseBreakOption(scale3, opt) {
+    var scaleBreakHelper = getScaleBreakHelper();
+    var breakOption = opt.breakOption;
+    var breakParsed = opt.breakParsed;
+    if (!breakParsed && scaleBreakHelper) {
+      breakParsed = scaleBreakHelper.parseAxisBreakOption(breakOption, scale3);
+    }
+    return breakParsed;
+  }
+  function getBreaksUnsafe(scale3) {
+    var brk = scale3.brk;
+    return brk ? brk.breaks : [];
+  }
+  function hasBreaks(scale3) {
+    var brk = scale3.brk;
+    return brk ? brk.hasBreaks() : false;
+  }
+
   // node_modules/echarts/lib/util/time.js
   var ONE_SECOND = 1e3;
   var ONE_MINUTE = ONE_SECOND * 60;
   var ONE_HOUR = ONE_MINUTE * 60;
   var ONE_DAY = ONE_HOUR * 24;
   var ONE_YEAR = ONE_DAY * 365;
-  var defaultLeveledFormatter = {
+  var primaryTimeUnitFormatterMatchers = {
+    year: /({yyyy}|{yy})/,
+    month: /({MMMM}|{MMM}|{MM}|{M})/,
+    day: /({dd}|{d})/,
+    hour: /({HH}|{H}|{hh}|{h})/,
+    minute: /({mm}|{m})/,
+    second: /({ss}|{s})/,
+    millisecond: /({SSS}|{S})/
+  };
+  var defaultFormatterSeed = {
     year: "{yyyy}",
     month: "{MMM}",
     day: "{d}",
     hour: "{HH}:{mm}",
     minute: "{HH}:{mm}",
     second: "{HH}:{mm}:{ss}",
-    millisecond: "{HH}:{mm}:{ss} {SSS}",
-    none: "{yyyy}-{MM}-{dd} {HH}:{mm}:{ss} {SSS}"
+    millisecond: "{HH}:{mm}:{ss} {SSS}"
   };
+  var defaultFullFormatter = "{yyyy}-{MM}-{dd} {HH}:{mm}:{ss} {SSS}";
   var fullDayFormatter = "{yyyy}-{MM}-{dd}";
   var fullLeveledFormatter = {
     year: "{yyyy}",
     month: "{yyyy}-{MM}",
     day: fullDayFormatter,
-    hour: fullDayFormatter + " " + defaultLeveledFormatter.hour,
-    minute: fullDayFormatter + " " + defaultLeveledFormatter.minute,
-    second: fullDayFormatter + " " + defaultLeveledFormatter.second,
-    millisecond: defaultLeveledFormatter.none
+    hour: fullDayFormatter + " " + defaultFormatterSeed.hour,
+    minute: fullDayFormatter + " " + defaultFormatterSeed.minute,
+    second: fullDayFormatter + " " + defaultFormatterSeed.second,
+    millisecond: defaultFullFormatter
   };
   var primaryTimeUnits = ["year", "month", "day", "hour", "minute", "second", "millisecond"];
   var timeUnits = ["year", "half-year", "quarter", "month", "week", "half-week", "day", "half-day", "quarter-day", "hour", "minute", "second", "millisecond"];
+  function parseTimeAxisLabelFormatter(formatter) {
+    return !isString(formatter) && !isFunction(formatter) ? parseTimeAxisLabelFormatterDictionary(formatter) : formatter;
+  }
+  function parseTimeAxisLabelFormatterDictionary(dictOption) {
+    dictOption = dictOption || {};
+    var dict = {};
+    var canAddHighlight = true;
+    each(primaryTimeUnits, function(lowestUnit) {
+      canAddHighlight && (canAddHighlight = dictOption[lowestUnit] == null);
+    });
+    each(primaryTimeUnits, function(lowestUnit, lowestUnitIdx) {
+      var upperDictOption = dictOption[lowestUnit];
+      dict[lowestUnit] = {};
+      var lowerTpl = null;
+      for (var upperUnitIdx = lowestUnitIdx; upperUnitIdx >= 0; upperUnitIdx--) {
+        var upperUnit = primaryTimeUnits[upperUnitIdx];
+        var upperDictItemOption = isObject(upperDictOption) && !isArray(upperDictOption) ? upperDictOption[upperUnit] : upperDictOption;
+        var tplArr = void 0;
+        if (isArray(upperDictItemOption)) {
+          tplArr = upperDictItemOption.slice();
+          lowerTpl = tplArr[0] || "";
+        } else if (isString(upperDictItemOption)) {
+          lowerTpl = upperDictItemOption;
+          tplArr = [lowerTpl];
+        } else {
+          if (lowerTpl == null) {
+            lowerTpl = defaultFormatterSeed[lowestUnit];
+          } else if (!primaryTimeUnitFormatterMatchers[upperUnit].test(lowerTpl)) {
+            lowerTpl = dict[upperUnit][upperUnit][0] + " " + lowerTpl;
+          }
+          tplArr = [lowerTpl];
+          if (canAddHighlight) {
+            tplArr[1] = "{primary|" + lowerTpl + "}";
+          }
+        }
+        dict[lowestUnit][upperUnit] = tplArr;
+      }
+    });
+    return dict;
+  }
   function pad(str, len2) {
     str += "";
     return "0000".substr(0, len2 - str.length) + str;
@@ -14502,34 +15393,23 @@ var pptxPreview = (() => {
     if (isString(formatter)) {
       template = formatter;
     } else if (isFunction(formatter)) {
-      template = formatter(tick.value, idx, {
-        level: tick.level
-      });
+      var extra = {
+        time: tick.time,
+        level: tick.time ? tick.time.level : 0
+      };
+      var scaleBreakHelper = getScaleBreakHelper();
+      if (scaleBreakHelper) {
+        scaleBreakHelper.makeAxisLabelFormatterParamBreak(extra, tick["break"]);
+      }
+      template = formatter(tick.value, idx, extra);
     } else {
-      var defaults2 = extend({}, defaultLeveledFormatter);
-      if (tick.level > 0) {
-        for (var i = 0; i < primaryTimeUnits.length; ++i) {
-          defaults2[primaryTimeUnits[i]] = "{primary|" + defaults2[primaryTimeUnits[i]] + "}";
-        }
-      }
-      var mergedFormatter = formatter ? formatter.inherit === false ? formatter : defaults(formatter, defaults2) : defaults2;
-      var unit = getUnitFromValue(tick.value, isUTC);
-      if (mergedFormatter[unit]) {
-        template = mergedFormatter[unit];
-      } else if (mergedFormatter.inherit) {
-        var targetId = timeUnits.indexOf(unit);
-        for (var i = targetId - 1; i >= 0; --i) {
-          if (mergedFormatter[unit]) {
-            template = mergedFormatter[unit];
-            break;
-          }
-        }
-        template = template || defaults2.none;
-      }
-      if (isArray(template)) {
-        var levelId = tick.level == null ? 0 : tick.level >= 0 ? tick.level : template.length + tick.level;
-        levelId = Math.min(levelId, template.length - 1);
-        template = template[levelId];
+      var tickTime = tick.time;
+      if (tickTime) {
+        var leveledTplArr = formatter[tickTime.lowerTimeUnit][tickTime.upperTimeUnit];
+        template = leveledTplArr[Math.min(tickTime.level, leveledTplArr.length - 1)] || "";
+      } else {
+        var unit = getUnitFromValue(tick.value, isUTC);
+        template = formatter[unit][unit][0];
       }
     }
     return format(new Date(tick.value), template, isUTC, lang);
@@ -14564,31 +15444,22 @@ var pptxPreview = (() => {
       return "millisecond";
     }
   }
-  function getUnitValue(value, unit, isUTC) {
-    var date = isNumber(value) ? parseDate(value) : value;
-    unit = unit || getUnitFromValue(value, isUTC);
-    switch (unit) {
+  function roundTime(date, timeUnit, isUTC) {
+    switch (timeUnit) {
       case "year":
-        return date[fullYearGetterName(isUTC)]();
-      case "half-year":
-        return date[monthGetterName(isUTC)]() >= 6 ? 1 : 0;
-      case "quarter":
-        return Math.floor((date[monthGetterName(isUTC)]() + 1) / 4);
+        date[monthSetterName(isUTC)](0);
       case "month":
-        return date[monthGetterName(isUTC)]();
+        date[dateSetterName(isUTC)](1);
       case "day":
-        return date[dateGetterName(isUTC)]();
-      case "half-day":
-        return date[hoursGetterName(isUTC)]() / 24;
+        date[hoursSetterName(isUTC)](0);
       case "hour":
-        return date[hoursGetterName(isUTC)]();
+        date[minutesSetterName(isUTC)](0);
       case "minute":
-        return date[minutesGetterName(isUTC)]();
+        date[secondsSetterName(isUTC)](0);
       case "second":
-        return date[secondsGetterName(isUTC)]();
-      case "millisecond":
-        return date[millisecondsGetterName(isUTC)]();
+        date[millisecondsSetterName(isUTC)](0);
     }
+    return date;
   }
   function fullYearGetterName(isUTC) {
     return isUTC ? "getUTCFullYear" : "getFullYear";
@@ -14657,7 +15528,7 @@ var pptxPreview = (() => {
       return str && trim(str) ? str : "-";
     }
     function isNumberUserReadable(num) {
-      return !!(num != null && !isNaN(num) && isFinite(num));
+      return isNullableNumberFinite(num);
     }
     var isTypeTime = valueType === "time";
     var isValueDate = value instanceof Date;
@@ -14705,15 +15576,15 @@ var pptxPreview = (() => {
       color: inOpt,
       extraCssText
     } : inOpt || {};
-    var color = opt.color;
+    var color3 = opt.color;
     var type = opt.type;
     extraCssText = opt.extraCssText;
     var renderMode = opt.renderMode || "html";
-    if (!color) {
+    if (!color3) {
       return "";
     }
     if (renderMode === "html") {
-      return type === "subItem" ? '<span style="display:inline-block;vertical-align:middle;margin-right:8px;margin-left:3px;border-radius:4px;width:4px;height:4px;background-color:' + encodeHTML(color) + ";" + (extraCssText || "") + '"></span>' : '<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:' + encodeHTML(color) + ";" + (extraCssText || "") + '"></span>';
+      return type === "subItem" ? '<span style="display:inline-block;vertical-align:middle;margin-right:8px;margin-left:3px;border-radius:4px;width:4px;height:4px;background-color:' + encodeHTML(color3) + ";" + (extraCssText || "") + '"></span>' : '<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:' + encodeHTML(color3) + ";" + (extraCssText || "") + '"></span>';
     } else {
       var markerId = opt.markerId || "markerX";
       return {
@@ -14723,19 +15594,19 @@ var pptxPreview = (() => {
           width: 4,
           height: 4,
           borderRadius: 2,
-          backgroundColor: color
+          backgroundColor: color3
         } : {
           width: 10,
           height: 10,
           borderRadius: 5,
-          backgroundColor: color
+          backgroundColor: color3
         }
       };
     }
   }
-  function convertToColorString(color, defaultColor) {
+  function convertToColorString(color3, defaultColor) {
     defaultColor = defaultColor || "transparent";
-    return isString(color) ? color : isObject(color) ? color.colorStops && (color.colorStops[0] || {}).color || defaultColor : defaultColor;
+    return isString(color3) ? color3 : isObject(color3) ? color3.colorStops && (color3.colorStops[0] || {}).color || defaultColor : defaultColor;
   }
   function windowOpen(link, target) {
     if (target === "_blank" || target === "blank") {
@@ -14746,6 +15617,159 @@ var pptxPreview = (() => {
       window.open(link, target);
     }
   }
+
+  // node_modules/echarts/lib/core/CoordinateSystem.js
+  var nonSeriesBoxCoordSysCreators = {};
+  var normalCoordSysCreators = {};
+  var CoordinateSystemManager = (
+    /** @class */
+    (function() {
+      function CoordinateSystemManager2() {
+        this._normalMasterList = [];
+        this._nonSeriesBoxMasterList = [];
+      }
+      CoordinateSystemManager2.prototype.create = function(ecModel, api) {
+        this._nonSeriesBoxMasterList = dealCreate(nonSeriesBoxCoordSysCreators, true);
+        this._normalMasterList = dealCreate(normalCoordSysCreators, false);
+        function dealCreate(creatorMap, canBeNonSeriesBox) {
+          var coordinateSystems = [];
+          each(creatorMap, function(creator, type) {
+            var list = creator.create(ecModel, api);
+            coordinateSystems = coordinateSystems.concat(list || []);
+            if (true) {
+              if (canBeNonSeriesBox) {
+                each(list, function(master) {
+                  return assert(!master.update);
+                });
+              }
+            }
+          });
+          return coordinateSystems;
+        }
+      };
+      CoordinateSystemManager2.prototype.update = function(ecModel, api) {
+        each(this._normalMasterList, function(coordSys) {
+          coordSys.update && coordSys.update(ecModel, api);
+        });
+      };
+      CoordinateSystemManager2.prototype.getCoordinateSystems = function() {
+        return this._normalMasterList.concat(this._nonSeriesBoxMasterList);
+      };
+      CoordinateSystemManager2.register = function(type, creator) {
+        if (type === "matrix" || type === "calendar") {
+          nonSeriesBoxCoordSysCreators[type] = creator;
+          return;
+        }
+        normalCoordSysCreators[type] = creator;
+      };
+      CoordinateSystemManager2.get = function(type) {
+        return normalCoordSysCreators[type] || nonSeriesBoxCoordSysCreators[type];
+      };
+      return CoordinateSystemManager2;
+    })()
+  );
+  function canBeNonSeriesBoxCoordSys(coordSysType) {
+    return !!nonSeriesBoxCoordSysCreators[coordSysType];
+  }
+  var BOX_COORD_SYS_COORD_FROM_PROP_COORD = 1;
+  var BOX_COORD_SYS_COORD_FROM_PROP_COORD2 = 2;
+  function registerLayOutOnCoordSysUsage(opt) {
+    if (true) {
+      assert(!coordSysUseMap.get(opt.fullType));
+    }
+    coordSysUseMap.set(opt.fullType, {
+      getCoord2: void 0
+    }).getCoord2 = opt.getCoord2;
+  }
+  var coordSysUseMap = createHashMap();
+  function getCoordForCoordSysUsageKindBox(model) {
+    var coord = model.getShallow("coord", true);
+    var from = BOX_COORD_SYS_COORD_FROM_PROP_COORD;
+    if (coord == null) {
+      var store = coordSysUseMap.get(model.type);
+      if (store && store.getCoord2) {
+        from = BOX_COORD_SYS_COORD_FROM_PROP_COORD2;
+        coord = store.getCoord2(model);
+      }
+    }
+    return {
+      coord,
+      from
+    };
+  }
+  var COORD_SYS_USAGE_KIND_NONE = 0;
+  var COORD_SYS_USAGE_KIND_DATA = 1;
+  var COORD_SYS_USAGE_KIND_BOX = 2;
+  function decideCoordSysUsageKind(model, printError) {
+    var coordSysType = model.getShallow("coordinateSystem");
+    var coordSysUsageOption = model.getShallow("coordinateSystemUsage", true);
+    var isDeclaredExplicitly = coordSysUsageOption != null;
+    var kind = COORD_SYS_USAGE_KIND_NONE;
+    if (coordSysType) {
+      var isSeries2 = model.mainType === "series";
+      if (coordSysUsageOption == null) {
+        coordSysUsageOption = isSeries2 ? "data" : "box";
+      }
+      if (coordSysUsageOption === "data") {
+        kind = COORD_SYS_USAGE_KIND_DATA;
+        if (!isSeries2) {
+          if (true) {
+            if (isDeclaredExplicitly && printError) {
+              error('coordinateSystemUsage "data" is not supported in non-series components.');
+            }
+          }
+          kind = COORD_SYS_USAGE_KIND_NONE;
+        }
+      } else if (coordSysUsageOption === "box") {
+        kind = COORD_SYS_USAGE_KIND_BOX;
+        if (!isSeries2 && !canBeNonSeriesBoxCoordSys(coordSysType)) {
+          if (true) {
+            if (isDeclaredExplicitly && printError) {
+              error('coordinateSystem "' + coordSysType + '" cannot be used' + (' as coordinateSystemUsage "box" for "' + model.type + '" yet.'));
+            }
+          }
+          kind = COORD_SYS_USAGE_KIND_NONE;
+        }
+      }
+    }
+    return {
+      coordSysType,
+      kind
+    };
+  }
+  function injectCoordSysByOption(opt) {
+    var targetModel = opt.targetModel, coordSysType = opt.coordSysType, coordSysProvider = opt.coordSysProvider, isDefaultDataCoordSys = opt.isDefaultDataCoordSys, allowNotFound = opt.allowNotFound;
+    if (true) {
+      assert(!!coordSysType);
+    }
+    var _a2 = decideCoordSysUsageKind(targetModel, true), kind = _a2.kind, declaredType = _a2.coordSysType;
+    if (isDefaultDataCoordSys && kind !== COORD_SYS_USAGE_KIND_DATA) {
+      kind = COORD_SYS_USAGE_KIND_DATA;
+      declaredType = coordSysType;
+    }
+    if (kind === COORD_SYS_USAGE_KIND_NONE || declaredType !== coordSysType) {
+      return COORD_SYS_USAGE_KIND_NONE;
+    }
+    var coordSys = coordSysProvider(coordSysType, targetModel);
+    if (!coordSys) {
+      if (true) {
+        if (!allowNotFound) {
+          error(coordSysType + " cannot be found for" + (" " + targetModel.type + " (index: " + targetModel.componentIndex + ")."));
+        }
+      }
+      return COORD_SYS_USAGE_KIND_NONE;
+    }
+    if (kind === COORD_SYS_USAGE_KIND_DATA) {
+      if (true) {
+        assert(targetModel.mainType === "series");
+      }
+      targetModel.coordinateSystem = coordSys;
+    } else {
+      targetModel.boxCoordinateSystem = coordSys;
+    }
+    return kind;
+  }
+  var CoordinateSystem_default = CoordinateSystemManager;
 
   // node_modules/echarts/lib/util/layout.js
   var each2 = each;
@@ -14802,6 +15826,59 @@ var pptxPreview = (() => {
   var box = boxLayout;
   var vbox = curry(boxLayout, "vertical");
   var hbox = curry(boxLayout, "horizontal");
+  function getBoxLayoutParams(boxLayoutModel, ignoreParent) {
+    return {
+      left: boxLayoutModel.getShallow("left", ignoreParent),
+      top: boxLayoutModel.getShallow("top", ignoreParent),
+      right: boxLayoutModel.getShallow("right", ignoreParent),
+      bottom: boxLayoutModel.getShallow("bottom", ignoreParent),
+      width: boxLayoutModel.getShallow("width", ignoreParent),
+      height: boxLayoutModel.getShallow("height", ignoreParent)
+    };
+  }
+  function getViewRectAndCenterForCircleLayout(seriesModel, api) {
+    var layoutRef = createBoxLayoutReference(seriesModel, api, {
+      enableLayoutOnlyByCenter: true
+    });
+    var boxLayoutParams = seriesModel.getBoxLayoutParams();
+    var viewRect2;
+    var center2;
+    if (layoutRef.type === BoxLayoutReferenceType.point) {
+      center2 = layoutRef.refPoint;
+      viewRect2 = getLayoutRect(boxLayoutParams, {
+        width: api.getWidth(),
+        height: api.getHeight()
+      });
+    } else {
+      var centerOption = seriesModel.get("center");
+      var centerOptionArr = isArray(centerOption) ? centerOption : [centerOption, centerOption];
+      viewRect2 = getLayoutRect(boxLayoutParams, layoutRef.refContainer);
+      center2 = layoutRef.boxCoordFrom === BOX_COORD_SYS_COORD_FROM_PROP_COORD2 ? layoutRef.refPoint : [parsePercent2(centerOptionArr[0], viewRect2.width) + viewRect2.x, parsePercent2(centerOptionArr[1], viewRect2.height) + viewRect2.y];
+    }
+    return {
+      viewRect: viewRect2,
+      center: center2
+    };
+  }
+  function getCircleLayout(seriesModel, api) {
+    var _a2 = getViewRectAndCenterForCircleLayout(seriesModel, api), viewRect2 = _a2.viewRect, center2 = _a2.center;
+    var radius = seriesModel.get("radius");
+    if (!isArray(radius)) {
+      radius = [0, radius];
+    }
+    var width = parsePercent2(viewRect2.width, api.getWidth());
+    var height = parsePercent2(viewRect2.height, api.getHeight());
+    var size = Math.min(width, height);
+    var r0 = parsePercent2(radius[0], size / 2);
+    var r = parsePercent2(radius[1], size / 2);
+    return {
+      cx: center2[0],
+      cy: center2[1],
+      r0,
+      r,
+      viewRect: viewRect2
+    };
+  }
   function getLayoutRect(positionInfo, containerRect, margin) {
     margin = normalizeCssArray2(margin || 0);
     var containerWidth = containerRect.width;
@@ -14867,9 +15944,57 @@ var pptxPreview = (() => {
     if (isNaN(height)) {
       height = containerHeight - verticalMargin - top - (bottom || 0);
     }
-    var rect = new BoundingRect_default(left + margin[3], top + margin[0], width, height);
+    var rect = new BoundingRect_default((containerRect.x || 0) + left + margin[3], (containerRect.y || 0) + top + margin[0], width, height);
     rect.margin = margin;
     return rect;
+  }
+  var BoxLayoutReferenceType = {
+    rect: 1,
+    point: 2
+  };
+  function createBoxLayoutReference(model, api, opt) {
+    var refContainer;
+    var refPoint;
+    var layoutRefType;
+    var boxCoordSys = model.boxCoordinateSystem;
+    var boxCoordFrom;
+    if (boxCoordSys) {
+      var _a2 = getCoordForCoordSysUsageKindBox(model), coord = _a2.coord, from = _a2.from;
+      if (boxCoordSys.dataToLayout) {
+        layoutRefType = BoxLayoutReferenceType.rect;
+        boxCoordFrom = from;
+        var result = boxCoordSys.dataToLayout(coord);
+        refContainer = result.contentRect || result.rect;
+      } else if (opt && opt.enableLayoutOnlyByCenter && boxCoordSys.dataToPoint) {
+        layoutRefType = BoxLayoutReferenceType.point;
+        boxCoordFrom = from;
+        refPoint = boxCoordSys.dataToPoint(coord);
+      } else {
+        if (true) {
+          error(model.type + "[" + model.componentIndex + "]" + (" layout based on " + boxCoordSys.type + " is not supported."));
+        }
+      }
+    }
+    if (layoutRefType == null) {
+      layoutRefType = BoxLayoutReferenceType.rect;
+    }
+    if (layoutRefType === BoxLayoutReferenceType.rect) {
+      if (!refContainer) {
+        refContainer = {
+          x: 0,
+          y: 0,
+          width: api.getWidth(),
+          height: api.getHeight()
+        };
+      }
+      refPoint = [refContainer.x + refContainer.width / 2, refContainer.y + refContainer.height / 2];
+    }
+    return {
+      type: layoutRefType,
+      refContainer,
+      refPoint,
+      boxCoordFrom
+    };
   }
   function fetchLayoutMode(ins) {
     var layoutMode = ins.layoutMode || ins.constructor.layoutMode;
@@ -14894,7 +16019,7 @@ var pptxPreview = (() => {
         merged[name] = targetOption[name];
       });
       each2(names, function(name) {
-        hasProp(newOption, name) && (newParams[name] = merged[name] = newOption[name]);
+        hasOwn(newOption, name) && (newParams[name] = merged[name] = newOption[name]);
         hasValue(newParams, name) && newValueCount++;
         hasValue(merged, name) && mergedValueCount++;
       });
@@ -14913,16 +16038,13 @@ var pptxPreview = (() => {
       } else {
         for (var i = 0; i < names.length; i++) {
           var name_1 = names[i];
-          if (!hasProp(newParams, name_1) && hasProp(targetOption, name_1)) {
+          if (!hasOwn(newParams, name_1) && hasOwn(targetOption, name_1)) {
             newParams[name_1] = targetOption[name_1];
             break;
           }
         }
         return newParams;
       }
-    }
-    function hasProp(obj, name) {
-      return obj.hasOwnProperty(name);
     }
     function hasValue(obj, name) {
       return obj[name] != null && obj[name] !== "auto";
@@ -14938,7 +16060,7 @@ var pptxPreview = (() => {
   }
   function copyLayoutParams(target, source) {
     source && target && each2(LOCATION_PARAMS, function(name) {
-      source.hasOwnProperty(name) && (target[name] = source[name]);
+      hasOwn(source, name) && (target[name] = source[name]);
     });
     return target;
   }
@@ -14947,7 +16069,7 @@ var pptxPreview = (() => {
   var inner = makeInner();
   var ComponentModel = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(ComponentModel2, _super);
       function ComponentModel2(option, parentModel, ecModel) {
         var _this = _super.call(this, option, parentModel, ecModel) || this;
@@ -15007,15 +16129,7 @@ var pptxPreview = (() => {
         }, opt);
       };
       ComponentModel2.prototype.getBoxLayoutParams = function() {
-        var boxLayoutModel = this;
-        return {
-          left: boxLayoutModel.get("left"),
-          top: boxLayoutModel.get("top"),
-          right: boxLayoutModel.get("right"),
-          bottom: boxLayoutModel.get("bottom"),
-          width: boxLayoutModel.get("width"),
-          height: boxLayoutModel.get("height")
-        };
+        return getBoxLayoutParams(this, false);
       };
       ComponentModel2.prototype.getZLevelKey = function() {
         return "";
@@ -15023,17 +16137,17 @@ var pptxPreview = (() => {
       ComponentModel2.prototype.setZLevel = function(zlevel) {
         this.option.zlevel = zlevel;
       };
-      ComponentModel2.protoInitialize = function() {
-        var proto2 = ComponentModel2.prototype;
-        proto2.type = "component";
-        proto2.id = "";
-        proto2.name = "";
-        proto2.mainType = "";
-        proto2.subType = "";
-        proto2.componentIndex = 0;
-      }();
+      ComponentModel2.protoInitialize = (function() {
+        var proto = ComponentModel2.prototype;
+        proto.type = "component";
+        proto.id = "";
+        proto.name = "";
+        proto.mainType = "";
+        proto.subType = "";
+        proto.componentIndex = 0;
+      })();
       return ComponentModel2;
-    }(Model_default)
+    })(Model_default)
   );
   mountExtend(ComponentModel, Model_default);
   enableClassManagement(ComponentModel);
@@ -15054,18 +16168,130 @@ var pptxPreview = (() => {
   }
   var Component_default = ComponentModel;
 
+  // node_modules/echarts/lib/visual/tokens.js
+  var tokens = {
+    color: {},
+    darkColor: {},
+    size: {}
+  };
+  var color = tokens.color = {
+    theme: ["#5070dd", "#b6d634", "#505372", "#ff994d", "#0ca8df", "#ffd10a", "#fb628b", "#785db0", "#3fbe95"],
+    neutral00: "#fff",
+    neutral05: "#f4f7fd",
+    neutral10: "#e8ebf0",
+    neutral15: "#dbdee4",
+    neutral20: "#cfd2d7",
+    neutral25: "#c3c5cb",
+    neutral30: "#b7b9be",
+    neutral35: "#aaacb2",
+    neutral40: "#9ea0a5",
+    neutral45: "#929399",
+    neutral50: "#86878c",
+    neutral55: "#797b7f",
+    neutral60: "#6d6e73",
+    neutral65: "#616266",
+    neutral70: "#54555a",
+    neutral75: "#48494d",
+    neutral80: "#3c3c41",
+    neutral85: "#303034",
+    neutral90: "#232328",
+    neutral95: "#17171b",
+    neutral99: "#000",
+    accent05: "#eff1f9",
+    accent10: "#e0e4f2",
+    accent15: "#d0d6ec",
+    accent20: "#c0c9e6",
+    accent25: "#b1bbdf",
+    accent30: "#a1aed9",
+    accent35: "#91a0d3",
+    accent40: "#8292cc",
+    accent45: "#7285c6",
+    accent50: "#6578ba",
+    accent55: "#5c6da9",
+    accent60: "#536298",
+    accent65: "#4a5787",
+    accent70: "#404c76",
+    accent75: "#374165",
+    accent80: "#2e3654",
+    accent85: "#252b43",
+    accent90: "#1b2032",
+    accent95: "#121521",
+    transparent: "rgba(0,0,0,0)",
+    highlight: "rgba(255,231,130,0.8)"
+  };
+  extend(color, {
+    primary: color.neutral80,
+    secondary: color.neutral70,
+    tertiary: color.neutral60,
+    quaternary: color.neutral50,
+    disabled: color.neutral20,
+    border: color.neutral30,
+    borderTint: color.neutral20,
+    borderShade: color.neutral40,
+    background: color.neutral05,
+    backgroundTint: "rgba(234,237,245,0.5)",
+    backgroundTransparent: "rgba(255,255,255,0)",
+    backgroundShade: color.neutral10,
+    shadow: "rgba(0,0,0,0.2)",
+    shadowTint: "rgba(129,130,136,0.2)",
+    axisLine: color.neutral70,
+    axisLineTint: color.neutral40,
+    axisTick: color.neutral70,
+    axisTickMinor: color.neutral60,
+    axisLabel: color.neutral70,
+    axisSplitLine: color.neutral15,
+    axisMinorSplitLine: color.neutral05
+  });
+  for (key in color) {
+    if (color.hasOwnProperty(key)) {
+      hex = color[key];
+      if (key === "theme") {
+        tokens.darkColor.theme = color.theme.slice();
+      } else if (key === "highlight") {
+        tokens.darkColor.highlight = "rgba(255,231,130,0.4)";
+      } else if (key.indexOf("accent") === 0) {
+        tokens.darkColor[key] = modifyHSL(hex, null, function(s) {
+          return s * 0.5;
+        }, function(l) {
+          return Math.min(1, 1.3 - l);
+        });
+      } else {
+        tokens.darkColor[key] = modifyHSL(hex, null, function(s) {
+          return s * 0.9;
+        }, function(l) {
+          return 1 - Math.pow(l, 1.5);
+        });
+      }
+    }
+  }
+  var hex;
+  var key;
+  tokens.size = {
+    xxs: 2,
+    xs: 5,
+    s: 10,
+    m: 15,
+    l: 20,
+    xl: 30,
+    xxl: 40,
+    xxxl: 50
+  };
+  var tokens_default = tokens;
+
   // node_modules/echarts/lib/model/globalDefault.js
   var platform = "";
   if (typeof navigator !== "undefined") {
     platform = navigator.platform || "";
   }
   var decalColor = "rgba(0, 0, 0, 0.2)";
+  var themeColor = tokens_default.color.theme[0];
+  var lightThemeColor = modifyHSL(themeColor, null, null, 0.9);
   var globalDefault_default = {
     darkMode: "auto",
     // backgroundColor: 'rgba(0,0,0,0)',
     colorBy: "series",
-    color: ["#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"],
-    gradientColor: ["#f6efa6", "#d88273", "#bf444c"],
+    color: tokens_default.color.theme,
+    gradientColor: [lightThemeColor, themeColor],
     aria: {
       decal: {
         decals: [{
@@ -15142,17 +16368,6 @@ var pptxPreview = (() => {
     useUTC: false
   };
 
-  // node_modules/echarts/lib/util/types.js
-  var VISUAL_DIMENSIONS = createHashMap(["tooltip", "label", "itemName", "itemId", "itemGroupId", "itemChildGroupId", "seriesName"]);
-  var SOURCE_FORMAT_ORIGINAL = "original";
-  var SOURCE_FORMAT_ARRAY_ROWS = "arrayRows";
-  var SOURCE_FORMAT_OBJECT_ROWS = "objectRows";
-  var SOURCE_FORMAT_KEYED_COLUMNS = "keyedColumns";
-  var SOURCE_FORMAT_TYPED_ARRAY = "typedArray";
-  var SOURCE_FORMAT_UNKNOWN = "unknown";
-  var SERIES_LAYOUT_BY_COLUMN = "column";
-  var SERIES_LAYOUT_BY_ROW = "row";
-
   // node_modules/echarts/lib/data/helper/sourceHelper.js
   var BE_ORDINAL = {
     Must: 1,
@@ -15174,7 +16389,7 @@ var pptxPreview = (() => {
     var encodeSeriesName = [];
     var ecModel = seriesModel.ecModel;
     var datasetMap = innerGlobalModel(ecModel).datasetMap;
-    var key = datasetModel.uid + "_" + source.seriesLayoutBy;
+    var key2 = datasetModel.uid + "_" + source.seriesLayoutBy;
     var baseCategoryDimIndex;
     var categoryWayValueDimStart;
     coordDimensions = coordDimensions.slice();
@@ -15188,7 +16403,7 @@ var pptxPreview = (() => {
       }
       encode[coordDimInfo.name] = [];
     });
-    var datasetRecord = datasetMap.get(key) || datasetMap.set(key, {
+    var datasetRecord = datasetMap.get(key2) || datasetMap.set(key2, {
       categoryWayDim: categoryWayValueDimStart,
       valueWayDim: 0
     });
@@ -15239,7 +16454,7 @@ var pptxPreview = (() => {
         }
       });
     }
-    var idxResult = function() {
+    var idxResult = (function() {
       var idxRes0 = {};
       var idxRes1 = {};
       var guessRecords = [];
@@ -15269,7 +16484,7 @@ var pptxPreview = (() => {
         return idxResult2.v != null && idxResult2.n != null;
       }
       return fulfilled(idxRes0) ? idxRes0 : fulfilled(idxRes1) ? idxRes1 : null;
-    }();
+    })();
     if (idxResult) {
       encode.value = [idxResult.v];
       var nameDimIndex = potentialNameDimIndex != null ? potentialNameDimIndex : idxResult.n;
@@ -15376,7 +16591,7 @@ var pptxPreview = (() => {
     }
     function detectValue(val2) {
       var beStr = isString(val2);
-      if (val2 != null && Number.isFinite(Number(val2)) && val2 !== "") {
+      if (val2 != null && isFinite(Number(val2)) && val2 !== "") {
         return beStr ? BE_ORDINAL.Might : BE_ORDINAL.Not;
       } else if (beStr && val2 !== "-") {
         return BE_ORDINAL.Must;
@@ -15409,7 +16624,7 @@ var pptxPreview = (() => {
   var innerDecal = makeInner();
   var PaletteMixin = (
     /** @class */
-    function() {
+    (function() {
       function PaletteMixin2() {
       }
       PaletteMixin2.prototype.getColorFromPalette = function(name, scope, requestNum) {
@@ -15421,7 +16636,7 @@ var pptxPreview = (() => {
         clearPalette(this, innerColor);
       };
       return PaletteMixin2;
-    }()
+    })()
   );
   function getNearestPalette(palettes, requestColorNum) {
     var paletteNum = palettes.length;
@@ -15432,9 +16647,9 @@ var pptxPreview = (() => {
     }
     return palettes[paletteNum - 1];
   }
-  function getFromPalette(that, inner11, defaultPalette, layeredPalette, name, scope, requestNum) {
+  function getFromPalette(that, inner10, defaultPalette, layeredPalette, name, scope, requestNum) {
     scope = scope || that;
-    var scopeFields = inner11(scope);
+    var scopeFields = inner10(scope);
     var paletteIdx = scopeFields.paletteIdx || 0;
     var paletteNameMap = scopeFields.paletteNameMap = scopeFields.paletteNameMap || {};
     if (paletteNameMap.hasOwnProperty(name)) {
@@ -15452,9 +16667,9 @@ var pptxPreview = (() => {
     scopeFields.paletteIdx = (paletteIdx + 1) % palette.length;
     return pickedPaletteItem;
   }
-  function clearPalette(that, inner11) {
-    inner11(that).paletteIdx = 0;
-    inner11(that).paletteNameMap = {};
+  function clearPalette(that, inner10) {
+    inner10(that).paletteIdx = 0;
+    inner10(that).paletteNameMap = {};
   }
 
   // node_modules/echarts/lib/model/Global.js
@@ -15470,6 +16685,7 @@ var pptxPreview = (() => {
     singleAxis: "SingleAxisComponent",
     parallel: "ParallelComponent",
     calendar: "CalendarComponent",
+    matrix: "MatrixComponent",
     graphic: "GraphicComponent",
     toolbox: "ToolboxComponent",
     tooltip: "TooltipComponent",
@@ -15501,6 +16717,7 @@ var pptxPreview = (() => {
     tree: "TreeChart",
     treemap: "TreemapChart",
     graph: "GraphChart",
+    chord: "ChordChart",
     gauge: "GaugeChart",
     funnel: "FunnelChart",
     parallel: "ParallelChart",
@@ -15529,7 +16746,7 @@ var pptxPreview = (() => {
   }
   var GlobalModel = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(GlobalModel2, _super);
       function GlobalModel2() {
         return _super !== null && _super.apply(this, arguments) || this;
@@ -15740,6 +16957,10 @@ var pptxPreview = (() => {
         delete option[OPTION_INNER_KEY];
         return option;
       };
+      GlobalModel2.prototype.setTheme = function(theme2) {
+        this._theme = new Model_default(theme2);
+        this._resetOption("recreate", null);
+      };
       GlobalModel2.prototype.getTheme = function() {
         return this._theme;
       };
@@ -15919,7 +17140,7 @@ var pptxPreview = (() => {
           });
         });
       };
-      GlobalModel2.internalField = function() {
+      GlobalModel2.internalField = (function() {
         reCreateSeriesIndices = function(ecModel) {
           var seriesIndices = ecModel._seriesIndices = [];
           each(ecModel._componentsMap.get("series"), function(series) {
@@ -15949,9 +17170,9 @@ var pptxPreview = (() => {
           merge(baseOption, globalDefault_default, false);
           ecModel._mergeOption(baseOption, null);
         };
-      }();
+      })();
       return GlobalModel2;
-    }(Model_default)
+    })(Model_default)
   );
   function isNotTargetSeries(seriesModel, payload) {
     if (payload) {
@@ -15964,7 +17185,7 @@ var pptxPreview = (() => {
   function mergeTheme(option, theme2) {
     var notMergeColorLayer = option.color && !option.colorLayer;
     each(theme2, function(themeItem, name) {
-      if (name === "colorLayer" && notMergeColorLayer) {
+      if (name === "colorLayer" && notMergeColorLayer || name === "color" && option.color) {
         return;
       }
       if (!Component_default.hasClass(name)) {
@@ -16017,80 +17238,11 @@ var pptxPreview = (() => {
   mixin(GlobalModel, PaletteMixin);
   var Global_default = GlobalModel;
 
-  // node_modules/echarts/lib/core/ExtensionAPI.js
-  var availableMethods = [
-    "getDom",
-    "getZr",
-    "getWidth",
-    "getHeight",
-    "getDevicePixelRatio",
-    "dispatchAction",
-    "isSSR",
-    "isDisposed",
-    "on",
-    "off",
-    "getDataURL",
-    "getConnectedDataURL",
-    // 'getModel',
-    "getOption",
-    // 'getViewOfComponentModel',
-    // 'getViewOfSeriesModel',
-    "getId",
-    "updateLabelLayout"
-  ];
-  var ExtensionAPI = (
-    /** @class */
-    /* @__PURE__ */ function() {
-      function ExtensionAPI2(ecInstance) {
-        each(availableMethods, function(methodName) {
-          this[methodName] = bind(ecInstance[methodName], ecInstance);
-        }, this);
-      }
-      return ExtensionAPI2;
-    }()
-  );
-  var ExtensionAPI_default = ExtensionAPI;
-
-  // node_modules/echarts/lib/core/CoordinateSystem.js
-  var coordinateSystemCreators = {};
-  var CoordinateSystemManager = (
-    /** @class */
-    function() {
-      function CoordinateSystemManager2() {
-        this._coordinateSystems = [];
-      }
-      CoordinateSystemManager2.prototype.create = function(ecModel, api) {
-        var coordinateSystems = [];
-        each(coordinateSystemCreators, function(creator, type) {
-          var list = creator.create(ecModel, api);
-          coordinateSystems = coordinateSystems.concat(list || []);
-        });
-        this._coordinateSystems = coordinateSystems;
-      };
-      CoordinateSystemManager2.prototype.update = function(ecModel, api) {
-        each(this._coordinateSystems, function(coordSys) {
-          coordSys.update && coordSys.update(ecModel, api);
-        });
-      };
-      CoordinateSystemManager2.prototype.getCoordinateSystems = function() {
-        return this._coordinateSystems.slice();
-      };
-      CoordinateSystemManager2.register = function(type, creator) {
-        coordinateSystemCreators[type] = creator;
-      };
-      CoordinateSystemManager2.get = function(type) {
-        return coordinateSystemCreators[type];
-      };
-      return CoordinateSystemManager2;
-    }()
-  );
-  var CoordinateSystem_default = CoordinateSystemManager;
-
   // node_modules/echarts/lib/model/OptionManager.js
   var QUERY_REG = /^(min|max)?(.+)$/;
   var OptionManager = (
     /** @class */
-    function() {
+    (function() {
       function OptionManager2(api) {
         this._timelineOptions = [];
         this._mediaList = [];
@@ -16173,7 +17325,7 @@ var pptxPreview = (() => {
         return result;
       };
       return OptionManager2;
-    }()
+    })()
   );
   function parseRawOption(rawOption, optionPreprocessorFuncs2, isNew) {
     var mediaList = [];
@@ -16548,17 +17700,17 @@ var pptxPreview = (() => {
     }
     return obj;
   }
-  function set(opt, path, val, overwrite) {
+  function set2(opt, path, val, overwrite) {
     var pathArr = path.split(",");
     var obj = opt;
-    var key;
+    var key2;
     var i = 0;
     for (; i < pathArr.length - 1; i++) {
-      key = pathArr[i];
-      if (obj[key] == null) {
-        obj[key] = {};
+      key2 = pathArr[i];
+      if (obj[key2] == null) {
+        obj[key2] = {};
       }
-      obj = obj[key];
+      obj = obj[key2];
     }
     if (overwrite || obj[pathArr[i]] == null) {
       obj[pathArr[i]] = val;
@@ -16673,7 +17825,7 @@ var pptxPreview = (() => {
         }
       } else if (seriesType2 === "gauge") {
         var pointerColor = get(seriesOpt, "pointer.color");
-        pointerColor != null && set(seriesOpt, "itemStyle.color", pointerColor);
+        pointerColor != null && set2(seriesOpt, "itemStyle.color", pointerColor);
       } else if (seriesType2 === "bar") {
         compatBarItemStyle(seriesOpt);
         compatBarItemStyle(seriesOpt.backgroundStyle);
@@ -16744,6 +17896,7 @@ var pptxPreview = (() => {
   }
 
   // node_modules/echarts/lib/processor/dataStack.js
+  var dataStackStageHandler = createSimpleOverallStageHandler2(dataStack);
   function dataStack(ecModel) {
     var stackInfoMap = createHashMap();
     ecModel.eachSeries(function(seriesModel) {
@@ -16765,11 +17918,23 @@ var pptxPreview = (() => {
         if (!stackInfo.stackedDimension || !(stackInfo.isStackedByIndex || stackInfo.stackedByDimension)) {
           return;
         }
-        stackInfoList.length && data.setCalculationInfo("stackedOnSeries", stackInfoList[stackInfoList.length - 1].seriesModel);
         stackInfoList.push(stackInfo);
       }
     });
-    stackInfoMap.each(calculateStack);
+    stackInfoMap.each(function(stackInfoList) {
+      if (stackInfoList.length === 0) {
+        return;
+      }
+      var firstSeries = stackInfoList[0].seriesModel;
+      var stackOrder = firstSeries.get("stackOrder") || "seriesAsc";
+      if (stackOrder === "seriesDesc") {
+        stackInfoList.reverse();
+      }
+      each(stackInfoList, function(stackInfo, index) {
+        stackInfo.data.setCalculationInfo("stackedOnSeries", index > 0 ? stackInfoList[index - 1].seriesModel : null);
+      });
+      calculateStack(stackInfoList);
+    });
   }
   function calculateStack(stackInfoList) {
     each(stackInfoList, function(targetStackInfo, idxInStack) {
@@ -16816,7 +17981,7 @@ var pptxPreview = (() => {
   // node_modules/echarts/lib/data/Source.js
   var SourceImpl = (
     /** @class */
-    /* @__PURE__ */ function() {
+    /* @__PURE__ */ (function() {
       function SourceImpl2(fields) {
         this.data = fields.data || (fields.sourceFormat === SOURCE_FORMAT_KEYED_COLUMNS ? {} : []);
         this.sourceFormat = fields.sourceFormat || SOURCE_FORMAT_UNKNOWN;
@@ -16837,7 +18002,7 @@ var pptxPreview = (() => {
         }
       }
       return SourceImpl2;
-    }()
+    })()
   );
   function isSourceInstance(val) {
     return val instanceof SourceImpl;
@@ -16894,8 +18059,8 @@ var pptxPreview = (() => {
         }
       }
     } else if (isObject(data)) {
-      for (var key in data) {
-        if (hasOwn(data, key) && isArrayLike(data[key])) {
+      for (var key2 in data) {
+        if (hasOwn(data, key2) && isArrayLike(data[key2])) {
           sourceFormat = SOURCE_FORMAT_KEYED_COLUMNS;
           break;
         }
@@ -16942,8 +18107,8 @@ var pptxPreview = (() => {
     } else if (sourceFormat === SOURCE_FORMAT_KEYED_COLUMNS) {
       if (!dimensionsDefine) {
         dimensionsDefine = [];
-        each(data, function(colArr, key) {
-          dimensionsDefine.push(key);
+        each(data, function(colArr, key2) {
+          dimensionsDefine.push(key2);
         });
       }
     } else if (sourceFormat === SOURCE_FORMAT_ORIGINAL) {
@@ -17022,16 +18187,19 @@ var pptxPreview = (() => {
   var _a;
   var _b;
   var _c;
+  var _d;
   var providerMethods;
   var mountMethods;
   var DefaultDataProvider = (
     /** @class */
-    function() {
+    (function() {
       function DefaultDataProvider2(sourceParam, dimSize) {
         var source = !isSourceInstance(sourceParam) ? createSourceFromSeriesDataOption(sourceParam) : sourceParam;
         this._source = source;
         var data = this._data = source.data;
-        if (source.sourceFormat === SOURCE_FORMAT_TYPED_ARRAY) {
+        var sourceFormat = source.sourceFormat;
+        var seriesLayoutBy = source.seriesLayoutBy;
+        if (sourceFormat === SOURCE_FORMAT_TYPED_ARRAY) {
           if (true) {
             if (dimSize == null) {
               throw new Error("Typed array data must specify dimension size");
@@ -17040,6 +18208,10 @@ var pptxPreview = (() => {
           this._offset = 0;
           this._dimSize = dimSize;
           this._data = data;
+        }
+        if (true) {
+          var validator = rawSourceDataValidatorMap[getMethodMapKey(sourceFormat, seriesLayoutBy)];
+          validator && validator(data, source.dimensionsDefine);
         }
         mountMethods(this, data, source);
       }
@@ -17056,12 +18228,12 @@ var pptxPreview = (() => {
       };
       DefaultDataProvider2.prototype.clean = function() {
       };
-      DefaultDataProvider2.protoInitialize = function() {
-        var proto2 = DefaultDataProvider2.prototype;
-        proto2.pure = false;
-        proto2.persistent = true;
-      }();
-      DefaultDataProvider2.internalField = function() {
+      DefaultDataProvider2.protoInitialize = (function() {
+        var proto = DefaultDataProvider2.prototype;
+        proto.pure = false;
+        proto.persistent = true;
+      })();
+      DefaultDataProvider2.internalField = (function() {
         var _a2;
         mountMethods = function(provider, data, source) {
           var sourceFormat = source.sourceFormat;
@@ -17095,11 +18267,11 @@ var pptxPreview = (() => {
           }
           return out2;
         };
-        var fillStorageForTypedArray = function(start2, end2, storage, extent3) {
+        var fillStorageForTypedArray = function(start2, end2, storage, extent) {
           var data = this._data;
           var dimSize = this._dimSize;
           for (var dim = 0; dim < dimSize; dim++) {
-            var dimExtent = extent3[dim];
+            var dimExtent = extent[dim];
             var min3 = dimExtent[0] == null ? Infinity : dimExtent[0];
             var max3 = dimExtent[1] == null ? -Infinity : dimExtent[1];
             var count = end2 - start2;
@@ -17132,8 +18304,8 @@ var pptxPreview = (() => {
           pure: true,
           appendData: function(newData) {
             var data = this._data;
-            each(newData, function(newCol, key) {
-              var oldCol = data[key] || (data[key] = []);
+            each(newData, function(newCol, key2) {
+              var oldCol = data[key2] || (data[key2] = []);
               for (var i = 0; i < (newCol || []).length; i++) {
                 oldCol.push(newCol[i]);
               }
@@ -17161,16 +18333,29 @@ var pptxPreview = (() => {
             this._data.push(newData[i]);
           }
         }
-      }();
+      })();
       return DefaultDataProvider2;
-    }()
+    })()
   );
+  var validateSimply = function(rawData) {
+    if (!isArray(rawData)) {
+      error("series.data or dataset.source must be an array.");
+    }
+  };
+  var rawSourceDataValidatorMap = (_a = {}, _a[SOURCE_FORMAT_ARRAY_ROWS + "_" + SERIES_LAYOUT_BY_COLUMN] = validateSimply, _a[SOURCE_FORMAT_ARRAY_ROWS + "_" + SERIES_LAYOUT_BY_ROW] = validateSimply, _a[SOURCE_FORMAT_OBJECT_ROWS] = validateSimply, _a[SOURCE_FORMAT_KEYED_COLUMNS] = function(rawData, dimsDef) {
+    for (var i = 0; i < dimsDef.length; i++) {
+      var dimName = dimsDef[i].name;
+      if (dimName == null) {
+        error("dimension name must not be null/undefined.");
+      }
+    }
+  }, _a[SOURCE_FORMAT_ORIGINAL] = validateSimply, _a);
   var getItemSimply = function(rawData, startIndex, dimsDef, idx) {
     return rawData[idx];
   };
-  var rawSourceItemGetterMap = (_a = {}, _a[SOURCE_FORMAT_ARRAY_ROWS + "_" + SERIES_LAYOUT_BY_COLUMN] = function(rawData, startIndex, dimsDef, idx) {
+  var rawSourceItemGetterMap = (_b = {}, _b[SOURCE_FORMAT_ARRAY_ROWS + "_" + SERIES_LAYOUT_BY_COLUMN] = function(rawData, startIndex, dimsDef, idx) {
     return rawData[idx + startIndex];
-  }, _a[SOURCE_FORMAT_ARRAY_ROWS + "_" + SERIES_LAYOUT_BY_ROW] = function(rawData, startIndex, dimsDef, idx, out2) {
+  }, _b[SOURCE_FORMAT_ARRAY_ROWS + "_" + SERIES_LAYOUT_BY_ROW] = function(rawData, startIndex, dimsDef, idx, out2) {
     idx += startIndex;
     var item = out2 || [];
     var data = rawData;
@@ -17179,20 +18364,15 @@ var pptxPreview = (() => {
       item[i] = row ? row[idx] : null;
     }
     return item;
-  }, _a[SOURCE_FORMAT_OBJECT_ROWS] = getItemSimply, _a[SOURCE_FORMAT_KEYED_COLUMNS] = function(rawData, startIndex, dimsDef, idx, out2) {
+  }, _b[SOURCE_FORMAT_OBJECT_ROWS] = getItemSimply, _b[SOURCE_FORMAT_KEYED_COLUMNS] = function(rawData, startIndex, dimsDef, idx, out2) {
     var item = out2 || [];
     for (var i = 0; i < dimsDef.length; i++) {
       var dimName = dimsDef[i].name;
-      if (true) {
-        if (dimName == null) {
-          throw new Error();
-        }
-      }
-      var col = rawData[dimName];
+      var col = dimName != null ? rawData[dimName] : null;
       item[i] = col ? col[idx] : null;
     }
     return item;
-  }, _a[SOURCE_FORMAT_ORIGINAL] = getItemSimply, _a);
+  }, _b[SOURCE_FORMAT_ORIGINAL] = getItemSimply, _b);
   function getRawSourceItemGetter(sourceFormat, seriesLayoutBy) {
     var method = rawSourceItemGetterMap[getMethodMapKey(sourceFormat, seriesLayoutBy)];
     if (true) {
@@ -17203,21 +18383,16 @@ var pptxPreview = (() => {
   var countSimply = function(rawData, startIndex, dimsDef) {
     return rawData.length;
   };
-  var rawSourceDataCounterMap = (_b = {}, _b[SOURCE_FORMAT_ARRAY_ROWS + "_" + SERIES_LAYOUT_BY_COLUMN] = function(rawData, startIndex, dimsDef) {
+  var rawSourceDataCounterMap = (_c = {}, _c[SOURCE_FORMAT_ARRAY_ROWS + "_" + SERIES_LAYOUT_BY_COLUMN] = function(rawData, startIndex, dimsDef) {
     return Math.max(0, rawData.length - startIndex);
-  }, _b[SOURCE_FORMAT_ARRAY_ROWS + "_" + SERIES_LAYOUT_BY_ROW] = function(rawData, startIndex, dimsDef) {
+  }, _c[SOURCE_FORMAT_ARRAY_ROWS + "_" + SERIES_LAYOUT_BY_ROW] = function(rawData, startIndex, dimsDef) {
     var row = rawData[0];
     return row ? Math.max(0, row.length - startIndex) : 0;
-  }, _b[SOURCE_FORMAT_OBJECT_ROWS] = countSimply, _b[SOURCE_FORMAT_KEYED_COLUMNS] = function(rawData, startIndex, dimsDef) {
+  }, _c[SOURCE_FORMAT_OBJECT_ROWS] = countSimply, _c[SOURCE_FORMAT_KEYED_COLUMNS] = function(rawData, startIndex, dimsDef) {
     var dimName = dimsDef[0].name;
-    if (true) {
-      if (dimName == null) {
-        throw new Error();
-      }
-    }
-    var col = rawData[dimName];
+    var col = dimName != null ? rawData[dimName] : null;
     return col ? col.length : 0;
-  }, _b[SOURCE_FORMAT_ORIGINAL] = countSimply, _b);
+  }, _c[SOURCE_FORMAT_ORIGINAL] = countSimply, _c);
   function getRawSourceDataCounter(sourceFormat, seriesLayoutBy) {
     var method = rawSourceDataCounterMap[getMethodMapKey(sourceFormat, seriesLayoutBy)];
     if (true) {
@@ -17228,12 +18403,12 @@ var pptxPreview = (() => {
   var getRawValueSimply = function(dataItem, dimIndex, property) {
     return dataItem[dimIndex];
   };
-  var rawSourceValueGetterMap = (_c = {}, _c[SOURCE_FORMAT_ARRAY_ROWS] = getRawValueSimply, _c[SOURCE_FORMAT_OBJECT_ROWS] = function(dataItem, dimIndex, property) {
+  var rawSourceValueGetterMap = (_d = {}, _d[SOURCE_FORMAT_ARRAY_ROWS] = getRawValueSimply, _d[SOURCE_FORMAT_OBJECT_ROWS] = function(dataItem, dimIndex, property) {
     return dataItem[property];
-  }, _c[SOURCE_FORMAT_KEYED_COLUMNS] = getRawValueSimply, _c[SOURCE_FORMAT_ORIGINAL] = function(dataItem, dimIndex, property) {
+  }, _d[SOURCE_FORMAT_KEYED_COLUMNS] = getRawValueSimply, _d[SOURCE_FORMAT_ORIGINAL] = function(dataItem, dimIndex, property) {
     var value = getDataItemValue(dataItem);
     return !(value instanceof Array) ? value : value[dimIndex];
-  }, _c[SOURCE_FORMAT_TYPED_ARRAY] = getRawValueSimply, _c);
+  }, _d[SOURCE_FORMAT_TYPED_ARRAY] = getRawValueSimply, _d);
   function getRawSourceValueGetter(sourceFormat) {
     var method = rawSourceValueGetterMap[sourceFormat];
     if (true) {
@@ -17271,7 +18446,7 @@ var pptxPreview = (() => {
   var DIMENSION_LABEL_REG = /\{@(.+?)\}/g;
   var DataFormatMixin = (
     /** @class */
-    function() {
+    (function() {
       function DataFormatMixin2() {
       }
       DataFormatMixin2.prototype.getDataParams = function(dataIndex, dataType) {
@@ -17281,7 +18456,7 @@ var pptxPreview = (() => {
         var name = data.getName(dataIndex);
         var itemOpt = data.getRawDataItem(dataIndex);
         var style = data.getItemVisual(dataIndex, "style");
-        var color = style && style[data.getItemVisual(dataIndex, "drawType") || "fill"];
+        var color3 = style && style[data.getItemVisual(dataIndex, "drawType") || "fill"];
         var borderColor = style && style.stroke;
         var mainType = this.mainType;
         var isSeries2 = mainType === "series";
@@ -17299,7 +18474,7 @@ var pptxPreview = (() => {
           data: itemOpt,
           dataType,
           value: rawValue,
-          color,
+          color: color3,
           borderColor,
           dimensionNames: userOutput ? userOutput.fullDimensions : null,
           encode: userOutput ? userOutput.encode : null,
@@ -17356,7 +18531,7 @@ var pptxPreview = (() => {
         return;
       };
       return DataFormatMixin2;
-    }()
+    })()
   );
   function normalizeTooltipFormatResult(result) {
     var markupText;
@@ -17385,7 +18560,7 @@ var pptxPreview = (() => {
   }
   var Task = (
     /** @class */
-    function() {
+    (function() {
       function Task2(define) {
         define = define || {};
         this._reset = define.reset;
@@ -17529,9 +18704,9 @@ var pptxPreview = (() => {
         this._outputDueEnd = this._settedOutputEnd = end2;
       };
       return Task2;
-    }()
+    })()
   );
-  var iterator = /* @__PURE__ */ function() {
+  var iterator = /* @__PURE__ */ (function() {
     var end2;
     var current;
     var modBy;
@@ -17557,7 +18732,7 @@ var pptxPreview = (() => {
       current++;
       return result;
     }
-  }();
+  })();
 
   // node_modules/echarts/lib/data/helper/dataValueHelper.js
   function parseDataValue(value, opt) {
@@ -17597,7 +18772,7 @@ var pptxPreview = (() => {
   };
   var FilterOrderComparator = (
     /** @class */
-    function() {
+    (function() {
       function FilterOrderComparator2(op, rval) {
         if (!isNumber(rval)) {
           var errMsg = "";
@@ -17613,11 +18788,11 @@ var pptxPreview = (() => {
         return isNumber(lval) ? this._opFn(lval, this._rvalFloat) : this._opFn(numericToNumber(lval), this._rvalFloat);
       };
       return FilterOrderComparator2;
-    }()
+    })()
   );
   var SortOrderComparator = (
     /** @class */
-    function() {
+    (function() {
       function SortOrderComparator2(order, incomparable) {
         var isDesc = order === "desc";
         this._resultLT = isDesc ? 1 : -1;
@@ -17650,11 +18825,11 @@ var pptxPreview = (() => {
         return lvalFloat < rvalFloat ? this._resultLT : lvalFloat > rvalFloat ? -this._resultLT : 0;
       };
       return SortOrderComparator2;
-    }()
+    })()
   );
   var FilterEqualityComparator = (
     /** @class */
-    function() {
+    (function() {
       function FilterEqualityComparator2(isEq, rval) {
         this._rval = rval;
         this._isEQ = isEq;
@@ -17672,13 +18847,48 @@ var pptxPreview = (() => {
         return this._isEQ ? eqResult : !eqResult;
       };
       return FilterEqualityComparator2;
-    }()
+    })()
   );
+  function parseSanitizationFilter(filter2) {
+    var filterKey = "";
+    var filterG = -Infinity;
+    var filterGE = -Infinity;
+    var filterL = Infinity;
+    var filterLE = Infinity;
+    if (filter2) {
+      if (filter2.g != null) {
+        filterKey += "G" + filter2.g;
+        filterG = filter2.g;
+      }
+      if (filter2.ge != null) {
+        filterKey += "GE" + filter2.ge;
+        filterGE = filter2.ge;
+      }
+      if (filter2.l != null) {
+        filterKey += "L" + filter2.l;
+        filterL = filter2.l;
+      }
+      if (filter2.le != null) {
+        filterKey += "LE" + filter2.le;
+        filterLE = filter2.le;
+      }
+    }
+    return {
+      key: filterKey,
+      g: filterG,
+      ge: filterGE,
+      l: filterL,
+      le: filterLE
+    };
+  }
+  function passesSanitizationFilter(filterParsed, value) {
+    return value > filterParsed.g && value >= filterParsed.ge && value < filterParsed.l && value <= filterParsed.le;
+  }
 
   // node_modules/echarts/lib/data/helper/transform.js
   var ExternalSource = (
     /** @class */
-    function() {
+    (function() {
       function ExternalSource2() {
       }
       ExternalSource2.prototype.getRawData = function() {
@@ -17709,7 +18919,7 @@ var pptxPreview = (() => {
         return parseDataValue(rawVal, dimInfo);
       };
       return ExternalSource2;
-    }()
+    })()
   );
   function createExternalSource(internalSource, externalTransform) {
     var extSource = new ExternalSource();
@@ -17961,11 +19171,10 @@ var pptxPreview = (() => {
   }
 
   // node_modules/echarts/lib/data/DataStore.js
-  var UNDEFINED = "undefined";
-  var CtorUint32Array = typeof Uint32Array === UNDEFINED ? Array : Uint32Array;
-  var CtorUint16Array = typeof Uint16Array === UNDEFINED ? Array : Uint16Array;
-  var CtorInt32Array = typeof Int32Array === UNDEFINED ? Array : Int32Array;
-  var CtorFloat64Array = typeof Float64Array === UNDEFINED ? Array : Float64Array;
+  var CtorUint32Array = typeof Uint32Array === UNDEFINED_STR ? Array : Uint32Array;
+  var CtorUint16Array = typeof Uint16Array === UNDEFINED_STR ? Array : Uint16Array;
+  var CtorInt32Array = typeof Int32Array === UNDEFINED_STR ? Array : Int32Array;
+  var CtorFloat64Array = typeof Float64Array === UNDEFINED_STR ? Array : Float64Array;
   var dataCtors = {
     "float": CtorFloat64Array,
     "int": CtorInt32Array,
@@ -17977,9 +19186,6 @@ var pptxPreview = (() => {
   var defaultDimValueGetters;
   function getIndicesCtor(rawCount) {
     return rawCount > 65535 ? CtorUint32Array : CtorUint16Array;
-  }
-  function getInitialExtent() {
-    return [Infinity, -Infinity];
   }
   function cloneChunk(originalChunk) {
     var Ctor = originalChunk.constructor;
@@ -18003,7 +19209,7 @@ var pptxPreview = (() => {
   }
   var DataStore = (
     /** @class */
-    function() {
+    (function() {
       function DataStore2() {
         this._chunks = [];
         this._rawExtent = [];
@@ -18061,7 +19267,7 @@ var pptxPreview = (() => {
         };
         calcDimNameToIdx.set(dimName, calcDimIdx);
         this._chunks[calcDimIdx] = new dataCtors[type || "float"](this._rawCount);
-        this._rawExtent[calcDimIdx] = getInitialExtent();
+        this._rawExtent[calcDimIdx] = initExtentForUnion();
         return calcDimIdx;
       };
       DataStore2.prototype.collectOrdinalMeta = function(dimIdx, ordinalMeta) {
@@ -18071,7 +19277,7 @@ var pptxPreview = (() => {
         var offset = dim.ordinalOffset || 0;
         var len2 = chunk.length;
         if (offset === 0) {
-          rawExtents[dimIdx] = getInitialExtent();
+          rawExtents[dimIdx] = initExtentForUnion();
         }
         var dimRawExtent = rawExtents[dimIdx];
         for (var i = offset; i < len2; i++) {
@@ -18151,7 +19357,7 @@ var pptxPreview = (() => {
         for (var i = 0; i < dimLen; i++) {
           var dim = dimensions[i];
           if (!rawExtent[i]) {
-            rawExtent[i] = getInitialExtent();
+            rawExtent[i] = initExtentForUnion();
           }
           prepareStore(chunks, i, dim.type, end2, append);
         }
@@ -18231,11 +19437,9 @@ var pptxPreview = (() => {
             dimDataArray.push(val);
           }
         });
-        var sortedDimDataArray = dimDataArray.sort(function(a, b) {
-          return a - b;
-        });
+        asc(dimDataArray);
         var len2 = this.count();
-        return len2 === 0 ? 0 : len2 % 2 === 1 ? sortedDimDataArray[(len2 - 1) / 2] : (sortedDimDataArray[len2 / 2] + sortedDimDataArray[len2 / 2 - 1]) / 2;
+        return len2 === 0 ? 0 : len2 % 2 === 1 ? dimDataArray[(len2 - 1) / 2] : (dimDataArray[len2 / 2] + dimDataArray[len2 / 2 - 1]) / 2;
       };
       DataStore2.prototype.indexOfRawIndex = function(rawIndex) {
         if (rawIndex >= this._rawCount || rawIndex < 0) {
@@ -18262,37 +19466,6 @@ var pptxPreview = (() => {
           }
         }
         return -1;
-      };
-      DataStore2.prototype.indicesOfNearest = function(dim, value, maxDistance) {
-        var chunks = this._chunks;
-        var dimData = chunks[dim];
-        var nearestIndices = [];
-        if (!dimData) {
-          return nearestIndices;
-        }
-        if (maxDistance == null) {
-          maxDistance = Infinity;
-        }
-        var minDist = Infinity;
-        var minDiff = -1;
-        var nearestIndicesLen = 0;
-        for (var i = 0, len2 = this.count(); i < len2; i++) {
-          var dataIndex = this.getRawIndex(i);
-          var diff = value - dimData[dataIndex];
-          var dist3 = Math.abs(diff);
-          if (dist3 <= maxDistance) {
-            if (dist3 < minDist || dist3 === minDist && diff >= 0 && minDiff < 0) {
-              minDist = dist3;
-              minDiff = diff;
-              nearestIndicesLen = 0;
-            }
-            if (diff === minDiff) {
-              nearestIndices[nearestIndicesLen++] = i;
-            }
-          }
-        }
-        nearestIndices.length = nearestIndicesLen;
-        return nearestIndices;
       };
       DataStore2.prototype.getIndices = function() {
         var newIndices;
@@ -18456,7 +19629,7 @@ var pptxPreview = (() => {
         var values = [];
         var rawExtent = target._rawExtent;
         for (var i = 0; i < dims.length; i++) {
-          rawExtent[dims[i]] = getInitialExtent();
+          rawExtent[dims[i]] = initExtentForUnion();
         }
         for (var dataIndex = 0; dataIndex < dataCount; dataIndex++) {
           var rawIndex = target.getRawIndex(dataIndex);
@@ -18603,7 +19776,7 @@ var pptxPreview = (() => {
         var frameSize = Math.floor(1 / rate);
         var dimStore = targetStorage[dimension];
         var len2 = this.count();
-        var rawExtentOnDim = target._rawExtent[dimension] = getInitialExtent();
+        var rawExtentOnDim = target._rawExtent[dimension] = initExtentForUnion();
         var newIndices = new (getIndicesCtor(this._rawCount))(Math.ceil(len2 / frameSize));
         var offset = 0;
         for (var i = 0; i < len2; i += frameSize) {
@@ -18660,34 +19833,40 @@ var pptxPreview = (() => {
           }
         }
       };
-      DataStore2.prototype.getDataExtent = function(dim) {
+      DataStore2.prototype.getDataExtent = function(dim, filter2) {
         var dimData = this._chunks[dim];
-        var initialExtent = getInitialExtent();
+        var initialExtent = initExtentForUnion();
         if (!dimData) {
           return initialExtent;
         }
         var currEnd = this.count();
-        var useRaw = !this._indices;
-        var dimExtent;
+        var useRaw = !this._indices && !filter2;
         if (useRaw) {
           return this._rawExtent[dim].slice();
         }
-        dimExtent = this._extent[dim];
+        var thisExtent = this._extent;
+        var dimExtentRecord = thisExtent[dim] || (thisExtent[dim] = {});
+        var filterParsed = parseSanitizationFilter(filter2);
+        var filterKey = filterParsed.key;
+        var dimExtent = dimExtentRecord[filterKey];
         if (dimExtent) {
           return dimExtent.slice();
         }
-        dimExtent = initialExtent;
-        var min3 = dimExtent[0];
-        var max3 = dimExtent[1];
+        var min3 = initialExtent[0];
+        var max3 = initialExtent[1];
         for (var i = 0; i < currEnd; i++) {
           var rawIdx = this.getRawIndex(i);
           var value = dimData[rawIdx];
-          value < min3 && (min3 = value);
-          value > max3 && (max3 = value);
+          if (!filter2 || passesSanitizationFilter(filterParsed, value)) {
+            if (value < min3) {
+              min3 = value;
+            }
+            if (value > max3) {
+              max3 = value;
+            }
+          }
         }
-        dimExtent = [min3, max3];
-        this._extent[dim] = dimExtent;
-        return dimExtent;
+        return dimExtentRecord[filterKey] = [min3, max3];
       };
       DataStore2.prototype.getRawDataItem = function(idx) {
         var rawIdx = this.getRawIndex(idx);
@@ -18760,7 +19939,7 @@ var pptxPreview = (() => {
       DataStore2.prototype._updateGetRawIdx = function() {
         this.getRawIndex = this._indices ? this._getRawIdx : this._getRawIdxIdentity;
       };
-      DataStore2.internalField = function() {
+      DataStore2.internalField = (function() {
         function getDimValueSimply(dataItem, property, dataIndex, dimIndex) {
           return parseDataValue(dataItem[dimIndex], this._dimensions[dimIndex]);
         }
@@ -18778,16 +19957,16 @@ var pptxPreview = (() => {
             return dataItem[dimIndex];
           }
         };
-      }();
+      })();
       return DataStore2;
-    }()
+    })()
   );
   var DataStore_default = DataStore;
 
   // node_modules/echarts/lib/data/helper/sourceManager.js
   var SourceManager = (
     /** @class */
-    function() {
+    (function() {
       function SourceManager2(sourceHost) {
         this._sourceList = [];
         this._storeList = [];
@@ -18999,7 +20178,7 @@ var pptxPreview = (() => {
         };
       };
       return SourceManager2;
-    }()
+    })()
   );
   function isSeries(sourceHost) {
     return sourceHost.mainType === "series";
@@ -19019,10 +20198,10 @@ var pptxPreview = (() => {
     }
   }
   function getTooltipTextStyle(textStyle, renderMode) {
-    var nameFontColor = textStyle.color || "#6e7079";
+    var nameFontColor = textStyle.color || tokens_default.color.tertiary;
     var nameFontSize = textStyle.fontSize || 12;
     var nameFontWeight = textStyle.fontWeight || "400";
-    var valueFontColor = textStyle.color || "#464646";
+    var valueFontColor = textStyle.color || tokens_default.color.secondary;
     var valueFontSize = textStyle.fontSize || 14;
     var valueFontWeight = textStyle.fontWeight || "900";
     if (renderMode === "html") {
@@ -19140,10 +20319,10 @@ var pptxPreview = (() => {
     if (noName && noValue) {
       return;
     }
-    var markerStr = noMarker ? "" : ctx.markupStyleCreator.makeTooltipMarker(fragment.markerType, fragment.markerColor || "#333", renderMode);
+    var markerStr = noMarker ? "" : ctx.markupStyleCreator.makeTooltipMarker(fragment.markerType, fragment.markerColor || tokens_default.color.secondary, renderMode);
     var readableName = noName ? "" : makeValueReadable(name, "ordinal", useUTC);
     var valueTypeOption = fragment.valueType;
-    var readableValueList = noValue ? [] : valueFormatter(fragment.value, fragment.dataIndex);
+    var readableValueList = noValue ? [] : valueFormatter(fragment.value, fragment.rawDataIndex);
     var valueAlignRight = !noMarker || !noName;
     var valueCloseToMarker = !noMarker && noName;
     var _a2 = getTooltipTextStyle(toolTipTextStyle, renderMode), nameStyle = _a2.nameStyle, valueStyle = _a2.valueStyle;
@@ -19201,8 +20380,8 @@ var pptxPreview = (() => {
   }
   function retrieveVisualColorForTooltipMarker(series, dataIndex) {
     var style = series.getData().getItemVisual(dataIndex, "style");
-    var color = style[series.visualDrawType];
-    return convertToColorString(color);
+    var color3 = style[series.visualDrawType];
+    return convertToColorString(color3);
   }
   function getPaddingFromTooltipModel(model, renderMode) {
     var padding = model.get("padding");
@@ -19210,7 +20389,7 @@ var pptxPreview = (() => {
   }
   var TooltipMarkupStyleCreator = (
     /** @class */
-    function() {
+    (function() {
       function TooltipMarkupStyleCreator2() {
         this.richTextStyles = {};
         this._nextStyleNameId = getRandomIdBase();
@@ -19250,7 +20429,7 @@ var pptxPreview = (() => {
         return "{" + styleName + "|" + text + "}";
       };
       return TooltipMarkupStyleCreator2;
-    }()
+    })()
   );
 
   // node_modules/echarts/lib/component/tooltip/seriesFormatTooltip.js
@@ -19302,7 +20481,7 @@ var pptxPreview = (() => {
         noName: !trim(inlineName),
         value: inlineValue,
         valueType: inlineValueType,
-        dataIndex
+        rawDataIndex: data.getRawIndex(dataIndex)
       })].concat(subBlocks || [])
     });
   }
@@ -19351,7 +20530,7 @@ var pptxPreview = (() => {
   var SERIES_UNIVERSAL_TRANSITION_PROP = "__universalTransitionEnabled";
   var SeriesModel = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(SeriesModel2, _super);
       function SeriesModel2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -19482,6 +20661,42 @@ var pptxPreview = (() => {
         var coordSys = this.coordinateSystem;
         return coordSys && coordSys.getBaseAxis && coordSys.getBaseAxis();
       };
+      SeriesModel2.prototype.indicesOfNearest = function(axisDim, dim, value, maxDistance) {
+        var data = this.getData();
+        var coordSys = this.coordinateSystem;
+        var axis = coordSys && coordSys.getAxis(axisDim);
+        if (!coordSys || !axis) {
+          return [];
+        }
+        var targetCoord = axis.dataToCoord(value);
+        if (maxDistance == null) {
+          maxDistance = Infinity;
+        }
+        var nearestIndices = [];
+        var minDist = Infinity;
+        var minDiff = -1;
+        var nearestIndicesLen = 0;
+        var dimIdx = data.getDimensionIndex(dim);
+        var store = data.getStore();
+        for (var idx = 0, len2 = store.count(); idx < len2; idx++) {
+          var dimValue = store.get(dimIdx, idx);
+          var dataCoord = axis.dataToCoord(dimValue);
+          var diff = targetCoord - dataCoord;
+          var dist3 = Math.abs(diff);
+          if (dist3 <= maxDistance) {
+            if (dist3 < minDist || dist3 === minDist && diff >= 0 && minDiff < 0) {
+              minDist = dist3;
+              minDiff = diff;
+              nearestIndicesLen = 0;
+            }
+            if (diff === minDiff) {
+              nearestIndices[nearestIndicesLen++] = idx;
+            }
+          }
+        }
+        nearestIndices.length = nearestIndicesLen;
+        return nearestIndices;
+      };
       SeriesModel2.prototype.formatTooltip = function(dataIndex, multipleSeries, dataType) {
         return defaultSeriesFormatTooltip({
           series: this,
@@ -19507,11 +20722,11 @@ var pptxPreview = (() => {
       };
       SeriesModel2.prototype.getColorFromPalette = function(name, scope, requestColorNum) {
         var ecModel = this.ecModel;
-        var color = PaletteMixin.prototype.getColorFromPalette.call(this, name, scope, requestColorNum);
-        if (!color) {
-          color = ecModel.getColorFromPalette(name, scope, requestColorNum);
+        var color3 = PaletteMixin.prototype.getColorFromPalette.call(this, name, scope, requestColorNum);
+        if (!color3) {
+          color3 = ecModel.getColorFromPalette(name, scope, requestColorNum);
         }
-        return color;
+        return color3;
       };
       SeriesModel2.prototype.coordDimToDataDim = function(coordDim) {
         return this.getRawData().mapDimensionsAll(coordDim);
@@ -19635,18 +20850,18 @@ var pptxPreview = (() => {
       SeriesModel2.registerClass = function(clz) {
         return Component_default.registerClass(clz);
       };
-      SeriesModel2.protoInitialize = function() {
-        var proto2 = SeriesModel2.prototype;
-        proto2.type = "series.__base__";
-        proto2.seriesIndex = 0;
-        proto2.ignoreStyleOnData = false;
-        proto2.hasSymbolVisual = false;
-        proto2.defaultSymbol = "circle";
-        proto2.visualStyleAccessPath = "itemStyle";
-        proto2.visualDrawType = "fill";
-      }();
+      SeriesModel2.protoInitialize = (function() {
+        var proto = SeriesModel2.prototype;
+        proto.type = "series.__base__";
+        proto.seriesIndex = 0;
+        proto.ignoreStyleOnData = false;
+        proto.hasSymbolVisual = false;
+        proto.defaultSymbol = "circle";
+        proto.visualStyleAccessPath = "itemStyle";
+        proto.visualDrawType = "fill";
+      })();
       return SeriesModel2;
-    }(Component_default)
+    })(Component_default)
   );
   mixin(SeriesModel, DataFormatMixin);
   mixin(SeriesModel, PaletteMixin);
@@ -19711,7 +20926,7 @@ var pptxPreview = (() => {
   // node_modules/echarts/lib/view/Component.js
   var ComponentView = (
     /** @class */
-    function() {
+    (function() {
       function ComponentView2() {
         this.group = new Group_default();
         this.uid = getUID("viewComponent");
@@ -19737,7 +20952,7 @@ var pptxPreview = (() => {
         }
       };
       return ComponentView2;
-    }()
+    })()
   );
   enableClassExtend(ComponentView);
   enableClassManagement(ComponentView);
@@ -19745,9 +20960,9 @@ var pptxPreview = (() => {
 
   // node_modules/echarts/lib/chart/helper/createRenderPlanner.js
   function createRenderPlanner() {
-    var inner11 = makeInner();
+    var inner10 = makeInner();
     return function(seriesModel) {
-      var fields = inner11(seriesModel);
+      var fields = inner10(seriesModel);
       var pipelineContext = seriesModel.pipelineContext;
       var originalLarge = !!fields.large;
       var originalProgressive = !!fields.progressiveRender;
@@ -19762,7 +20977,7 @@ var pptxPreview = (() => {
   var renderPlanner = createRenderPlanner();
   var ChartView = (
     /** @class */
-    function() {
+    (function() {
       function ChartView2() {
         this.group = new Group_default();
         this.uid = getUID("viewChart");
@@ -19809,9 +21024,6 @@ var pptxPreview = (() => {
       ChartView2.prototype.updateView = function(seriesModel, ecModel, api, payload) {
         this.render(seriesModel, ecModel, api, payload);
       };
-      ChartView2.prototype.updateLayout = function(seriesModel, ecModel, api, payload) {
-        this.render(seriesModel, ecModel, api, payload);
-      };
       ChartView2.prototype.updateVisual = function(seriesModel, ecModel, api, payload) {
         this.render(seriesModel, ecModel, api, payload);
       };
@@ -19821,12 +21033,12 @@ var pptxPreview = (() => {
       ChartView2.markUpdateMethod = function(payload, methodName) {
         inner3(payload).updateMethod = methodName;
       };
-      ChartView2.protoInitialize = function() {
-        var proto2 = ChartView2.prototype;
-        proto2.type = "chart";
-      }();
+      ChartView2.protoInitialize = (function() {
+        var proto = ChartView2.prototype;
+        proto.type = "chart";
+      })();
       return ChartView2;
-    }()
+    })()
   );
   function elSetState(el2, state, highlightDigit) {
     if (el2 && isHighDownDispatcher(el2)) {
@@ -19998,30 +21210,30 @@ var pptxPreview = (() => {
       var data = seriesModel.getData();
       var stylePath = seriesModel.visualStyleAccessPath || "itemStyle";
       var styleModel = seriesModel.getModel(stylePath);
-      var getStyle2 = getStyleMapper(seriesModel, stylePath);
-      var globalStyle = getStyle2(styleModel);
+      var getStyle = getStyleMapper(seriesModel, stylePath);
+      var globalStyle = getStyle(styleModel);
       var decalOption = styleModel.getShallow("decal");
       if (decalOption) {
         data.setVisual("decal", decalOption);
         decalOption.dirty = true;
       }
       var colorKey = getDefaultColorKey(seriesModel, stylePath);
-      var color = globalStyle[colorKey];
-      var colorCallback = isFunction(color) ? color : null;
+      var color3 = globalStyle[colorKey];
+      var colorCallback = isFunction(color3) ? color3 : null;
       var hasAutoColor = globalStyle.fill === "auto" || globalStyle.stroke === "auto";
       if (!globalStyle[colorKey] || colorCallback || hasAutoColor) {
-        var colorPalette2 = seriesModel.getColorFromPalette(
+        var colorPalette = seriesModel.getColorFromPalette(
           // TODO series count changed.
           seriesModel.name,
           null,
           ecModel.getSeriesCount()
         );
         if (!globalStyle[colorKey]) {
-          globalStyle[colorKey] = colorPalette2;
+          globalStyle[colorKey] = colorPalette;
           data.setVisual("colorFromPalette", true);
         }
-        globalStyle.fill = globalStyle.fill === "auto" || isFunction(globalStyle.fill) ? colorPalette2 : globalStyle.fill;
-        globalStyle.stroke = globalStyle.stroke === "auto" || isFunction(globalStyle.stroke) ? colorPalette2 : globalStyle.stroke;
+        globalStyle.fill = globalStyle.fill === "auto" || isFunction(globalStyle.fill) ? colorPalette : globalStyle.fill;
+        globalStyle.stroke = globalStyle.stroke === "auto" || isFunction(globalStyle.stroke) ? colorPalette : globalStyle.stroke;
       }
       data.setVisual("style", globalStyle);
       data.setVisual("drawType", colorKey);
@@ -20041,21 +21253,20 @@ var pptxPreview = (() => {
   var sharedModel = new Model_default();
   var dataStyleTask = {
     createOnAllSeries: true,
-    performRawSeries: true,
     reset: function(seriesModel, ecModel) {
-      if (seriesModel.ignoreStyleOnData || ecModel.isSeriesFiltered(seriesModel)) {
+      if (seriesModel.ignoreStyleOnData) {
         return;
       }
       var data = seriesModel.getData();
       var stylePath = seriesModel.visualStyleAccessPath || "itemStyle";
-      var getStyle2 = getStyleMapper(seriesModel, stylePath);
+      var getStyle = getStyleMapper(seriesModel, stylePath);
       var colorKey = data.getVisual("drawType");
       return {
         dataEach: data.hasItemOption ? function(data2, idx) {
           var rawItem = data2.getRawDataItem(idx);
           if (rawItem && rawItem[stylePath]) {
             sharedModel.option = rawItem[stylePath];
-            var style = getStyle2(sharedModel);
+            var style = getStyle(sharedModel);
             var existsStyle = data2.ensureUniqueItemVisual(idx, "style");
             extend(existsStyle, style);
             if (sharedModel.option.decal) {
@@ -20075,20 +21286,13 @@ var pptxPreview = (() => {
     overallReset: function(ecModel) {
       var paletteScopeGroupByType = createHashMap();
       ecModel.eachSeries(function(seriesModel) {
-        var colorBy = seriesModel.getColorBy();
-        if (seriesModel.isColorBySeries()) {
-          return;
+        if (!seriesModel.isColorBySeries()) {
+          var key2 = seriesModel.type + "-" + seriesModel.getColorBy();
+          inner4(seriesModel).scope = paletteScopeGroupByType.get(key2) || paletteScopeGroupByType.set(key2, {});
         }
-        var key = seriesModel.type + "-" + colorBy;
-        var colorScope = paletteScopeGroupByType.get(key);
-        if (!colorScope) {
-          colorScope = {};
-          paletteScopeGroupByType.set(key, colorScope);
-        }
-        inner4(seriesModel).scope = colorScope;
       });
       ecModel.eachSeries(function(seriesModel) {
-        if (seriesModel.isColorBySeries() || ecModel.isSeriesFiltered(seriesModel)) {
+        if (seriesModel.isColorBySeries()) {
           return;
         }
         var dataAll = seriesModel.getRawData();
@@ -20121,14 +21325,14 @@ var pptxPreview = (() => {
     opts = opts || {};
     defaults(opts, {
       text: "loading",
-      textColor: "#000",
+      textColor: tokens_default.color.primary,
       fontSize: 12,
       fontWeight: "normal",
       fontStyle: "normal",
       fontFamily: "sans-serif",
-      maskColor: "rgba(255, 255, 255, 0.8)",
+      maskColor: "rgba(255,255,255,0.8)",
       showSpinner: true,
-      color: "#5470c6",
+      color: tokens_default.color.theme[0],
       spinnerRadius: 10,
       lineWidth: 5,
       zlevel: 0
@@ -20220,7 +21424,7 @@ var pptxPreview = (() => {
   // node_modules/echarts/lib/core/Scheduler.js
   var Scheduler = (
     /** @class */
-    function() {
+    (function() {
       function Scheduler2(ecInstance, api, dataProcessorHandlers, visualHandlers) {
         this._stageTaskMap = createHashMap();
         this.ecInstance = ecInstance;
@@ -20257,22 +21461,14 @@ var pptxPreview = (() => {
       };
       Scheduler2.prototype.updateStreamModes = function(seriesModel, view) {
         var pipeline = this._pipelineMap.get(seriesModel.uid);
-        var data = seriesModel.getData();
-        var dataLen = data.count();
-        var progressiveRender = pipeline.progressiveEnabled && view.incrementalPrepareRender && dataLen >= pipeline.threshold;
-        var large = seriesModel.get("large") && dataLen >= seriesModel.get("largeThreshold");
-        var modDataCount = seriesModel.get("progressiveChunkMode") === "mod" ? dataLen : null;
-        seriesModel.pipelineContext = pipeline.context = {
-          progressiveRender,
-          modDataCount,
-          large
-        };
+        var context = seriesModel.__preparePipelineContext ? seriesModel.__preparePipelineContext(view, pipeline) : preparePipelineContext(seriesModel, view, pipeline);
+        seriesModel.pipelineContext = pipeline.context = context;
       };
-      Scheduler2.prototype.restorePipelines = function(ecModel) {
+      Scheduler2.prototype.restorePipelines = function(zr, ecModel) {
         var scheduler = this;
         var pipelineMap = scheduler._pipelineMap = createHashMap();
         ecModel.eachSeries(function(seriesModel) {
-          var progressive = seriesModel.getProgressive();
+          var progressive = zr.painter.type === "canvas" && seriesModel.getProgressive();
           var pipelineId = seriesModel.uid;
           pipelineMap.set(pipelineId, {
             id: pipelineId,
@@ -20437,7 +21633,7 @@ var pptxPreview = (() => {
         var newAgentStubMap = overallTask.agentStubMap = createHashMap();
         var seriesType2 = stageHandler.seriesType;
         var getTargetSeries = stageHandler.getTargetSeries;
-        var overallProgress = true;
+        var dirtyOnOverallProgress = stageHandler.dirtyOnOverallProgress;
         var shouldOverallTaskDirty = false;
         var errMsg = "";
         if (true) {
@@ -20449,7 +21645,6 @@ var pptxPreview = (() => {
         } else if (getTargetSeries) {
           getTargetSeries(ecModel, api).each(createStub);
         } else {
-          overallProgress = false;
           each(ecModel.getSeries(), createStub);
         }
         function createStub(seriesModel) {
@@ -20462,12 +21657,12 @@ var pptxPreview = (() => {
           })));
           stub.context = {
             model: seriesModel,
-            overallProgress
+            dirtyOnOverallProgress
             // FIXME:TS never used, so comment it
             // modifyOutputEnd: modifyOutputEnd
           };
           stub.agent = overallTask;
-          stub.__block = overallProgress;
+          stub.__block = dirtyOnOverallProgress;
           scheduler._pipe(seriesModel, stub);
         }
         if (shouldOverallTaskDirty) {
@@ -20496,13 +21691,13 @@ var pptxPreview = (() => {
       };
       ;
       return Scheduler2;
-    }()
+    })()
   );
   function overallTaskReset(context) {
     context.overallReset(context.ecModel, context.api, context.payload);
   }
   function stubReset(context) {
-    return context.overallProgress && stubProgress;
+    return context.dirtyOnOverallProgress && stubProgress;
   }
   function stubProgress() {
     this.agent.dirty();
@@ -20568,155 +21763,186 @@ var pptxPreview = (() => {
   }
   var Scheduler_default = Scheduler;
 
-  // node_modules/echarts/lib/theme/light.js
-  var colorAll = ["#37A2DA", "#32C5E9", "#67E0E3", "#9FE6B8", "#FFDB5C", "#ff9f7f", "#fb7293", "#E062AE", "#E690D1", "#e7bcf3", "#9d96f5", "#8378EA", "#96BFFF"];
-  var light_default = {
-    color: colorAll,
-    colorLayer: [["#37A2DA", "#ffd85c", "#fd7b5f"], ["#37A2DA", "#67E0E3", "#FFDB5C", "#ff9f7f", "#E062AE", "#9d96f5"], ["#37A2DA", "#32C5E9", "#9FE6B8", "#FFDB5C", "#ff9f7f", "#fb7293", "#e7bcf3", "#8378EA", "#96BFFF"], colorAll]
-  };
-
   // node_modules/echarts/lib/theme/dark.js
-  var contrastColor = "#B9B8CE";
-  var backgroundColor = "#100C2A";
+  var color2 = tokens_default.darkColor;
+  var backgroundColor = color2.background;
   var axisCommon = function() {
     return {
       axisLine: {
         lineStyle: {
-          color: contrastColor
+          color: color2.axisLine
         }
       },
       splitLine: {
         lineStyle: {
-          color: "#484753"
+          color: color2.axisSplitLine
         }
       },
       splitArea: {
         areaStyle: {
-          color: ["rgba(255,255,255,0.02)", "rgba(255,255,255,0.05)"]
+          color: [color2.backgroundTint, color2.backgroundTransparent]
         }
       },
       minorSplitLine: {
         lineStyle: {
-          color: "#20203B"
+          color: color2.axisMinorSplitLine
         }
-      }
+      },
+      axisLabel: {
+        color: color2.axisLabel
+      },
+      axisName: {}
     };
   };
-  var colorPalette = ["#4992ff", "#7cffb2", "#fddd60", "#ff6e76", "#58d9f9", "#05c091", "#ff8a45", "#8d48e3", "#dd79ff"];
+  var matrixAxis = {
+    label: {
+      color: color2.secondary
+    },
+    itemStyle: {
+      borderColor: color2.borderTint
+    },
+    dividerLineStyle: {
+      color: color2.border
+    }
+  };
   var theme = {
     darkMode: true,
-    color: colorPalette,
+    color: color2.theme,
     backgroundColor,
     axisPointer: {
       lineStyle: {
-        color: "#817f91"
+        color: color2.border
       },
       crossStyle: {
-        color: "#817f91"
+        color: color2.borderShade
       },
       label: {
-        // TODO Contrast of label backgorundColor
-        color: "#fff"
+        color: color2.tertiary
       }
     },
     legend: {
       textStyle: {
-        color: contrastColor
+        color: color2.secondary
       },
       pageTextStyle: {
-        color: contrastColor
+        color: color2.tertiary
       }
     },
     textStyle: {
-      color: contrastColor
+      color: color2.secondary
     },
     title: {
       textStyle: {
-        color: "#EEF1FA"
+        color: color2.primary
       },
       subtextStyle: {
-        color: "#B9B8CE"
+        color: color2.quaternary
       }
     },
     toolbox: {
       iconStyle: {
-        borderColor: contrastColor
+        borderColor: color2.accent50
+      },
+      feature: {
+        dataView: {
+          backgroundColor,
+          textColor: color2.primary,
+          textareaColor: color2.background,
+          textareaBorderColor: color2.border,
+          buttonColor: color2.accent50,
+          buttonTextColor: color2.neutral00
+        }
+      }
+    },
+    tooltip: {
+      backgroundColor: color2.neutral20,
+      defaultBorderColor: color2.border,
+      textStyle: {
+        color: color2.tertiary
       }
     },
     dataZoom: {
-      borderColor: "#71708A",
+      borderColor: color2.accent10,
       textStyle: {
-        color: contrastColor
+        color: color2.tertiary
       },
       brushStyle: {
-        color: "rgba(135,163,206,0.3)"
+        color: color2.backgroundTint
       },
       handleStyle: {
-        color: "#353450",
-        borderColor: "#C5CBE3"
+        color: color2.neutral00,
+        borderColor: color2.accent20
       },
       moveHandleStyle: {
-        color: "#B0B6C3",
-        opacity: 0.3
+        color: color2.accent40
       },
-      fillerColor: "rgba(135,163,206,0.2)",
       emphasis: {
         handleStyle: {
-          borderColor: "#91B7F2",
-          color: "#4D587D"
-        },
-        moveHandleStyle: {
-          color: "#636D9A",
-          opacity: 0.7
+          borderColor: color2.accent50
         }
       },
       dataBackground: {
         lineStyle: {
-          color: "#71708A",
-          width: 1
+          color: color2.accent30
         },
         areaStyle: {
-          color: "#71708A"
+          color: color2.accent20
         }
       },
       selectedDataBackground: {
         lineStyle: {
-          color: "#87A3CE"
+          color: color2.accent50
         },
         areaStyle: {
-          color: "#87A3CE"
+          color: color2.accent30
         }
       }
     },
     visualMap: {
       textStyle: {
-        color: contrastColor
+        color: color2.secondary
+      },
+      handleStyle: {
+        borderColor: color2.neutral30
       }
     },
     timeline: {
       lineStyle: {
-        color: contrastColor
+        color: color2.accent10
       },
       label: {
-        color: contrastColor
+        color: color2.tertiary
       },
       controlStyle: {
-        color: contrastColor,
-        borderColor: contrastColor
+        color: color2.accent30,
+        borderColor: color2.accent30
       }
     },
     calendar: {
       itemStyle: {
-        color: backgroundColor
+        color: color2.neutral00,
+        borderColor: color2.neutral20
       },
       dayLabel: {
-        color: contrastColor
+        color: color2.tertiary
       },
       monthLabel: {
-        color: contrastColor
+        color: color2.secondary
       },
       yearLabel: {
-        color: contrastColor
+        color: color2.secondary
+      }
+    },
+    matrix: {
+      x: matrixAxis,
+      y: matrixAxis,
+      backgroundColor: {
+        borderColor: color2.axisLine
+      },
+      body: {
+        itemStyle: {
+          borderColor: color2.borderTint
+        }
       }
     },
     timeAxis: axisCommon(),
@@ -20727,22 +21953,22 @@ var pptxPreview = (() => {
       symbol: "circle"
     },
     graph: {
-      color: colorPalette
+      color: color2.theme
     },
     gauge: {
       title: {
-        color: contrastColor
+        color: color2.secondary
       },
       axisLine: {
         lineStyle: {
-          color: [[1, "rgba(207,212,219,0.2)"]]
+          color: [[1, color2.neutral05]]
         }
       },
       axisLabel: {
-        color: contrastColor
+        color: color2.axisLabel
       },
       detail: {
-        color: "#EEF1FA"
+        color: color2.primary
       }
     },
     candlestick: {
@@ -20754,6 +21980,86 @@ var pptxPreview = (() => {
         // borderColor: '#ca2824',
         // borderColor0: '#09a443'
       }
+    },
+    funnel: {
+      itemStyle: {
+        borderColor: color2.background
+      }
+    },
+    radar: (function() {
+      var radar = axisCommon();
+      radar.axisName = {
+        color: color2.axisLabel
+      };
+      radar.axisLine.lineStyle.color = color2.neutral20;
+      return radar;
+    })(),
+    treemap: {
+      breadcrumb: {
+        itemStyle: {
+          color: color2.neutral20,
+          textStyle: {
+            color: color2.secondary
+          }
+        },
+        emphasis: {
+          itemStyle: {
+            color: color2.neutral30
+          }
+        }
+      }
+    },
+    sunburst: {
+      itemStyle: {
+        borderColor: color2.background
+      }
+    },
+    map: {
+      itemStyle: {
+        borderColor: color2.border,
+        areaColor: color2.neutral10
+      },
+      label: {
+        color: color2.tertiary
+      },
+      emphasis: {
+        label: {
+          color: color2.primary
+        },
+        itemStyle: {
+          areaColor: color2.highlight
+        }
+      },
+      select: {
+        label: {
+          color: color2.primary
+        },
+        itemStyle: {
+          areaColor: color2.highlight
+        }
+      }
+    },
+    geo: {
+      itemStyle: {
+        borderColor: color2.border,
+        areaColor: color2.neutral10
+      },
+      emphasis: {
+        label: {
+          color: color2.primary
+        },
+        itemStyle: {
+          areaColor: color2.highlight
+        }
+      },
+      select: {
+        label: {
+          color: color2.primary
+        },
+        itemStyle: {
+          color: color2.highlight
+        }
+      }
     }
   };
   theme.categoryAxis.splitLine.show = false;
@@ -20762,7 +22068,7 @@ var pptxPreview = (() => {
   // node_modules/echarts/lib/util/ECEventProcessor.js
   var ECEventProcessor = (
     /** @class */
-    function() {
+    (function() {
       function ECEventProcessor2() {
       }
       ECEventProcessor2.prototype.normalizeQuery = function(query) {
@@ -20780,13 +22086,13 @@ var pptxPreview = (() => {
             dataIndex: 1,
             dataType: 1
           };
-          each(query, function(val, key) {
+          each(query, function(val, key2) {
             var reserved = false;
             for (var i = 0; i < suffixes_1.length; i++) {
               var propSuffix = suffixes_1[i];
-              var suffixPos = key.lastIndexOf(propSuffix);
-              if (suffixPos > 0 && suffixPos === key.length - propSuffix.length) {
-                var mainType = key.slice(0, suffixPos);
+              var suffixPos = key2.lastIndexOf(propSuffix);
+              if (suffixPos > 0 && suffixPos === key2.length - propSuffix.length) {
+                var mainType = key2.slice(0, suffixPos);
                 if (mainType !== "data") {
                   cptQuery.mainType = mainType;
                   cptQuery[propSuffix.toLowerCase()] = val;
@@ -20794,12 +22100,12 @@ var pptxPreview = (() => {
                 }
               }
             }
-            if (dataKeys_1.hasOwnProperty(key)) {
-              dataQuery[key] = val;
+            if (dataKeys_1.hasOwnProperty(key2)) {
+              dataQuery[key2] = val;
               reserved = true;
             }
             if (!reserved) {
-              otherQuery[key] = val;
+              otherQuery[key2] = val;
             }
           });
         }
@@ -20832,7 +22138,7 @@ var pptxPreview = (() => {
         this.eventInfo = null;
       };
       return ECEventProcessor2;
-    }()
+    })()
   );
 
   // node_modules/echarts/lib/visual/symbol.js
@@ -20914,8 +22220,8 @@ var pptxPreview = (() => {
   };
 
   // node_modules/echarts/lib/visual/helper.js
-  function getItemVisualFromData(data, dataIndex, key) {
-    switch (key) {
+  function getItemVisualFromData(data, dataIndex, key2) {
+    switch (key2) {
       case "color":
         var style = data.getItemVisual(dataIndex, "style");
         return style[data.getVisual("drawType")];
@@ -20924,15 +22230,15 @@ var pptxPreview = (() => {
       case "symbol":
       case "symbolSize":
       case "liftZ":
-        return data.getItemVisual(dataIndex, key);
+        return data.getItemVisual(dataIndex, key2);
       default:
         if (true) {
-          console.warn("Unknown visual type " + key);
+          console.warn("Unknown visual type " + key2);
         }
     }
   }
-  function getVisualFromData(data, key) {
-    switch (key) {
+  function getVisualFromData(data, key2) {
+    switch (key2) {
       case "color":
         var style = data.getVisual("style");
         return style[data.getVisual("drawType")];
@@ -20941,10 +22247,10 @@ var pptxPreview = (() => {
       case "symbol":
       case "symbolSize":
       case "liftZ":
-        return data.getVisual(key);
+        return data.getVisual(key2);
       default:
         if (true) {
-          console.warn("Unknown visual type " + key);
+          console.warn("Unknown visual type " + key2);
         }
     }
   }
@@ -21034,18 +22340,62 @@ var pptxPreview = (() => {
     return found;
   }
 
+  // node_modules/echarts/lib/core/lifecycle.js
+  var lifecycle = new Eventful_default();
+  var lifecycle_default = lifecycle;
+
+  // node_modules/echarts/lib/core/impl.js
+  var implsStore = {};
+  function registerImpl(name, impl) {
+    if (true) {
+      if (implsStore[name]) {
+        error("Already has an implementation of " + name + ".");
+      }
+    }
+    implsStore[name] = impl;
+  }
+  function getImpl(name) {
+    if (true) {
+      if (!implsStore[name]) {
+        error("Implementation of " + name + " doesn't exists.");
+      }
+    }
+    return implsStore[name];
+  }
+
+  // node_modules/echarts/lib/chart/custom/customSeriesRegister.js
+  var customRenderers = {};
+  function registerCustomSeries(type, renderItem) {
+    customRenderers[type] = renderItem;
+  }
+
+  // node_modules/echarts/lib/util/cycleCache.js
+  var ecModelCacheInner = makeInner();
+  function resetCachePerECPrepare(ecModel) {
+    ecModelCacheInner(ecModel).prepare = {};
+  }
+  function resetCachePerECFullUpdate(ecModel) {
+    ecModelCacheInner(ecModel).fullUpdate = {};
+  }
+  function getCachePerECPrepare(ecModel) {
+    return ecModelCacheInner(ecModel).prepare;
+  }
+  function getCachePerECFullUpdate(ecModel) {
+    return ecModelCacheInner(ecModel).fullUpdate;
+  }
+
   // node_modules/zrender/lib/core/WeakMap.js
   var wmUniqueIndex = Math.round(Math.random() * 9);
   var supportDefineProperty = typeof Object.defineProperty === "function";
-  var WeakMap = function() {
+  var WeakMap = (function() {
     function WeakMap2() {
       this._id = "__ec_inner_" + wmUniqueIndex++;
     }
-    WeakMap2.prototype.get = function(key) {
-      return this._guard(key)[this._id];
+    WeakMap2.prototype.get = function(key2) {
+      return this._guard(key2)[this._id];
     };
-    WeakMap2.prototype.set = function(key, value) {
-      var target = this._guard(key);
+    WeakMap2.prototype.set = function(key2, value) {
+      var target = this._guard(key2);
       if (supportDefineProperty) {
         Object.defineProperty(target, this._id, {
           value,
@@ -21057,24 +22407,24 @@ var pptxPreview = (() => {
       }
       return this;
     };
-    WeakMap2.prototype["delete"] = function(key) {
-      if (this.has(key)) {
-        delete this._guard(key)[this._id];
+    WeakMap2.prototype["delete"] = function(key2) {
+      if (this.has(key2)) {
+        delete this._guard(key2)[this._id];
         return true;
       }
       return false;
     };
-    WeakMap2.prototype.has = function(key) {
-      return !!this._guard(key)[this._id];
+    WeakMap2.prototype.has = function(key2) {
+      return !!this._guard(key2)[this._id];
     };
-    WeakMap2.prototype._guard = function(key) {
-      if (key !== Object(key)) {
+    WeakMap2.prototype._guard = function(key2) {
+      if (key2 !== Object(key2)) {
         throw TypeError("Value of WeakMap is not a non-null object.");
       }
-      return key;
+      return key2;
     };
     return WeakMap2;
-  }();
+  })();
   var WeakMap_default = WeakMap;
 
   // node_modules/echarts/lib/util/symbol.js
@@ -21271,22 +22621,22 @@ var pptxPreview = (() => {
       }
     }
   });
-  function symbolPathSetColor(color, innerColor2) {
+  function symbolPathSetColor(color3, innerColor2) {
     if (this.type !== "image") {
       var symbolStyle = this.style;
       if (this.__isEmptyBrush) {
-        symbolStyle.stroke = color;
-        symbolStyle.fill = innerColor2 || "#fff";
+        symbolStyle.stroke = color3;
+        symbolStyle.fill = innerColor2 || tokens_default.color.neutral00;
         symbolStyle.lineWidth = 2;
       } else if (this.shape.symbolType === "line") {
-        symbolStyle.stroke = color;
+        symbolStyle.stroke = color3;
       } else {
-        symbolStyle.fill = color;
+        symbolStyle.fill = color3;
       }
       this.markRedraw();
     }
   }
-  function createSymbol(symbolType, x, y, w, h, color, keepAspect) {
+  function createSymbol(symbolType, x, y, w, h, color3, keepAspect) {
     var isEmpty = symbolType.indexOf("empty") === 0;
     if (isEmpty) {
       symbolType = symbolType.substr(5, 1).toLowerCase() + symbolType.substr(6);
@@ -21309,8 +22659,8 @@ var pptxPreview = (() => {
     }
     symbolPath.__isEmptyBrush = isEmpty;
     symbolPath.setColor = symbolPathSetColor;
-    if (color) {
-      symbolPath.setColor(color);
+    if (color3) {
+      symbolPath.setColor(color3);
     }
     return symbolPath;
   }
@@ -21404,7 +22754,7 @@ var pptxPreview = (() => {
       return parseFloat(opts[wh]);
     }
     var stl = document.defaultView.getComputedStyle(root);
-    return (root[cwh] || parseInt10(stl[wh]) || parseInt10(root.style[wh])) - (parseInt10(stl[plt]) || 0) - (parseInt10(stl[prb]) || 0) | 0;
+    return (root[cwh] || parseInt10(stl[wh]) || parseInt10(root.style[wh])) - (parseInt10(stl[plt]) || 0) - (parseInt10(stl[prb]) || 0) || 0;
   }
 
   // node_modules/zrender/lib/canvas/dashStyle.js
@@ -21477,7 +22827,7 @@ var pptxPreview = (() => {
       return canvasPattern;
     }
   }
-  function brushPath(ctx, el2, style, inBatch) {
+  function brushPath(ctx, el2, style, canBatch, scope) {
     var _a2;
     var hasStroke = styleHasStroke(style);
     var hasFill = styleHasFill(style);
@@ -21489,7 +22839,7 @@ var pptxPreview = (() => {
     }
     var path = el2.path || pathProxyForDraw;
     var dirtyFlag = el2.__dirty;
-    if (!inBatch) {
+    if (!canBatch) {
       var fill = style.fill;
       var stroke = style.stroke;
       var hasFillGradient = hasFill && !!fill.colorStops;
@@ -21518,7 +22868,7 @@ var pptxPreview = (() => {
       }
       if (hasStrokePattern) {
         strokePattern = dirtyFlag || !el2.__canvasStrokePattern ? createCanvasPattern(ctx, stroke, el2) : el2.__canvasStrokePattern;
-        el2.__canvasStrokePattern = fillPattern;
+        el2.__canvasStrokePattern = strokePattern;
       }
       if (hasFillGradient) {
         ctx.fillStyle = fillGradient;
@@ -21539,8 +22889,8 @@ var pptxPreview = (() => {
         }
       }
     }
-    var scale4 = el2.getGlobalScale();
-    path.setScale(scale4[0], scale4[1], el2.segmentIgnoreThreshold);
+    var scale3 = el2.getGlobalScale();
+    path.setScale(scale3[0], scale3[1], el2.segmentIgnoreThreshold);
     var lineDash;
     var lineDashOffset;
     if (ctx.setLineDash && style.lineDash) {
@@ -21556,7 +22906,7 @@ var pptxPreview = (() => {
         needsRebuild = false;
       }
       path.reset();
-      el2.buildPath(path, el2.shape, inBatch);
+      el2.buildPath(path, el2.shape, canBatch);
       path.toStatic();
       el2.pathUpdated();
     }
@@ -21567,7 +22917,7 @@ var pptxPreview = (() => {
       ctx.setLineDash(lineDash);
       ctx.lineDashOffset = lineDashOffset;
     }
-    if (!inBatch) {
+    if (!canBatch) {
       if (style.strokeFirst) {
         if (hasStroke) {
           doStrokePath(ctx, style);
@@ -21583,6 +22933,9 @@ var pptxPreview = (() => {
           doStrokePath(ctx, style);
         }
       }
+    } else {
+      scope.batchFill = hasFill;
+      scope.batchStroke = hasStroke;
     }
     if (lineDash) {
       ctx.setLineDash([]);
@@ -21704,8 +23057,8 @@ var pptxPreview = (() => {
     return styleChanged;
   }
   function bindPathAndTextCommonStyle(ctx, el2, prevEl, forceSetAll, scope) {
-    var style = getStyle(el2, scope.inHover);
-    var prevStyle = forceSetAll ? null : prevEl && getStyle(prevEl, scope.inHover) || {};
+    var style = el2.style;
+    var prevStyle = forceSetAll ? null : prevEl && prevEl.style || {};
     if (style === prevStyle) {
       return false;
     }
@@ -21756,7 +23109,7 @@ var pptxPreview = (() => {
     return styleChanged;
   }
   function bindImageStyle(ctx, el2, prevEl, forceSetAll, scope) {
-    return bindCommonProps(ctx, getStyle(el2, scope.inHover), prevEl && getStyle(prevEl, scope.inHover), forceSetAll, scope);
+    return bindCommonProps(ctx, el2.style, prevEl && prevEl.style, forceSetAll, scope);
   }
   function setContextTransform(ctx, el2) {
     var m2 = el2.transform;
@@ -21797,18 +23150,21 @@ var pptxPreview = (() => {
     return !(style.lineDash || !(+hasFill ^ +hasStroke) || hasFill && typeof style.fill !== "string" || hasStroke && typeof style.stroke !== "string" || style.strokePercent < 1 || style.strokeOpacity < 1 || style.fillOpacity < 1);
   }
   function flushPathDrawn(ctx, scope) {
-    scope.batchFill && ctx.fill();
-    scope.batchStroke && ctx.stroke();
-    scope.batchFill = "";
-    scope.batchStroke = "";
-  }
-  function getStyle(el2, inHover) {
-    return inHover ? el2.__hoverStyle || el2.style : el2.style;
+    if (scope.batchFill) {
+      scope.batchFill = false;
+      ctx.fill();
+    }
+    if (scope.batchStroke) {
+      scope.batchStroke = false;
+      ctx.stroke();
+    }
   }
   function brushSingle(ctx, el2) {
-    brush(ctx, el2, { inHover: false, viewWidth: 0, viewHeight: 0 }, true);
+    var scope = { inHover: false, viewWidth: 0, viewHeight: 0, beforeBrushParam: {} };
+    brush(ctx, el2, scope);
+    brushLoopFinalize(ctx, scope);
   }
-  function brush(ctx, el2, scope, isLast) {
+  function brush(ctx, el2, scope) {
     var m2 = el2.transform;
     if (!el2.shouldBePainted(scope.viewWidth, scope.viewHeight, false, false)) {
       el2.__dirty &= ~REDRAW_BIT;
@@ -21817,10 +23173,11 @@ var pptxPreview = (() => {
     }
     var clipPaths = el2.__clipPaths;
     var prevElClipPaths = scope.prevElClipPaths;
+    var style = el2.style;
     var forceSetTransform = false;
     var forceSetStyle = false;
     if (!prevElClipPaths || isClipPathChanged(clipPaths, prevElClipPaths)) {
-      if (prevElClipPaths && prevElClipPaths.length) {
+      if (prevElClipPaths) {
         flushPathDrawn(ctx, scope);
         ctx.restore();
         forceSetStyle = forceSetTransform = true;
@@ -21833,27 +23190,27 @@ var pptxPreview = (() => {
         ctx.save();
         updateClipStatus(clipPaths, ctx, scope);
         forceSetTransform = true;
+        scope.prevElClipPaths = clipPaths;
       }
-      scope.prevElClipPaths = clipPaths;
     }
     if (scope.allClipped) {
+      el2.__dirty &= ~REDRAW_BIT;
       el2.__isRendered = false;
       return;
     }
-    el2.beforeBrush && el2.beforeBrush();
+    el2.beforeBrush && el2.beforeBrush(scope.beforeBrushParam);
     el2.innerBeforeBrush();
     var prevEl = scope.prevEl;
     if (!prevEl) {
       forceSetStyle = forceSetTransform = true;
     }
-    var canBatchPath = el2 instanceof Path_default && el2.autoBatch && canPathBatch(el2.style);
+    var canBatchPath = el2 instanceof Path_default && el2.autoBatch && canPathBatch(style);
     if (forceSetTransform || isTransformChanged(m2, prevEl.transform)) {
       flushPathDrawn(ctx, scope);
       setContextTransform(ctx, el2);
     } else if (!canBatchPath) {
       flushPathDrawn(ctx, scope);
     }
-    var style = getStyle(el2, scope.inHover);
     if (el2 instanceof Path_default) {
       if (scope.lastDrawType !== DRAW_TYPE_PATH) {
         forceSetStyle = true;
@@ -21863,11 +23220,7 @@ var pptxPreview = (() => {
       if (!canBatchPath || !scope.batchFill && !scope.batchStroke) {
         ctx.beginPath();
       }
-      brushPath(ctx, el2, style, canBatchPath);
-      if (canBatchPath) {
-        scope.batchFill = style.fill || "";
-        scope.batchStroke = style.stroke || "";
-      }
+      brushPath(ctx, el2, style, canBatchPath, scope);
     } else {
       if (el2 instanceof TSpan_default) {
         if (scope.lastDrawType !== DRAW_TYPE_TEXT) {
@@ -21891,14 +23244,22 @@ var pptxPreview = (() => {
         brushIncremental(ctx, el2, scope);
       }
     }
-    if (canBatchPath && isLast) {
-      flushPathDrawn(ctx, scope);
-    }
     el2.innerAfterBrush();
-    el2.afterBrush && el2.afterBrush();
+    if (el2.afterBrush) {
+      if (canBatchPath) {
+        flushPathDrawn(ctx, scope);
+      }
+      el2.afterBrush();
+    }
     scope.prevEl = el2;
     el2.__dirty = 0;
     el2.__isRendered = true;
+  }
+  function brushLoopFinalize(ctx, scope) {
+    flushPathDrawn(ctx, scope);
+    if (scope.prevElClipPaths) {
+      ctx.restore();
+    }
   }
   function brushIncremental(ctx, el2, scope) {
     var displayables = el2.getDisplayables();
@@ -21910,28 +23271,31 @@ var pptxPreview = (() => {
       allClipped: false,
       viewWidth: scope.viewWidth,
       viewHeight: scope.viewHeight,
-      inHover: scope.inHover
+      inHover: scope.inHover,
+      beforeBrushParam: {}
     };
     var i;
     var len2;
     for (i = el2.getCursor(), len2 = displayables.length; i < len2; i++) {
       var displayable = displayables[i];
-      displayable.beforeBrush && displayable.beforeBrush();
+      displayable.beforeBrush && displayable.beforeBrush(scope.beforeBrushParam);
       displayable.innerBeforeBrush();
-      brush(ctx, displayable, innerScope, i === len2 - 1);
+      brush(ctx, displayable, innerScope);
       displayable.innerAfterBrush();
       displayable.afterBrush && displayable.afterBrush();
       innerScope.prevEl = displayable;
     }
+    brushLoopFinalize(ctx, innerScope);
     for (var i_1 = 0, len_1 = temporalDisplayables.length; i_1 < len_1; i_1++) {
       var displayable = temporalDisplayables[i_1];
-      displayable.beforeBrush && displayable.beforeBrush();
+      displayable.beforeBrush && displayable.beforeBrush(scope.beforeBrushParam);
       displayable.innerBeforeBrush();
-      brush(ctx, displayable, innerScope, i_1 === len_1 - 1);
+      brush(ctx, displayable, innerScope);
       displayable.innerAfterBrush();
       displayable.afterBrush && displayable.afterBrush();
       innerScope.prevEl = displayable;
     }
+    brushLoopFinalize(ctx, innerScope);
     el2.clearTemporalDisplayables();
     el2.notClear = true;
     ctx.restore();
@@ -22114,8 +23478,8 @@ var pptxPreview = (() => {
           }
         }
         function brushSymbol(x2, y2, width2, height2, symbolType) {
-          var scale4 = isSVG ? 1 : dpr2;
-          var symbol = createSymbol(symbolType, x2 * scale4, y2 * scale4, width2 * scale4, height2 * scale4, decalOpt.color, decalOpt.symbolKeepAspect);
+          var scale3 = isSVG ? 1 : dpr2;
+          var symbol = createSymbol(symbolType, x2 * scale3, y2 * scale3, width2 * scale3, height2 * scale3, decalOpt.color, decalOpt.symbolKeepAspect);
           if (isSVG) {
             var symbolVNode = zr.painter.renderOneToVNode(symbol);
             if (symbolVNode) {
@@ -22221,6 +23585,7 @@ var pptxPreview = (() => {
   }
 
   // node_modules/echarts/lib/visual/decal.js
+  var decalVisualStageHandler = createSimpleOverallStageHandler2(decalVisual);
   function decalVisual(ecModel, api) {
     ecModel.eachRawSeries(function(seriesModel) {
       if (ecModel.isSeriesFiltered(seriesModel)) {
@@ -22244,36 +23609,14 @@ var pptxPreview = (() => {
     });
   }
 
-  // node_modules/echarts/lib/core/lifecycle.js
-  var lifecycle = new Eventful_default();
-  var lifecycle_default = lifecycle;
-
-  // node_modules/echarts/lib/core/impl.js
-  var implsStore = {};
-  function registerImpl(name, impl) {
-    if (true) {
-      if (implsStore[name]) {
-        error("Already has an implementation of " + name + ".");
-      }
-    }
-    implsStore[name] = impl;
-  }
-  function getImpl(name) {
-    if (true) {
-      if (!implsStore[name]) {
-        error("Implementation of " + name + " doesn't exists.");
-      }
-    }
-    return implsStore[name];
-  }
-
   // node_modules/echarts/lib/core/echarts.js
   var TEST_FRAME_REMAIN_TIME = 1;
   var PRIORITY_PROCESSOR_SERIES_FILTER = 800;
   var PRIORITY_PROCESSOR_DATASTACK = 900;
+  var PRIORITY_PROCESSOR_AXIS_STATISTICS = 920;
   var PRIORITY_PROCESSOR_FILTER = 1e3;
   var PRIORITY_PROCESSOR_DEFAULT = 2e3;
-  var PRIORITY_PROCESSOR_STATISTIC = 5e3;
+  var PRIORITY_PROCESSOR_STATISTICS = 5e3;
   var PRIORITY_VISUAL_LAYOUT = 1e3;
   var PRIORITY_VISUAL_PROGRESSIVE_LAYOUT = 1100;
   var PRIORITY_VISUAL_GLOBAL = 2e3;
@@ -22286,9 +23629,11 @@ var pptxPreview = (() => {
   var PRIORITY_VISUAL_DECAL = 7e3;
   var PRIORITY = {
     PROCESSOR: {
-      FILTER: PRIORITY_PROCESSOR_FILTER,
       SERIES_FILTER: PRIORITY_PROCESSOR_SERIES_FILTER,
-      STATISTIC: PRIORITY_PROCESSOR_STATISTIC
+      AXIS_STATISTICS: PRIORITY_PROCESSOR_AXIS_STATISTICS,
+      FILTER: PRIORITY_PROCESSOR_FILTER,
+      STATISTIC: PRIORITY_PROCESSOR_STATISTICS,
+      STATISTICS: PRIORITY_PROCESSOR_STATISTICS
     },
     VISUAL: {
       LAYOUT: PRIORITY_VISUAL_LAYOUT,
@@ -22303,7 +23648,8 @@ var pptxPreview = (() => {
       DECAL: PRIORITY_VISUAL_DECAL
     }
   };
-  var IN_MAIN_PROCESS_KEY = "__flagInMainProcess";
+  var IN_EC_CYCLE_KEY = "__flagInMainProcess";
+  var EC_UPDATE_CYCLE_VERSION_KEY = "__mainProcessVersion";
   var PENDING_UPDATE = "__pendingUpdate";
   var STATUS_NEEDS_UPDATE_KEY = "__needsUpdateStatus";
   var ACTION_REG = /^[a-zA-Z0-9_]+$/;
@@ -22339,13 +23685,13 @@ var pptxPreview = (() => {
   }
   var MessageCenter = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(MessageCenter2, _super);
       function MessageCenter2() {
         return _super !== null && _super.apply(this, arguments) || this;
       }
       return MessageCenter2;
-    }(Eventful_default)
+    })(Eventful_default)
   );
   var messageCenterProto = MessageCenter.prototype;
   messageCenterProto.on = createRegisterEventWithLowercaseMessageCenter("on");
@@ -22368,9 +23714,10 @@ var pptxPreview = (() => {
   var enableConnect;
   var markStatusToUpdate;
   var applyChangedStates;
+  var updateECUpdateCycleVersion;
   var ECharts = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(ECharts2, _super);
       function ECharts2(dom, theme2, opts) {
         var _this = _super.call(this, new ECEventProcessor()) || this;
@@ -22380,13 +23727,12 @@ var pptxPreview = (() => {
         _this._componentsMap = {};
         _this._pendingActions = [];
         opts = opts || {};
-        if (isString(theme2)) {
-          theme2 = themeStorage[theme2];
-        }
+        _this.__v_skip = true;
         _this._dom = dom;
         var defaultRenderer = "canvas";
         var defaultCoarsePointer = "auto";
         var defaultUseDirtyRect = false;
+        _this[EC_UPDATE_CYCLE_VERSION_KEY] = 1;
         if (true) {
           var root = (
             /* eslint-disable-next-line */
@@ -22424,9 +23770,7 @@ var pptxPreview = (() => {
         });
         _this._ssr = opts.ssr;
         _this._throttledZrFlush = throttle(bind(zr.flush, zr), 17);
-        theme2 = clone(theme2);
-        theme2 && globalBackwardCompat(theme2, true);
-        _this._theme = theme2;
+        _this._updateTheme(theme2);
         _this._locale = createLocaleObject(opts.locale || SYSTEM_LANG);
         _this._coordSysMgr = new CoordinateSystem_default();
         var api = _this._api = createExtensionAPI(_this);
@@ -22449,37 +23793,38 @@ var pptxPreview = (() => {
         if (this._disposed) {
           return;
         }
-        applyChangedStates(this);
         var scheduler = this._scheduler;
+        var ecModel = this._model;
+        var api = this._api;
+        applyChangedStates(this);
         if (this[PENDING_UPDATE]) {
           var silent = this[PENDING_UPDATE].silent;
-          this[IN_MAIN_PROCESS_KEY] = true;
+          this[IN_EC_CYCLE_KEY] = true;
+          updateECUpdateCycleVersion(this);
           try {
             prepare(this);
             updateMethods.update.call(this, null, this[PENDING_UPDATE].updateParams);
           } catch (e2) {
-            this[IN_MAIN_PROCESS_KEY] = false;
+            this[IN_EC_CYCLE_KEY] = false;
             this[PENDING_UPDATE] = null;
             throw e2;
           }
           this._zr.flush();
-          this[IN_MAIN_PROCESS_KEY] = false;
+          this[IN_EC_CYCLE_KEY] = false;
           this[PENDING_UPDATE] = null;
           flushPendingActions.call(this, silent);
           triggerUpdatedEvent.call(this, silent);
         } else if (scheduler.unfinished) {
           var remainTime = TEST_FRAME_REMAIN_TIME;
-          var ecModel = this._model;
-          var api = this._api;
-          scheduler.unfinished = false;
           do {
-            var startTime = +/* @__PURE__ */ new Date();
+            scheduler.unfinished = false;
+            var startTime = platformApi.getTime();
             scheduler.performSeriesTasks(ecModel);
             scheduler.performDataProcessorTasks(ecModel);
             updateStreamModes(this, ecModel);
             scheduler.performVisualTasks(ecModel);
             renderSeries(this, this._model, api, "remain", {});
-            remainTime -= +/* @__PURE__ */ new Date() - startTime;
+            remainTime -= platformApi.getTime() - startTime;
           } while (remainTime > 0 && scheduler.unfinished);
           if (!scheduler.unfinished) {
             this._zr.flush();
@@ -22499,7 +23844,7 @@ var pptxPreview = (() => {
         return this._ssr;
       };
       ECharts2.prototype.setOption = function(option, notMerge, lazyUpdate) {
-        if (this[IN_MAIN_PROCESS_KEY]) {
+        if (this[IN_EC_CYCLE_KEY]) {
           if (true) {
             error("`setOption` should not be called during main process.");
           }
@@ -22519,7 +23864,8 @@ var pptxPreview = (() => {
           transitionOpt = notMerge.transition;
           notMerge = notMerge.notMerge;
         }
-        this[IN_MAIN_PROCESS_KEY] = true;
+        this[IN_EC_CYCLE_KEY] = true;
+        updateECUpdateCycleVersion(this);
         if (!this._model || notMerge) {
           var optionManager = new OptionManager_default(this._api);
           var theme2 = this._theme;
@@ -22540,7 +23886,7 @@ var pptxPreview = (() => {
             silent,
             updateParams
           };
-          this[IN_MAIN_PROCESS_KEY] = false;
+          this[IN_EC_CYCLE_KEY] = false;
           this.getZr().wakeUp();
         } else {
           try {
@@ -22548,20 +23894,68 @@ var pptxPreview = (() => {
             updateMethods.update.call(this, null, updateParams);
           } catch (e2) {
             this[PENDING_UPDATE] = null;
-            this[IN_MAIN_PROCESS_KEY] = false;
+            this[IN_EC_CYCLE_KEY] = false;
             throw e2;
           }
           if (!this._ssr) {
             this._zr.flush();
           }
           this[PENDING_UPDATE] = null;
-          this[IN_MAIN_PROCESS_KEY] = false;
+          this[IN_EC_CYCLE_KEY] = false;
           flushPendingActions.call(this, silent);
           triggerUpdatedEvent.call(this, silent);
         }
       };
-      ECharts2.prototype.setTheme = function() {
-        deprecateLog("ECharts#setTheme() is DEPRECATED in ECharts 3.0");
+      ECharts2.prototype.setTheme = function(theme2, opts) {
+        if (this[IN_EC_CYCLE_KEY]) {
+          if (true) {
+            error("`setTheme` should not be called during main process.");
+          }
+          return;
+        }
+        if (this._disposed) {
+          disposedWarning(this.id);
+          return;
+        }
+        var ecModel = this._model;
+        if (!ecModel) {
+          return;
+        }
+        var silent = opts && opts.silent;
+        var updateParams = null;
+        if (this[PENDING_UPDATE]) {
+          if (silent == null) {
+            silent = this[PENDING_UPDATE].silent;
+          }
+          updateParams = this[PENDING_UPDATE].updateParams;
+          this[PENDING_UPDATE] = null;
+        }
+        this[IN_EC_CYCLE_KEY] = true;
+        updateECUpdateCycleVersion(this);
+        try {
+          this._updateTheme(theme2);
+          ecModel.setTheme(this._theme);
+          prepare(this);
+          updateMethods.update.call(this, {
+            type: "setTheme"
+          }, updateParams);
+        } catch (e2) {
+          this[IN_EC_CYCLE_KEY] = false;
+          throw e2;
+        }
+        this[IN_EC_CYCLE_KEY] = false;
+        flushPendingActions.call(this, silent);
+        triggerUpdatedEvent.call(this, silent);
+      };
+      ECharts2.prototype._updateTheme = function(theme2) {
+        if (isString(theme2)) {
+          theme2 = themeStorage[theme2];
+        }
+        if (theme2) {
+          theme2 = clone(theme2);
+          theme2 && globalBackwardCompat(theme2, true);
+          this._theme = theme2;
+        }
       };
       ECharts2.prototype.getModel = function() {
         return this._model;
@@ -22610,9 +24004,6 @@ var pptxPreview = (() => {
         });
       };
       ECharts2.prototype.getSvgDataURL = function() {
-        if (!env_default.svgSupported) {
-          return;
-        }
         var zr = this._zr;
         var list = zr.storage.getDisplayList();
         each(list, function(el2) {
@@ -22654,8 +24045,8 @@ var pptxPreview = (() => {
         }
         var isSvg = opts.type === "svg";
         var groupId = this.group;
-        var mathMin8 = Math.min;
-        var mathMax8 = Math.max;
+        var mathMin9 = Math.min;
+        var mathMax9 = Math.max;
         var MAX_NUMBER = Infinity;
         if (connectedGroups[groupId]) {
           var left_1 = MAX_NUMBER;
@@ -22668,10 +24059,10 @@ var pptxPreview = (() => {
             if (chart.group === groupId) {
               var canvas = isSvg ? chart.getZr().painter.getSvgDom().innerHTML : chart.renderToCanvas(clone(opts));
               var boundingRect = chart.getDom().getBoundingClientRect();
-              left_1 = mathMin8(boundingRect.left, left_1);
-              top_1 = mathMin8(boundingRect.top, top_1);
-              right_1 = mathMax8(boundingRect.right, right_1);
-              bottom_1 = mathMax8(boundingRect.bottom, bottom_1);
+              left_1 = mathMin9(boundingRect.left, left_1);
+              top_1 = mathMin9(boundingRect.top, top_1);
+              right_1 = mathMax9(boundingRect.right, right_1);
+              bottom_1 = mathMax9(boundingRect.bottom, bottom_1);
               canvasList_1.push({
                 dom: canvas,
                 left: boundingRect.left,
@@ -22737,11 +24128,14 @@ var pptxPreview = (() => {
           return this.getDataURL(opts);
         }
       };
-      ECharts2.prototype.convertToPixel = function(finder, value) {
-        return doConvertPixel(this, "convertToPixel", finder, value);
+      ECharts2.prototype.convertToPixel = function(finder, value, opt) {
+        return doConvertPixel(this, "convertToPixel", finder, value, opt);
       };
-      ECharts2.prototype.convertFromPixel = function(finder, value) {
-        return doConvertPixel(this, "convertFromPixel", finder, value);
+      ECharts2.prototype.convertToLayout = function(finder, value, opt) {
+        return doConvertPixel(this, "convertToLayout", finder, value, opt);
+      };
+      ECharts2.prototype.convertFromPixel = function(finder, value, opt) {
+        return doConvertPixel(this, "convertFromPixel", finder, value, opt);
       };
       ECharts2.prototype.containPixel = function(finder, value) {
         if (this._disposed) {
@@ -22751,23 +24145,23 @@ var pptxPreview = (() => {
         var ecModel = this._model;
         var result;
         var findResult = parseFinder(ecModel, finder);
-        each(findResult, function(models, key) {
-          key.indexOf("Models") >= 0 && each(models, function(model) {
+        each(findResult, function(models, key2) {
+          key2.indexOf("Models") >= 0 && each(models, function(model) {
             var coordSys = model.coordinateSystem;
             if (coordSys && coordSys.containPoint) {
               result = result || !!coordSys.containPoint(value);
-            } else if (key === "seriesModels") {
+            } else if (key2 === "seriesModels") {
               var view = this._chartsMap[model.__viewId];
               if (view && view.containPoint) {
                 result = result || view.containPoint(value, model);
               } else {
                 if (true) {
-                  warn(key + ": " + (view ? "The found component do not support containPoint." : "No view mapping to the found component."));
+                  warn(key2 + ": " + (view ? "The found component do not support containPoint." : "No view mapping to the found component."));
                 }
               }
             } else {
               if (true) {
-                warn(key + ": containPoint is not supported");
+                warn(key2 + ": containPoint is not supported");
               }
             }
           }, this);
@@ -22846,17 +24240,13 @@ var pptxPreview = (() => {
           handler.zrEventfulCallAtLast = true;
           _this._zr.on(eveName, handler, _this);
         });
-        each(eventActionMap, function(actionType, eventType) {
-          _this._messageCenter.on(eventType, function(event) {
-            this.trigger(eventType, event);
-          }, _this);
+        var messageCenter = this._messageCenter;
+        each(publicEventTypeMap, function(_, eventType) {
+          messageCenter.on(eventType, function(event) {
+            _this.trigger(eventType, event);
+          });
         });
-        each(["selectchanged"], function(eventType) {
-          _this._messageCenter.on(eventType, function(event) {
-            this.trigger(eventType, event);
-          }, _this);
-        });
-        handleLegacySelectEvents(this._messageCenter, this, this._api);
+        handleLegacySelectEvents(messageCenter, this, this._api);
       };
       ECharts2.prototype.isDisposed = function() {
         return this._disposed;
@@ -22894,7 +24284,7 @@ var pptxPreview = (() => {
         delete instances2[chart.id];
       };
       ECharts2.prototype.resize = function(opts) {
-        if (this[IN_MAIN_PROCESS_KEY]) {
+        if (this[IN_EC_CYCLE_KEY]) {
           if (true) {
             error("`resize` should not be called during main process.");
           }
@@ -22919,7 +24309,8 @@ var pptxPreview = (() => {
           needPrepare = true;
           this[PENDING_UPDATE] = null;
         }
-        this[IN_MAIN_PROCESS_KEY] = true;
+        this[IN_EC_CYCLE_KEY] = true;
+        updateECUpdateCycleVersion(this);
         try {
           needPrepare && prepare(this);
           updateMethods.update.call(this, {
@@ -22930,10 +24321,10 @@ var pptxPreview = (() => {
             }, opts && opts.animation)
           });
         } catch (e2) {
-          this[IN_MAIN_PROCESS_KEY] = false;
+          this[IN_EC_CYCLE_KEY] = false;
           throw e2;
         }
-        this[IN_MAIN_PROCESS_KEY] = false;
+        this[IN_EC_CYCLE_KEY] = false;
         flushPendingActions.call(this, silent);
         triggerUpdatedEvent.call(this, silent);
       };
@@ -22969,7 +24360,7 @@ var pptxPreview = (() => {
       };
       ECharts2.prototype.makeActionFromEvent = function(eventObj) {
         var payload = extend({}, eventObj);
-        payload.type = eventActionMap[eventObj.type];
+        payload.type = connectionEventRevertMap[eventObj.type];
         return payload;
       };
       ECharts2.prototype.dispatchAction = function(payload, opt) {
@@ -22988,7 +24379,7 @@ var pptxPreview = (() => {
         if (!this._model) {
           return;
         }
-        if (this[IN_MAIN_PROCESS_KEY]) {
+        if (this[IN_EC_CYCLE_KEY]) {
           this._pendingActions.push(payload);
           return;
         }
@@ -23025,10 +24416,11 @@ var pptxPreview = (() => {
         this._scheduler.unfinished = true;
         this.getZr().wakeUp();
       };
-      ECharts2.internalField = function() {
+      ECharts2.internalField = (function() {
         prepare = function(ecIns) {
+          resetCachePerECPrepare(ecIns._model);
           var scheduler = ecIns._scheduler;
-          scheduler.restorePipelines(ecIns._model);
+          scheduler.restorePipelines(ecIns._zr, ecIns._model);
           scheduler.prepareStageTasks();
           prepareView(ecIns, true);
           prepareView(ecIns, false);
@@ -23103,15 +24495,7 @@ var pptxPreview = (() => {
             each([].concat(ecIns._componentsViews).concat(ecIns._chartsViews), callView);
             return;
           }
-          var query = {};
-          query[mainType + "Id"] = payload[mainType + "Id"];
-          query[mainType + "Index"] = payload[mainType + "Index"];
-          query[mainType + "Name"] = payload[mainType + "Name"];
-          var condition = {
-            mainType,
-            query
-          };
-          subType && (condition.subType = subType);
+          var condition = makeQueryConditionKindA(payload, mainType, subType);
           var excludeSeriesId = payload.excludeSeriesId;
           var excludeSeriesIdMap;
           if (excludeSeriesId != null) {
@@ -23168,7 +24552,7 @@ var pptxPreview = (() => {
         updateMethods = {
           prepareAndUpdate: function(payload) {
             prepare(this);
-            updateMethods.update.call(this, payload, {
+            updateMethods.update.call(this, payload, payload && {
               // Needs to mark option changed if newOption is given.
               // It's from MagicType.
               // TODO If use a separate flag optionChanged in payload?
@@ -23184,38 +24568,43 @@ var pptxPreview = (() => {
             if (!ecModel) {
               return;
             }
+            resetCachePerECFullUpdate(ecModel);
             ecModel.setUpdatePayload(payload);
             scheduler.restoreData(ecModel, payload);
             scheduler.performSeriesTasks(ecModel);
             coordSysMgr.create(ecModel, api);
+            lifecycle_default.trigger("coordsys:aftercreate", ecModel, api);
             scheduler.performDataProcessorTasks(ecModel, payload);
             updateStreamModes(this, ecModel);
             coordSysMgr.update(ecModel, api);
             clearColorPalette(ecModel);
             scheduler.performVisualTasks(ecModel, payload);
-            render(this, ecModel, api, payload, updateParams);
             var backgroundColor2 = ecModel.get("backgroundColor") || "transparent";
-            var darkMode = ecModel.get("darkMode");
             zr.setBackgroundColor(backgroundColor2);
+            var darkMode = ecModel.get("darkMode");
             if (darkMode != null && darkMode !== "auto") {
               zr.setDarkMode(darkMode);
             }
+            render(this, ecModel, api, payload, updateParams);
             lifecycle_default.trigger("afterupdate", ecModel, api);
           },
+          /**
+           * PENDING: See INCONSISTENCY_OF_BRUSH_SELECTED_EVENT_IN_UPDATE_TRANSFORM
+           */
           updateTransform: function(payload) {
-            var _this = this;
-            var ecModel = this._model;
-            var api = this._api;
+            var ecIns = this;
+            var ecModel = ecIns._model;
+            var api = ecIns._api;
             if (!ecModel) {
               return;
             }
             ecModel.setUpdatePayload(payload);
             var componentDirtyList = [];
-            ecModel.eachComponent(function(componentType, componentModel) {
-              if (componentType === "series") {
+            ecModel.eachComponent(function(mainType, componentModel) {
+              if (mainType === COMPONENT_MAIN_TYPE_SERIES) {
                 return;
               }
-              var componentView = _this.getViewOfComponentModel(componentModel);
+              var componentView = ecIns.getViewOfComponentModel(componentModel);
               if (componentView && componentView.__alive) {
                 if (componentView.updateTransform) {
                   var result = componentView.updateTransform(componentModel, ecModel, api, payload);
@@ -23227,20 +24616,20 @@ var pptxPreview = (() => {
             });
             var seriesDirtyMap = createHashMap();
             ecModel.eachSeries(function(seriesModel) {
-              var chartView = _this._chartsMap[seriesModel.__viewId];
-              if (chartView.updateTransform) {
+              var chartView = ecIns._chartsMap[seriesModel.__viewId];
+              var pipelineContext = seriesModel.pipelineContext;
+              if (chartView.updateTransform && !pipelineContext.progressiveRender) {
                 var result = chartView.updateTransform(seriesModel, ecModel, api, payload);
                 result && result.update && seriesDirtyMap.set(seriesModel.uid, 1);
               } else {
                 seriesDirtyMap.set(seriesModel.uid, 1);
               }
             });
-            clearColorPalette(ecModel);
-            this._scheduler.performVisualTasks(ecModel, payload, {
+            ecIns._scheduler.performVisualTasks(ecModel, payload, {
               setDirty: true,
               dirtyMap: seriesDirtyMap
             });
-            renderSeries(this, ecModel, api, payload, {}, seriesDirtyMap);
+            renderSeries(ecIns, ecModel, api, payload, {}, seriesDirtyMap);
             lifecycle_default.trigger("afterupdate", ecModel, api);
           },
           updateView: function(payload) {
@@ -23285,11 +24674,14 @@ var pptxPreview = (() => {
             });
             lifecycle_default.trigger("afterupdate", ecModel, this._api);
           },
+          /**
+           * @deprecated
+           */
           updateLayout: function(payload) {
             updateMethods.update.call(this, payload);
           }
         };
-        doConvertPixel = function(ecIns, methodName, finder, value) {
+        function doConvertPixelImpl(ecIns, methodName, finder, value, opt) {
           if (ecIns._disposed) {
             disposedWarning(ecIns.id);
             return;
@@ -23300,14 +24692,16 @@ var pptxPreview = (() => {
           var parsedFinder = parseFinder(ecModel, finder);
           for (var i = 0; i < coordSysList.length; i++) {
             var coordSys = coordSysList[i];
-            if (coordSys[methodName] && (result = coordSys[methodName](ecModel, parsedFinder, value)) != null) {
+            if (coordSys[methodName] && (result = coordSys[methodName](ecModel, parsedFinder, value, opt)) != null) {
               return result;
             }
           }
           if (true) {
             warn("No coordinate system that supports " + methodName + " found by the given finder.");
           }
-        };
+        }
+        ;
+        doConvertPixel = doConvertPixelImpl;
         updateStreamModes = function(ecIns, ecModel) {
           var chartsMap = ecIns._chartsMap;
           var scheduler = ecIns._scheduler;
@@ -23320,12 +24714,12 @@ var pptxPreview = (() => {
           var ecModel = this.getModel();
           var payloadType = payload.type;
           var escapeConnect = payload.escapeConnect;
-          var actionWrap = actions[payloadType];
-          var actionInfo = actionWrap.actionInfo;
+          var actionInfo = actions[payloadType];
           var cptTypeTmp = (actionInfo.update || "update").split(":");
           var updateMethod = cptTypeTmp.pop();
           var cptType = cptTypeTmp[0] != null && parseClassType(cptTypeTmp[0]);
-          this[IN_MAIN_PROCESS_KEY] = true;
+          this[IN_EC_CYCLE_KEY] = true;
+          updateECUpdateCycleVersion(this);
           var payloads = [payload];
           var batched = false;
           if (payload.batch) {
@@ -23338,15 +24732,22 @@ var pptxPreview = (() => {
           }
           var eventObjBatch = [];
           var eventObj;
+          var actionResultBatch = [];
+          var nonRefinedEventType = actionInfo.nonRefinedEventType;
           var isSelectChange = isSelectChangePayload(payload);
           var isHighDown = isHighDownPayload(payload);
           if (isHighDown) {
             allLeaveBlur(this._api);
           }
           each(payloads, function(batchItem) {
-            eventObj = actionWrap.action(batchItem, _this._model, _this._api);
+            var actionResult = actionInfo.action(batchItem, ecModel, _this._api);
+            if (actionInfo.refineEvent) {
+              actionResultBatch.push(actionResult);
+            } else {
+              eventObj = actionResult;
+            }
             eventObj = eventObj || extend({}, batchItem);
-            eventObj.type = actionInfo.event || eventObj.type;
+            eventObj.type = nonRefinedEventType;
             eventObjBatch.push(eventObj);
             if (isHighDown) {
               var _a2 = preParseFinder(payload), queryOptionMap = _a2.queryOptionMap, mainTypeSpecified = _a2.mainTypeSpecified;
@@ -23370,33 +24771,36 @@ var pptxPreview = (() => {
                 updateMethods[updateMethod].call(this, payload);
               }
             } catch (e2) {
-              this[IN_MAIN_PROCESS_KEY] = false;
+              this[IN_EC_CYCLE_KEY] = false;
               throw e2;
             }
           }
           if (batched) {
             eventObj = {
-              type: actionInfo.event || payloadType,
+              type: nonRefinedEventType,
               escapeConnect,
               batch: eventObjBatch
             };
           } else {
             eventObj = eventObjBatch[0];
           }
-          this[IN_MAIN_PROCESS_KEY] = false;
+          this[IN_EC_CYCLE_KEY] = false;
           if (!silent) {
+            var refinedEvent = void 0;
+            if (actionInfo.refineEvent) {
+              var eventContent = actionInfo.refineEvent(actionResultBatch, payload, ecModel, this._api).eventContent;
+              assert(isObject(eventContent));
+              refinedEvent = defaults({
+                type: actionInfo.refinedEventType
+              }, eventContent);
+              refinedEvent.fromAction = payload.type;
+              refinedEvent.fromActionPayload = payload;
+              refinedEvent.escapeConnect = true;
+            }
             var messageCenter = this._messageCenter;
             messageCenter.trigger(eventObj.type, eventObj);
-            if (isSelectChange) {
-              var newObj = {
-                type: "selectchanged",
-                escapeConnect,
-                selected: getAllSelectedIndices(ecModel),
-                isFromClick: payload.isFromClick || false,
-                fromAction: payload.type,
-                fromActionPayload: payload
-              };
-              messageCenter.trigger(newObj.type, newObj);
+            if (refinedEvent) {
+              messageCenter.trigger(refinedEvent.type, refinedEvent);
             }
           }
         };
@@ -23420,6 +24824,8 @@ var pptxPreview = (() => {
               zr.animation.isFinished() && !ecIns[PENDING_UPDATE] && !ecIns._scheduler.unfinished && !ecIns._pendingActions.length
             ) {
               ecIns.trigger("finished");
+            } else {
+              zr.refresh();
             }
           });
         };
@@ -23494,15 +24900,15 @@ var pptxPreview = (() => {
             each(zLevels, function(item) {
               var componentModel = ecModel.getComponent(item.type, item.idx);
               var zlevel = item.zlevel;
-              var key = item.key;
+              var key2 = item.key;
               if (lastSeriesZLevel_1 != null) {
                 zlevel = Math.max(lastSeriesZLevel_1, zlevel);
               }
-              if (key) {
-                if (zlevel === lastSeriesZLevel_1 && key !== lastSeriesKey_1) {
+              if (key2) {
+                if (zlevel === lastSeriesZLevel_1 && key2 !== lastSeriesKey_1) {
                   zlevel++;
                 }
-                lastSeriesKey_1 = key;
+                lastSeriesKey_1 = key2;
               } else if (lastSeriesKey_1) {
                 if (zlevel === lastSeriesZLevel_1) {
                   zlevel++;
@@ -23574,6 +24980,9 @@ var pptxPreview = (() => {
           ecIns[STATUS_NEEDS_UPDATE_KEY] = true;
           ecIns.getZr().wakeUp();
         };
+        updateECUpdateCycleVersion = function(ecIns) {
+          ecIns[EC_UPDATE_CYCLE_VERSION_KEY] = (ecIns[EC_UPDATE_CYCLE_VERSION_KEY] + 1) % 1e6;
+        };
         applyChangedStates = function(ecIns) {
           if (!ecIns[STATUS_NEEDS_UPDATE_KEY]) {
             return;
@@ -23607,6 +25016,9 @@ var pptxPreview = (() => {
         }
         function updateHoverLayerStatus(ecIns, ecModel) {
           var zr = ecIns._zr;
+          if (zr.painter.type !== "canvas") {
+            return;
+          }
           var storage = zr.storage;
           var elCount = 0;
           storage.traverse(function(el2) {
@@ -23614,7 +25026,8 @@ var pptxPreview = (() => {
               elCount++;
             }
           });
-          if (elCount > ecModel.get("hoverLayerThreshold") && !env_default.node && !env_default.worker) {
+          var shouldUseHoverLayer2 = elCount > retrieve2(ecModel.get("hoverLayerThreshold"), globalDefault_default.hoverLayerThreshold) && !env_default.node && !env_default.worker;
+          if (ecIns._usingTHL || shouldUseHoverLayer2) {
             ecModel.eachSeries(function(seriesModel) {
               if (seriesModel.preventUsingHoverLayer) {
                 return;
@@ -23622,12 +25035,14 @@ var pptxPreview = (() => {
               var chartView = ecIns._chartsMap[seriesModel.__viewId];
               if (chartView.__alive) {
                 chartView.eachRendered(function(el2) {
-                  if (el2.states.emphasis) {
-                    el2.states.emphasis.hoverLayer = true;
+                  var emphasis = el2.states.emphasis;
+                  if (emphasis && emphasis.hoverLayer !== HOVER_LAYER_FOR_INCREMENTAL) {
+                    emphasis.hoverLayer = shouldUseHoverLayer2 ? HOVER_LAYER_FROM_THRESHOLD : HOVER_LAYER_NO;
                   }
                 });
               }
             });
+            ecIns._usingTHL = shouldUseHoverLayer2;
           }
         }
         ;
@@ -23644,41 +25059,13 @@ var pptxPreview = (() => {
           if (model.preventAutoZ) {
             return;
           }
-          var z = model.get("z") || 0;
-          var zlevel = model.get("zlevel") || 0;
+          var zInfo = retrieveZInfo(model);
           view.eachRendered(function(el2) {
-            doUpdateZ(el2, z, zlevel, -Infinity);
+            traverseUpdateZ(el2, zInfo.z, zInfo.zlevel);
             return true;
           });
         }
         ;
-        function doUpdateZ(el2, z, zlevel, maxZ2) {
-          var label = el2.getTextContent();
-          var labelLine = el2.getTextGuideLine();
-          var isGroup = el2.isGroup;
-          if (isGroup) {
-            var children = el2.childrenRef();
-            for (var i = 0; i < children.length; i++) {
-              maxZ2 = Math.max(doUpdateZ(children[i], z, zlevel, maxZ2), maxZ2);
-            }
-          } else {
-            el2.z = z;
-            el2.zlevel = zlevel;
-            maxZ2 = Math.max(el2.z2, maxZ2);
-          }
-          if (label) {
-            label.z = z;
-            label.zlevel = zlevel;
-            isFinite(maxZ2) && (label.z2 = maxZ2 + 2);
-          }
-          if (labelLine) {
-            var textGuideLineConfig = el2.textGuideLineConfig;
-            labelLine.z = z;
-            labelLine.zlevel = zlevel;
-            isFinite(maxZ2) && (labelLine.z2 = maxZ2 + (textGuideLineConfig && textGuideLineConfig.showAbove ? 1 : -1));
-          }
-          return maxZ2;
-        }
         function clearStates(model, view) {
           view.eachRendered(function(el2) {
             if (isElementRemoved(el2)) {
@@ -23747,7 +25134,7 @@ var pptxPreview = (() => {
         ;
         createExtensionAPI = function(ecIns) {
           return new /** @class */
-          (function(_super2) {
+          ((function(_super2) {
             __extends(class_1, _super2);
             function class_1() {
               return _super2 !== null && _super2.apply(this, arguments) || this;
@@ -23797,8 +25184,14 @@ var pptxPreview = (() => {
             class_1.prototype.getViewOfSeriesModel = function(seriesModel) {
               return ecIns.getViewOfSeriesModel(seriesModel);
             };
+            class_1.prototype.getECUpdateCycleVersion = function() {
+              return ecIns[EC_UPDATE_CYCLE_VERSION_KEY];
+            };
+            class_1.prototype.usingTHL = function() {
+              return ecIns._usingTHL;
+            };
             return class_1;
-          }(ExtensionAPI_default))(ecIns);
+          })(ExtensionAPI_default))(ecIns);
         };
         enableConnect = function(chart) {
           function updateConnectedChartsStatus(charts, status) {
@@ -23807,7 +25200,7 @@ var pptxPreview = (() => {
               otherChart[CONNECT_STATUS_KEY] = status;
             }
           }
-          each(eventActionMap, function(actionType, eventType) {
+          each(connectionEventRevertMap, function(_, eventType) {
             chart._messageCenter.on(eventType, function(event) {
               if (connectedGroups[chart.group] && chart[CONNECT_STATUS_KEY] !== CONNECT_STATUS_PENDING) {
                 if (event && event.escapeConnect) {
@@ -23831,9 +25224,9 @@ var pptxPreview = (() => {
             });
           });
         };
-      }();
+      })();
       return ECharts2;
-    }(Eventful_default)
+    })(Eventful_default)
   );
   var echartsProto = ECharts.prototype;
   echartsProto.on = createRegisterEventWithLowercaseECharts("on");
@@ -23859,7 +25252,8 @@ var pptxPreview = (() => {
     }
   }
   var actions = {};
-  var eventActionMap = {};
+  var connectionEventRevertMap = {};
+  var publicEventTypeMap = {};
   var dataProcessorFuncs = [];
   var optionPreprocessorFuncs = [];
   var visualFuncs = [];
@@ -23922,39 +25316,69 @@ var pptxPreview = (() => {
   function registerUpdateLifecycle(name, cb) {
     lifecycle_default.on(name, cb);
   }
-  function registerAction(actionInfo, eventName, action) {
-    if (isFunction(eventName)) {
-      action = eventName;
-      eventName = "";
+  function registerAction(arg0, arg1, action) {
+    var actionType;
+    var publicEventType;
+    var refineEvent;
+    var update;
+    var publishNonRefinedEvent;
+    if (isFunction(arg1)) {
+      action = arg1;
+      arg1 = "";
     }
-    var actionType = isObject(actionInfo) ? actionInfo.type : [actionInfo, actionInfo = {
-      event: eventName
-    }][0];
-    actionInfo.event = (actionInfo.event || actionType).toLowerCase();
-    eventName = actionInfo.event;
-    if (eventActionMap[eventName]) {
+    if (isObject(arg0)) {
+      actionType = arg0.type;
+      publicEventType = arg0.event;
+      update = arg0.update;
+      publishNonRefinedEvent = arg0.publishNonRefinedEvent;
+      if (!action) {
+        action = arg0.action;
+      }
+      refineEvent = arg0.refineEvent;
+    } else {
+      actionType = arg0;
+      publicEventType = arg1;
+    }
+    function createEventType(actionOrEventType) {
+      return actionOrEventType.toLowerCase();
+    }
+    publicEventType = createEventType(publicEventType || actionType);
+    var nonRefinedEventType = refineEvent ? createEventType(actionType) : publicEventType;
+    if (actions[actionType]) {
       return;
     }
-    assert(ACTION_REG.test(actionType) && ACTION_REG.test(eventName));
-    if (!actions[actionType]) {
-      actions[actionType] = {
-        action,
-        actionInfo
-      };
+    assert(ACTION_REG.test(actionType) && ACTION_REG.test(publicEventType));
+    if (refineEvent) {
+      assert(publicEventType !== actionType);
     }
-    eventActionMap[eventName] = actionType;
+    actions[actionType] = {
+      actionType,
+      refinedEventType: publicEventType,
+      nonRefinedEventType,
+      update,
+      action,
+      refineEvent
+    };
+    publicEventTypeMap[publicEventType] = 1;
+    if (refineEvent && publishNonRefinedEvent) {
+      publicEventTypeMap[nonRefinedEventType] = 1;
+    }
+    if (connectionEventRevertMap[nonRefinedEventType]) {
+      error(nonRefinedEventType + ' must not be shared; use "refineEvent" if you intend to share an event name.');
+    }
+    connectionEventRevertMap[nonRefinedEventType] = actionType;
   }
   function registerCoordinateSystem(type, coordSysCreator) {
     CoordinateSystem_default.register(type, coordSysCreator);
   }
   function registerLayout(priority, layoutTask) {
-    normalizeRegister(visualFuncs, priority, layoutTask, PRIORITY_VISUAL_LAYOUT, "layout");
+    normalizeRegister(visualFuncs, priority, layoutTask, PRIORITY_VISUAL_LAYOUT, "layout", true);
   }
   function registerVisual(priority, visualTask) {
-    normalizeRegister(visualFuncs, priority, visualTask, PRIORITY_VISUAL_CHART, "visual");
+    normalizeRegister(visualFuncs, priority, visualTask, PRIORITY_VISUAL_CHART, "visual", true);
   }
   var registeredTasks = [];
-  function normalizeRegister(targetList, priority, fn, defaultPriority, visualType) {
+  function normalizeRegister(targetList, priority, fn, defaultPriority, visualType, checkBlock) {
     if (isFunction(priority) || isObject(priority)) {
       fn = priority;
       priority = defaultPriority;
@@ -23975,6 +25399,11 @@ var pptxPreview = (() => {
     stageHandler.__prio = priority;
     stageHandler.__raw = fn;
     targetList.push(stageHandler);
+    if (true) {
+      if (checkBlock) {
+        assert(!stageHandler.dirtyOnOverallProgress, "dirtyOnOverallProgress is not allowed in " + visualType + " stage; otherwise progressive rendering is disabled on all series.");
+      }
+    }
   }
   function registerLoading(name, loadingFx) {
     loadingEffects[name] = loadingFx;
@@ -23989,9 +25418,9 @@ var pptxPreview = (() => {
   registerVisual(PRIORITY_VISUAL_CHART_DATA_CUSTOM, dataColorPaletteTask);
   registerVisual(PRIORITY_VISUAL_GLOBAL, seriesSymbolTask);
   registerVisual(PRIORITY_VISUAL_CHART_DATA_CUSTOM, dataSymbolTask);
-  registerVisual(PRIORITY_VISUAL_DECAL, decalVisual);
+  registerVisual(PRIORITY_VISUAL_DECAL, decalVisualStageHandler);
   registerPreprocessor(globalBackwardCompat);
-  registerProcessor(PRIORITY_PROCESSOR_DATASTACK, dataStack);
+  registerProcessor(PRIORITY_PROCESSOR_DATASTACK, dataStackStageHandler);
   registerLoading("default", defaultLoading);
   registerAction({
     type: HIGHLIGHT_ACTION_TYPE,
@@ -24005,20 +25434,37 @@ var pptxPreview = (() => {
   }, noop);
   registerAction({
     type: SELECT_ACTION_TYPE,
-    event: SELECT_ACTION_TYPE,
-    update: SELECT_ACTION_TYPE
-  }, noop);
+    event: SELECT_CHANGED_EVENT_TYPE,
+    update: SELECT_ACTION_TYPE,
+    action: noop,
+    refineEvent: makeSelectChangedEvent,
+    publishNonRefinedEvent: true
+  });
   registerAction({
     type: UNSELECT_ACTION_TYPE,
-    event: UNSELECT_ACTION_TYPE,
-    update: UNSELECT_ACTION_TYPE
-  }, noop);
+    event: SELECT_CHANGED_EVENT_TYPE,
+    update: UNSELECT_ACTION_TYPE,
+    action: noop,
+    refineEvent: makeSelectChangedEvent,
+    publishNonRefinedEvent: true
+  });
   registerAction({
     type: TOGGLE_SELECT_ACTION_TYPE,
-    event: TOGGLE_SELECT_ACTION_TYPE,
-    update: TOGGLE_SELECT_ACTION_TYPE
-  }, noop);
-  registerTheme("light", light_default);
+    event: SELECT_CHANGED_EVENT_TYPE,
+    update: TOGGLE_SELECT_ACTION_TYPE,
+    action: noop,
+    refineEvent: makeSelectChangedEvent,
+    publishNonRefinedEvent: true
+  });
+  function makeSelectChangedEvent(actionResultBatch, payload, ecModel, api) {
+    return {
+      eventContent: {
+        selected: getAllSelectedIndices(ecModel),
+        isFromClick: payload.isFromClick || false
+      }
+    };
+  }
+  registerTheme("default", {});
   registerTheme("dark", dark_default);
 
   // node_modules/echarts/lib/data/DataDiffer.js
@@ -24030,7 +25476,7 @@ var pptxPreview = (() => {
   }
   var DataDiffer = (
     /** @class */
-    function() {
+    (function() {
       function DataDiffer2(oldArr, newArr, oldKeyGetter, newKeyGetter, context, diffMode) {
         this._old = oldArr;
         this._new = newArr;
@@ -24148,36 +25594,36 @@ var pptxPreview = (() => {
       DataDiffer2.prototype._initIndexMap = function(arr, map3, keyArr, keyGetterName) {
         var cbModeMultiple = this._diffModeMultiple;
         for (var i = 0; i < arr.length; i++) {
-          var key = "_ec_" + this[keyGetterName](arr[i], i);
+          var key2 = "_ec_" + this[keyGetterName](arr[i], i);
           if (!cbModeMultiple) {
-            keyArr[i] = key;
+            keyArr[i] = key2;
           }
           if (!map3) {
             continue;
           }
-          var idxMapVal = map3[key];
+          var idxMapVal = map3[key2];
           var idxMapValLen = dataIndexMapValueLength(idxMapVal);
           if (idxMapValLen === 0) {
-            map3[key] = i;
+            map3[key2] = i;
             if (cbModeMultiple) {
-              keyArr.push(key);
+              keyArr.push(key2);
             }
           } else if (idxMapValLen === 1) {
-            map3[key] = [idxMapVal, i];
+            map3[key2] = [idxMapVal, i];
           } else {
             idxMapVal.push(i);
           }
         }
       };
       return DataDiffer2;
-    }()
+    })()
   );
   var DataDiffer_default = DataDiffer;
 
   // node_modules/echarts/lib/data/helper/dimensionHelper.js
   var DimensionUserOuput = (
     /** @class */
-    function() {
+    (function() {
       function DimensionUserOuput2(encode, dimRequest) {
         this._encode = encode;
         this._schema = dimRequest;
@@ -24196,7 +25642,7 @@ var pptxPreview = (() => {
         return this._cachedDimNames;
       };
       return DimensionUserOuput2;
-    }()
+    })()
   );
   function summarizeDimensions(data, schema) {
     var summary = {};
@@ -24276,7 +25722,7 @@ var pptxPreview = (() => {
   // node_modules/echarts/lib/data/SeriesDimensionDefine.js
   var SeriesDimensionDefine = (
     /** @class */
-    /* @__PURE__ */ function() {
+    /* @__PURE__ */ (function() {
       function SeriesDimensionDefine2(opt) {
         this.otherDims = {};
         if (opt != null) {
@@ -24284,7 +25730,7 @@ var pptxPreview = (() => {
         }
       }
       return SeriesDimensionDefine2;
-    }()
+    })()
   );
   var SeriesDimensionDefine_default = SeriesDimensionDefine;
 
@@ -24299,7 +25745,7 @@ var pptxPreview = (() => {
   };
   var SeriesDataSchema = (
     /** @class */
-    function() {
+    (function() {
       function SeriesDataSchema2(opt) {
         this.dimensions = opt.dimensions;
         this._dimOmitted = opt.dimensionOmitted;
@@ -24400,7 +25846,7 @@ var pptxPreview = (() => {
         this._updateDimOmitted(true);
       };
       return SeriesDataSchema2;
-    }()
+    })()
   );
   function isSeriesDataSchema(schema) {
     return schema instanceof SeriesDataSchema;
@@ -24441,7 +25887,7 @@ var pptxPreview = (() => {
   var makeIdFromName;
   var SeriesData = (
     /** @class */
-    function() {
+    (function() {
       function SeriesData2(dimensionsInput, hostModel) {
         this.type = "list";
         this._dimOmitted = false;
@@ -24494,17 +25940,17 @@ var pptxPreview = (() => {
           if (dimensionInfo.createInvertedIndices) {
             invertedIndicesMap[dimensionName] = [];
           }
-          if (otherDims.itemName === 0) {
-            this._nameDimIdx = i;
-          }
-          if (otherDims.itemId === 0) {
-            this._idDimIdx = i;
-          }
           if (true) {
             assert(assignStoreDimIdx || dimensionInfo.storeDimIndex >= 0);
           }
           if (assignStoreDimIdx) {
             dimensionInfo.storeDimIndex = i;
+          }
+          if (otherDims.itemName === 0) {
+            this._nameDimIdx = dimensionInfo.storeDimIndex;
+          }
+          if (otherDims.itemId === 0) {
+            this._idDimIdx = dimensionInfo.storeDimIndex;
           }
         }
         this.dimensions = dimensionNames;
@@ -24687,18 +26133,18 @@ var pptxPreview = (() => {
         }
         prepareInvertedIndex(this);
       };
-      SeriesData2.prototype.getApproximateExtent = function(dim) {
-        return this._approximateExtent[dim] || this._store.getDataExtent(this._getStoreDimIndex(dim));
+      SeriesData2.prototype.getApproximateExtent = function(dim, filter2) {
+        return this._approximateExtent[dim] || this._store.getDataExtent(this._getStoreDimIndex(dim), filter2);
       };
-      SeriesData2.prototype.setApproximateExtent = function(extent3, dim) {
+      SeriesData2.prototype.setApproximateExtent = function(extent, dim) {
         dim = this.getDimension(dim);
-        this._approximateExtent[dim] = extent3.slice();
+        this._approximateExtent[dim] = extent.slice();
       };
-      SeriesData2.prototype.getCalculationInfo = function(key) {
-        return this._calculationInfo[key];
+      SeriesData2.prototype.getCalculationInfo = function(key2) {
+        return this._calculationInfo[key2];
       };
-      SeriesData2.prototype.setCalculationInfo = function(key, value) {
-        isObject3(key) ? extend(this._calculationInfo, key) : this._calculationInfo[key] = value;
+      SeriesData2.prototype.setCalculationInfo = function(key2, value) {
+        isObject3(key2) ? extend(this._calculationInfo, key2) : this._calculationInfo[key2] = value;
       };
       SeriesData2.prototype.getName = function(idx) {
         var rawIndex = this.getRawIndex(idx);
@@ -24743,7 +26189,7 @@ var pptxPreview = (() => {
         return this._store.getIndices();
       };
       SeriesData2.prototype.getDataExtent = function(dim) {
-        return this._store.getDataExtent(this._getStoreDimIndex(dim));
+        return this._store.getDataExtent(this._getStoreDimIndex(dim), null);
       };
       SeriesData2.prototype.getSum = function(dim) {
         return this._store.getSum(this._getStoreDimIndex(dim));
@@ -24793,9 +26239,6 @@ var pptxPreview = (() => {
           return INDEX_NOT_FOUND;
         }
         return rawIndex;
-      };
-      SeriesData2.prototype.indicesOfNearest = function(dim, value, maxDistance) {
-        return this._store.indicesOfNearest(this._getStoreDimIndex(dim), value, maxDistance);
       };
       SeriesData2.prototype.each = function(dims, cb, ctx) {
         "use strict";
@@ -24901,9 +26344,9 @@ var pptxPreview = (() => {
           return getId(thisList, idx);
         });
       };
-      SeriesData2.prototype.getVisual = function(key) {
+      SeriesData2.prototype.getVisual = function(key2) {
         var visual = this._visual;
-        return visual && visual[key];
+        return visual && visual[key2];
       };
       SeriesData2.prototype.setVisual = function(kvObj, val) {
         this._visual = this._visual || {};
@@ -24913,59 +26356,59 @@ var pptxPreview = (() => {
           this._visual[kvObj] = val;
         }
       };
-      SeriesData2.prototype.getItemVisual = function(idx, key) {
+      SeriesData2.prototype.getItemVisual = function(idx, key2) {
         var itemVisual = this._itemVisuals[idx];
-        var val = itemVisual && itemVisual[key];
+        var val = itemVisual && itemVisual[key2];
         if (val == null) {
-          return this.getVisual(key);
+          return this.getVisual(key2);
         }
         return val;
       };
       SeriesData2.prototype.hasItemVisual = function() {
         return this._itemVisuals.length > 0;
       };
-      SeriesData2.prototype.ensureUniqueItemVisual = function(idx, key) {
+      SeriesData2.prototype.ensureUniqueItemVisual = function(idx, key2) {
         var itemVisuals = this._itemVisuals;
         var itemVisual = itemVisuals[idx];
         if (!itemVisual) {
           itemVisual = itemVisuals[idx] = {};
         }
-        var val = itemVisual[key];
+        var val = itemVisual[key2];
         if (val == null) {
-          val = this.getVisual(key);
+          val = this.getVisual(key2);
           if (isArray(val)) {
             val = val.slice();
           } else if (isObject3(val)) {
             val = extend({}, val);
           }
-          itemVisual[key] = val;
+          itemVisual[key2] = val;
         }
         return val;
       };
-      SeriesData2.prototype.setItemVisual = function(idx, key, value) {
+      SeriesData2.prototype.setItemVisual = function(idx, key2, value) {
         var itemVisual = this._itemVisuals[idx] || {};
         this._itemVisuals[idx] = itemVisual;
-        if (isObject3(key)) {
-          extend(itemVisual, key);
+        if (isObject3(key2)) {
+          extend(itemVisual, key2);
         } else {
-          itemVisual[key] = value;
+          itemVisual[key2] = value;
         }
       };
       SeriesData2.prototype.clearAllVisual = function() {
         this._visual = {};
         this._itemVisuals = [];
       };
-      SeriesData2.prototype.setLayout = function(key, val) {
-        isObject3(key) ? extend(this._layout, key) : this._layout[key] = val;
+      SeriesData2.prototype.setLayout = function(key2, val) {
+        isObject3(key2) ? extend(this._layout, key2) : this._layout[key2] = val;
       };
-      SeriesData2.prototype.getLayout = function(key) {
-        return this._layout[key];
+      SeriesData2.prototype.getLayout = function(key2) {
+        return this._layout[key2];
       };
       SeriesData2.prototype.getItemLayout = function(idx) {
         return this._itemLayouts[idx];
       };
-      SeriesData2.prototype.setItemLayout = function(idx, layout3, merge2) {
-        this._itemLayouts[idx] = merge2 ? extend(this._itemLayouts[idx] || {}, layout3) : layout3;
+      SeriesData2.prototype.setItemLayout = function(idx, layout2, merge2) {
+        this._itemLayouts[idx] = merge2 ? extend(this._itemLayouts[idx] || {}, layout2) : layout2;
       };
       SeriesData2.prototype.clearItemLayouts = function() {
         this._itemLayouts.length = 0;
@@ -25005,7 +26448,7 @@ var pptxPreview = (() => {
           return injectFunction.apply(this, [res].concat(slice(arguments)));
         };
       };
-      SeriesData2.internalField = function() {
+      SeriesData2.internalField = (function() {
         prepareInvertedIndex = function(data) {
           var invertedIndicesMap = data._invertedIndicesMap;
           each(invertedIndicesMap, function(invertedIndices, dim) {
@@ -25082,9 +26525,9 @@ var pptxPreview = (() => {
             idList[idx] = id;
           }
         };
-      }();
+      })();
       return SeriesData2;
-    }()
+    })()
   );
   var SeriesData_default = SeriesData;
 
@@ -25247,26 +26690,19 @@ var pptxPreview = (() => {
         return item0.storeDimIndex - item1.storeDimIndex;
       });
     }
-    removeDuplication(resultList);
+    removeDuplicates(resultList, function(item) {
+      return item.name;
+    }, function(item, existingCount) {
+      if (existingCount > 0) {
+        item.name = item.name + (existingCount - 1);
+      }
+    });
     return new SeriesDataSchema({
       source,
       dimensions: resultList,
       fullDimensionCount: dimCount,
       dimensionOmitted: omitUnusedDimensions
     });
-  }
-  function removeDuplication(result) {
-    var duplicationMap = createHashMap();
-    for (var i = 0; i < result.length; i++) {
-      var dim = result[i];
-      var dimOriginalName = dim.name;
-      var count = duplicationMap.get(dimOriginalName) || 0;
-      if (count > 0) {
-        dim.name = dimOriginalName + (count - 1);
-      }
-      count++;
-      duplicationMap.set(dimOriginalName, count);
-    }
   }
   function getDimCount(source, sysDims, dimsDef, optDimCount) {
     var dimCount = Math.max(source.dimensionsDetectedCount || 1, sysDims.length, dimsDef.length, optDimCount || 0);
@@ -25291,21 +26727,21 @@ var pptxPreview = (() => {
   }
 
   // node_modules/echarts/lib/model/referHelper.js
-  var CoordSysInfo = (
+  var SeriesModelCoordSysInfo = (
     /** @class */
-    /* @__PURE__ */ function() {
-      function CoordSysInfo2(coordSysName) {
+    /* @__PURE__ */ (function() {
+      function SeriesModelCoordSysInfo2(coordSysName) {
         this.coordSysDims = [];
         this.axisMap = createHashMap();
         this.categoryAxisMap = createHashMap();
         this.coordSysName = coordSysName;
       }
-      return CoordSysInfo2;
-    }()
+      return SeriesModelCoordSysInfo2;
+    })()
   );
   function getCoordSysInfoBySeries(seriesModel) {
     var coordSysName = seriesModel.get("coordinateSystem");
-    var result = new CoordSysInfo(coordSysName);
+    var result = new SeriesModelCoordSysInfo(coordSysName);
     var fetch = fetchers[coordSysName];
     if (fetch) {
       fetch(seriesModel, result, result.axisMap, result.categoryAxisMap);
@@ -25392,6 +26828,21 @@ var pptxPreview = (() => {
           }
         }
       });
+    },
+    matrix: function(seriesModel, result, axisMap, categoryAxisMap) {
+      var matrixModel = seriesModel.getReferringComponents("matrix", SINGLE_REFERRING).models[0];
+      if (true) {
+        if (!matrixModel) {
+          throw new Error("matrix coordinate system should be specified.");
+        }
+      }
+      result.coordSysDims = ["x", "y"];
+      var xModel = matrixModel.getDimensionModel("x");
+      var yModel = matrixModel.getDimensionModel("y");
+      axisMap.set("x", xModel);
+      axisMap.set("y", yModel);
+      categoryAxisMap.set("x", xModel);
+      categoryAxisMap.set("y", yModel);
     }
   };
   function isCategory(axisModel) {
@@ -25418,17 +26869,26 @@ var pptxPreview = (() => {
     var stackedDimInfo;
     var stackResultDimension;
     var stackedOverDimension;
+    var allDimTypesAreNotOrdinalAndTime = true;
+    function dimTypeIsNotOrdinalAndTime(dimensionInfo) {
+      return dimensionInfo.type !== "ordinal" && dimensionInfo.type !== "time";
+    }
     each(dimensionDefineList, function(dimensionInfo, index) {
       if (isString(dimensionInfo)) {
         dimensionDefineList[index] = dimensionInfo = {
           name: dimensionInfo
         };
       }
+      if (!dimTypeIsNotOrdinalAndTime(dimensionInfo)) {
+        allDimTypesAreNotOrdinalAndTime = false;
+      }
+    });
+    each(dimensionDefineList, function(dimensionInfo, index) {
       if (mayStack && !dimensionInfo.isExtraCoord) {
         if (!byIndex && !stackedByDimInfo && dimensionInfo.ordinalMeta) {
           stackedByDimInfo = dimensionInfo;
         }
-        if (!stackedDimInfo && dimensionInfo.type !== "ordinal" && dimensionInfo.type !== "time" && (!stackedCoordDimension || stackedCoordDimension === dimensionInfo.coordDim)) {
+        if (!stackedDimInfo && dimTypeIsNotOrdinalAndTime(dimensionInfo) && (!allDimTypesAreNotOrdinalAndTime || dimensionInfo.coordDim !== "x" && dimensionInfo.coordDim !== "angle") && (!stackedCoordDimension || stackedCoordDimension === dimensionInfo.coordDim)) {
           stackedDimInfo = dimensionInfo;
         }
       }
@@ -25609,37 +27069,9 @@ var pptxPreview = (() => {
   // node_modules/echarts/lib/scale/Scale.js
   var Scale = (
     /** @class */
-    function() {
-      function Scale2(setting) {
-        this._setting = setting || {};
-        this._extent = [Infinity, -Infinity];
+    (function() {
+      function Scale2() {
       }
-      Scale2.prototype.getSetting = function(name) {
-        return this._setting[name];
-      };
-      Scale2.prototype.unionExtent = function(other) {
-        var extent3 = this._extent;
-        other[0] < extent3[0] && (extent3[0] = other[0]);
-        other[1] > extent3[1] && (extent3[1] = other[1]);
-      };
-      Scale2.prototype.unionExtentFromData = function(data, dim) {
-        this.unionExtent(data.getApproximateExtent(dim));
-      };
-      Scale2.prototype.getExtent = function() {
-        return this._extent.slice();
-      };
-      Scale2.prototype.setExtent = function(start2, end2) {
-        var thisExtent = this._extent;
-        if (!isNaN(start2)) {
-          thisExtent[0] = start2;
-        }
-        if (!isNaN(end2)) {
-          thisExtent[1] = end2;
-        }
-      };
-      Scale2.prototype.isInExtentRange = function(value) {
-        return this._extent[0] <= value && this._extent[1] >= value;
-      };
       Scale2.prototype.isBlank = function() {
         return this._isBlank;
       };
@@ -25647,7 +27079,7 @@ var pptxPreview = (() => {
         this._isBlank = isBlank;
       };
       return Scale2;
-    }()
+    })()
   );
   enableClassManagement(Scale);
   var Scale_default = Scale;
@@ -25656,12 +27088,13 @@ var pptxPreview = (() => {
   var uidBase = 0;
   var OrdinalMeta = (
     /** @class */
-    function() {
+    (function() {
       function OrdinalMeta2(opt) {
         this.categories = opt.categories || [];
         this._needCollect = opt.needCollect;
         this._deduplication = opt.deduplication;
         this.uid = ++uidBase;
+        this._onCollect = opt.onCollect;
       }
       OrdinalMeta2.createByAxisModel = function(axisModel) {
         var option = axisModel.option;
@@ -25687,6 +27120,7 @@ var pptxPreview = (() => {
         if (needCollect && !this._deduplication) {
           index = this.categories.length;
           this.categories[index] = category;
+          this._onCollect && this._onCollect(category, index);
           return index;
         }
         var map3 = this._getOrCreateMap();
@@ -25696,6 +27130,7 @@ var pptxPreview = (() => {
             index = this.categories.length;
             this.categories[index] = category;
             map3.set(category, index);
+            this._onCollect && this._onCollect(category, index);
           } else {
             index = NaN;
           }
@@ -25706,7 +27141,7 @@ var pptxPreview = (() => {
         return this._map || (this._map = createHashMap(this.categories));
       };
       return OrdinalMeta2;
-    }()
+    })()
   );
   function getName(obj) {
     if (isObject(obj) && obj.value != null) {
@@ -25717,33 +27152,173 @@ var pptxPreview = (() => {
   }
   var OrdinalMeta_default = OrdinalMeta;
 
+  // node_modules/echarts/lib/scale/scaleMapper.js
+  var SCALE_EXTENT_KIND_EFFECTIVE = 0;
+  var SCALE_EXTENT_KIND_MAPPING = 1;
+  var SCALE_MAPPER_METHOD_NAMES_MAP = {
+    needTransform: 1,
+    normalize: 1,
+    scale: 1,
+    transformIn: 1,
+    transformOut: 1,
+    contain: 1,
+    getExtent: 1,
+    getExtentUnsafe: 1,
+    setExtent: 1,
+    setExtent2: 1,
+    getFilter: 1,
+    sanitize: 1,
+    getDefaultStartValue: 1,
+    freeze: 1
+  };
+  var SCALE_MAPPER_METHOD_NAMES = keys(SCALE_MAPPER_METHOD_NAMES_MAP);
+  var SCALE_MAPPER_DEPTH_OUT_OF_BREAK = 2;
+  var SCALE_MAPPER_DEPTH_INNERMOST = 3;
+  function initBreakOrLinearMapper(mapper, breakParsed, initialExtent) {
+    var brk;
+    mapper = mapper || {};
+    var scaleBreakHelper = getScaleBreakHelper();
+    if (scaleBreakHelper) {
+      var brkMapper_1 = scaleBreakHelper.createBreakScaleMapper(breakParsed, initialExtent);
+      if (brkMapper_1.hasBreaks()) {
+        each(SCALE_MAPPER_METHOD_NAMES, function(methodName) {
+          if (brkMapper_1[methodName]) {
+            mapper[methodName] = bind(brkMapper_1[methodName], brkMapper_1);
+          }
+        });
+        brk = brkMapper_1;
+      }
+    }
+    if (brk == null) {
+      initLinearScaleMapper(mapper, initialExtent);
+    }
+    return {
+      brk,
+      mapper
+    };
+  }
+  function decorateScaleMapper(host, decoratedMapperMethods) {
+    each(SCALE_MAPPER_METHOD_NAMES, function(methodName) {
+      host[methodName] = decoratedMapperMethods[methodName];
+    });
+  }
+  function enableScaleMapperFreeze(host, subMapper) {
+    host.freeze = noop;
+    if (true) {
+      host.freeze = function() {
+        subMapper.freeze();
+      };
+    }
+    ;
+  }
+  function getScaleExtentForTickUnsafe(mapper) {
+    return mapper.getExtentUnsafe(SCALE_EXTENT_KIND_EFFECTIVE, SCALE_MAPPER_DEPTH_OUT_OF_BREAK);
+  }
+  function getScaleExtentForMappingUnsafe(mapper, depth) {
+    return mapper.getExtentUnsafe(SCALE_EXTENT_KIND_MAPPING, depth) || mapper.getExtentUnsafe(SCALE_EXTENT_KIND_EFFECTIVE, depth);
+  }
+  function getScaleLinearSpanForMapping(mapper) {
+    var extent = getScaleExtentForMappingUnsafe(mapper, SCALE_MAPPER_DEPTH_INNERMOST);
+    return extent[1] - extent[0];
+  }
+  function getScaleLinearSpanEffective(mapper) {
+    var extent = mapper.getExtentUnsafe(SCALE_EXTENT_KIND_EFFECTIVE, SCALE_MAPPER_DEPTH_INNERMOST);
+    return extent[1] - extent[0];
+  }
+  function initLinearScaleMapper(mapper, initialExtent) {
+    var linearMapper = mapper || {};
+    var extendList = [];
+    linearMapper._extents = extendList;
+    extendList[SCALE_EXTENT_KIND_EFFECTIVE] = initialExtent ? initialExtent.slice() : initExtentForUnion();
+    extend(linearMapper, linearScaleMapperMethods);
+    return linearMapper;
+  }
+  var linearScaleMapperMethods = {
+    needTransform: function() {
+      return false;
+    },
+    normalize: function(val) {
+      var extent = this._extents[SCALE_EXTENT_KIND_MAPPING] || this._extents[SCALE_EXTENT_KIND_EFFECTIVE];
+      if (extent[1] === extent[0]) {
+        return 0.5;
+      }
+      return (val - extent[0]) / (extent[1] - extent[0]);
+    },
+    scale: function(val) {
+      var extent = this._extents[SCALE_EXTENT_KIND_MAPPING] || this._extents[SCALE_EXTENT_KIND_EFFECTIVE];
+      return val * (extent[1] - extent[0]) + extent[0];
+    },
+    transformIn: function(val) {
+      return val;
+    },
+    transformOut: function(val) {
+      return val;
+    },
+    contain: function(val) {
+      var extent = getScaleExtentForMappingUnsafe(this, null);
+      return val >= extent[0] && val <= extent[1];
+    },
+    getExtent: function() {
+      return this._extents[SCALE_EXTENT_KIND_EFFECTIVE].slice();
+    },
+    getExtentUnsafe: function(kind) {
+      return this._extents[kind];
+    },
+    setExtent: function(start2, end2) {
+      if (true) {
+        assert(!this._frozen);
+      }
+      writeExtent(this._extents, SCALE_EXTENT_KIND_EFFECTIVE, start2, end2);
+    },
+    setExtent2: function(kind, start2, end2) {
+      if (true) {
+        assert(!this._frozen);
+      }
+      var extentList = this._extents;
+      if (!extentList[kind]) {
+        extentList[kind] = extentList[SCALE_EXTENT_KIND_EFFECTIVE].slice();
+      }
+      writeExtent(extentList, kind, start2, end2);
+    },
+    freeze: function() {
+      if (true) {
+        this._frozen = true;
+      }
+    }
+  };
+  function writeExtent(extentList, kind, start2, end2) {
+    if (isValidBoundsForExtent(start2, end2)) {
+      extentList[kind][0] = start2;
+      extentList[kind][1] = end2;
+    } else {
+      if (true) {
+        if (start2 != null && end2 != null && start2 <= end2) {
+          error("Invalid setExtent call - start: " + start2 + ", end: " + end2);
+        }
+      }
+    }
+  }
+
   // node_modules/echarts/lib/scale/helper.js
-  function isValueNice(val) {
-    var exp10 = Math.pow(10, quantityExponent(Math.abs(val)));
-    var f = Math.abs(val / exp10);
-    return f === 0 || f === 1 || f === 2 || f === 3 || f === 5;
+  function isIntervalOrLogScale(scale3) {
+    return isIntervalScale(scale3) || isLogScale(scale3);
   }
-  function isIntervalOrLogScale(scale4) {
-    return scale4.type === "interval" || scale4.type === "log";
+  function isIntervalScale(scale3) {
+    return scale3.type === "interval";
   }
-  function intervalScaleNiceTicks(extent3, splitNumber, minInterval, maxInterval) {
-    var result = {};
-    var span = extent3[1] - extent3[0];
-    var interval = result.interval = nice(span / splitNumber, true);
-    if (minInterval != null && interval < minInterval) {
-      interval = result.interval = minInterval;
-    }
-    if (maxInterval != null && interval > maxInterval) {
-      interval = result.interval = maxInterval;
-    }
-    var precision = result.intervalPrecision = getIntervalPrecision(interval);
-    var niceTickExtent = result.niceTickExtent = [round(Math.ceil(extent3[0] / interval) * interval, precision), round(Math.floor(extent3[1] / interval) * interval, precision)];
-    fixExtent(niceTickExtent, extent3);
-    return result;
+  function isTimeScale(scale3) {
+    return scale3.type === "time";
   }
-  function increaseInterval(interval) {
-    var exp10 = Math.pow(10, quantityExponent(interval));
-    var f = interval / exp10;
+  function isLogScale(scale3) {
+    return scale3.type === "log";
+  }
+  function isOrdinalScale(scale3) {
+    return scale3.type === "ordinal";
+  }
+  function increaseInterval(niceInterval) {
+    var exponent = quantityExponent(niceInterval);
+    var exp10 = mathPow2(10, exponent);
+    var f = mathRound2(niceInterval / exp10);
     if (!f) {
       f = 1;
     } else if (f === 2) {
@@ -25753,45 +27328,99 @@ var pptxPreview = (() => {
     } else {
       f *= 2;
     }
-    return round(f * exp10);
+    return round(f * exp10, -exponent);
   }
-  function getIntervalPrecision(interval) {
-    return getPrecision(interval) + 2;
+  function getIntervalPrecision(niceInterval) {
+    return getPrecision(niceInterval) + 2;
   }
-  function clamp(niceTickExtent, idx, extent3) {
-    niceTickExtent[idx] = Math.max(Math.min(niceTickExtent[idx], extent3[1]), extent3[0]);
+  function logScaleLogTick(val, base2) {
+    return mathLog(val) / mathLog(base2);
   }
-  function fixExtent(niceTickExtent, extent3) {
-    !isFinite(niceTickExtent[0]) && (niceTickExtent[0] = extent3[0]);
-    !isFinite(niceTickExtent[1]) && (niceTickExtent[1] = extent3[1]);
-    clamp(niceTickExtent, 0, extent3);
-    clamp(niceTickExtent, 1, extent3);
-    if (niceTickExtent[0] > niceTickExtent[1]) {
-      niceTickExtent[0] = niceTickExtent[1];
+  function logScalePowTick(linearTickVal, base2, opt) {
+    var lookup = opt && opt.lookup;
+    if (lookup) {
+      for (var i = 0; i < lookup.from.length; i++) {
+        if (linearTickVal === lookup.from[i]) {
+          return lookup.to[i];
+        }
+      }
     }
+    return mathPow2(base2, linearTickVal);
   }
-  function contain2(val, extent3) {
-    return val >= extent3[0] && val <= extent3[1];
-  }
-  function normalize2(val, extent3) {
-    if (extent3[1] === extent3[0]) {
-      return 0.5;
+  function intervalScaleEnsureValidExtent(rawExtent, fixMinMax, rawExtentResult) {
+    var extent = rawExtent.slice();
+    if (extent[0] === extent[1]) {
+      var containShapeRequired = rawExtentResult && rawExtentResult.ctnShp;
+      if (extent[0] !== 0) {
+        var expandSize = mathAbs2(extent[0]);
+        if (!fixMinMax[1]) {
+          extent[1] += expandSize / 2;
+          extent[0] -= expandSize / 2;
+        } else {
+          extent[0] -= expandSize / 2;
+        }
+      } else {
+        if (containShapeRequired) {
+          extent[0] = -1;
+          extent[1] = 1;
+        } else {
+          extent[1] = 1;
+        }
+      }
     }
-    return (val - extent3[0]) / (extent3[1] - extent3[0]);
+    if (!isValidNumberForExtent(extent[0]) || !isValidNumberForExtent(extent[1])) {
+      extent[0] = 0;
+      extent[1] = 1;
+    }
+    if (extent[1] < extent[0]) {
+      extent.reverse();
+    }
+    return extent;
   }
-  function scale3(val, extent3) {
-    return val * (extent3[1] - extent3[0]) + extent3[0];
+  function extentDiffers(extent1, extent2) {
+    return [extent1[0] !== extent2[0], extent1[1] !== extent2[1]];
+  }
+  function ensureValidSplitNumber(rawSplitNumber, defaultSplitNumber) {
+    rawSplitNumber = rawSplitNumber || defaultSplitNumber;
+    return mathRound2(mathMax2(rawSplitNumber, 1));
+  }
+  function ordinalScaleCreateTicks(ordinalScale, categoryInterval, addItem) {
+    var extent = getScaleExtentForTickUnsafe(ordinalScale);
+    var startTick = extent[0];
+    var tickCount = ordinalScale.count();
+    var step = Math.max((categoryInterval || 0) + 1, 1);
+    if (startTick !== 0 && step > 1 && tickCount / step > 2) {
+      startTick = Math.round(Math.ceil(startTick / step) * step);
+    }
+    if (startTick !== extent[0]) {
+      addItemInternally(extent[0], true, true);
+    }
+    var tickValue = startTick;
+    for (; tickValue <= extent[1]; tickValue += step) {
+      addItemInternally(tickValue, false, tickValue === extent[0] || tickValue === extent[1]);
+    }
+    if (tickValue - step !== extent[1]) {
+      addItemInternally(extent[1], true, true);
+    }
+    function addItemInternally(tickValue2, offInterval, isExtentBoundary) {
+      addItem({
+        value: tickValue2,
+        offInterval
+      }, isExtentBoundary);
+    }
   }
 
   // node_modules/echarts/lib/scale/Ordinal.js
   var OrdinalScale = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(OrdinalScale2, _super);
       function OrdinalScale2(setting) {
-        var _this = _super.call(this, setting) || this;
+        var _this = _super.call(this) || this;
         _this.type = "ordinal";
-        var ordinalMeta = _this.getSetting("ordinalMeta");
+        _this.parse = OrdinalScale2.parse;
+        decorateScaleMapper(_this, OrdinalScale2.decoratedMethods);
+        var ordinalMeta = setting.ordinalMeta;
         if (!ordinalMeta) {
           ordinalMeta = new OrdinalMeta_default({});
         }
@@ -25803,37 +27432,34 @@ var pptxPreview = (() => {
           });
         }
         _this._ordinalMeta = ordinalMeta;
-        _this._extent = _this.getSetting("extent") || [0, ordinalMeta.categories.length - 1];
+        var res = initBreakOrLinearMapper(
+          null,
+          null,
+          // Do not support break in OrdinalScale yet.
+          setting.extent || [0, ordinalMeta.categories.length - 1]
+        );
+        _this._mapper = res.mapper;
+        enableScaleMapperFreeze(_this, res.mapper);
         return _this;
       }
-      OrdinalScale2.prototype.parse = function(val) {
+      OrdinalScale2.parse = function(val) {
         if (val == null) {
-          return NaN;
+          val = NaN;
+        } else if (isString(val)) {
+          val = this._ordinalMeta.getOrdinal(val);
+          if (val == null) {
+            val = NaN;
+          }
+        } else {
+          val = mathRound2(val);
         }
-        return isString(val) ? this._ordinalMeta.getOrdinal(val) : Math.round(val);
-      };
-      OrdinalScale2.prototype.contain = function(rank) {
-        rank = this.parse(rank);
-        return contain2(rank, this._extent) && this._ordinalMeta.categories[rank] != null;
-      };
-      OrdinalScale2.prototype.normalize = function(val) {
-        val = this._getTickNumber(this.parse(val));
-        return normalize2(val, this._extent);
-      };
-      OrdinalScale2.prototype.scale = function(val) {
-        val = Math.round(scale3(val, this._extent));
-        return this.getRawOrdinalNumber(val);
+        return val;
       };
       OrdinalScale2.prototype.getTicks = function() {
         var ticks = [];
-        var extent3 = this._extent;
-        var rank = extent3[0];
-        while (rank <= extent3[1]) {
-          ticks.push({
-            value: rank
-          });
-          rank++;
-        }
+        ordinalScaleCreateTicks(this, 0, function(tick) {
+          ticks.push(tick);
+        });
         return ticks;
       };
       OrdinalScale2.prototype.getMinorTicks = function(splitNumber) {
@@ -25849,9 +27475,8 @@ var pptxPreview = (() => {
         var ticksByOrdinal = this._ticksByOrdinalNumber = [];
         var tickNum = 0;
         var allCategoryLen = this._ordinalMeta.categories.length;
-        for (var len2 = Math.min(allCategoryLen, infoOrdinalNumbers.length); tickNum < len2; ++tickNum) {
-          var ordinalNumber = infoOrdinalNumbers[tickNum];
-          ordinalsByTick[tickNum] = ordinalNumber;
+        for (var len2 = mathMin2(allCategoryLen, infoOrdinalNumbers.length); tickNum < len2; ++tickNum) {
+          var ordinalNumber = ordinalsByTick[tickNum] = infoOrdinalNumbers[tickNum];
           ticksByOrdinal[ordinalNumber] = tickNum;
         }
         var unusedOrdinal = 0;
@@ -25860,7 +27485,7 @@ var pptxPreview = (() => {
             unusedOrdinal++;
           }
           ;
-          ordinalsByTick.push(unusedOrdinal);
+          ordinalsByTick[tickNum] = unusedOrdinal;
           ticksByOrdinal[unusedOrdinal] = tickNum;
         }
       };
@@ -25868,597 +27493,254 @@ var pptxPreview = (() => {
         var ticksByOrdinalNumber = this._ticksByOrdinalNumber;
         return ticksByOrdinalNumber && ordinal >= 0 && ordinal < ticksByOrdinalNumber.length ? ticksByOrdinalNumber[ordinal] : ordinal;
       };
-      OrdinalScale2.prototype.getRawOrdinalNumber = function(tickNumber) {
+      OrdinalScale2.prototype.getRawOrdinalNumber = function(tickValue) {
         var ordinalNumbersByTick = this._ordinalNumbersByTick;
-        return ordinalNumbersByTick && tickNumber >= 0 && tickNumber < ordinalNumbersByTick.length ? ordinalNumbersByTick[tickNumber] : tickNumber;
+        return ordinalNumbersByTick && tickValue >= 0 && tickValue < ordinalNumbersByTick.length ? ordinalNumbersByTick[tickValue] : tickValue;
       };
       OrdinalScale2.prototype.getLabel = function(tick) {
         if (!this.isBlank()) {
           var ordinalNumber = this.getRawOrdinalNumber(tick.value);
-          var cateogry = this._ordinalMeta.categories[ordinalNumber];
-          return cateogry == null ? "" : cateogry + "";
+          var category = this._ordinalMeta.categories[ordinalNumber];
+          return category == null ? "" : category + "";
         }
       };
       OrdinalScale2.prototype.count = function() {
-        return this._extent[1] - this._extent[0] + 1;
-      };
-      OrdinalScale2.prototype.unionExtentFromData = function(data, dim) {
-        this.unionExtent(data.getApproximateExtent(dim));
-      };
-      OrdinalScale2.prototype.isInExtentRange = function(value) {
-        value = this._getTickNumber(value);
-        return this._extent[0] <= value && this._extent[1] >= value;
+        var extent = getScaleExtentForTickUnsafe(this._mapper);
+        return extent[1] - extent[0] + 1;
       };
       OrdinalScale2.prototype.getOrdinalMeta = function() {
         return this._ordinalMeta;
       };
-      OrdinalScale2.prototype.calcNiceTicks = function() {
-      };
-      OrdinalScale2.prototype.calcNiceExtent = function() {
-      };
       OrdinalScale2.type = "ordinal";
+      OrdinalScale2.decoratedMethods = {
+        needTransform: function() {
+          return this._mapper.needTransform();
+        },
+        contain: function(val) {
+          return this._mapper.contain(this._getTickNumber(val)) && val >= 0 && val < this._ordinalMeta.categories.length;
+        },
+        normalize: function(val) {
+          return this._mapper.normalize(this._getTickNumber(val));
+        },
+        scale: function(val) {
+          return this.getRawOrdinalNumber(mathRound2(this._mapper.scale(val)));
+        },
+        transformIn: function(val, opt) {
+          return this._mapper.transformIn(this._getTickNumber(val), opt);
+        },
+        transformOut: function(val, opt) {
+          return this.getRawOrdinalNumber(this._mapper.transformOut(val, opt));
+        },
+        getExtent: function() {
+          return this._mapper.getExtent();
+        },
+        getExtentUnsafe: function(kind, depth) {
+          return this._mapper.getExtentUnsafe(kind, depth);
+        },
+        /**
+         * NOTICE: OrdinalScale extent should always originates from
+         * `[0, ordinalMeta.categories.length - 1]`, regardless of min/max of `series.data`.
+         * But settings like `xxxAxis.min/max` can still modify the extent.
+         * It is handled by constructor of `ScaleRawExtentInfo`.
+         */
+        setExtent: function(start2, end2) {
+          return this._mapper.setExtent(start2, end2);
+        },
+        setExtent2: function(kind, start2, end2) {
+          return this._mapper.setExtent2(kind, start2, end2);
+        }
+      };
       return OrdinalScale2;
-    }(Scale_default)
+    })(Scale_default)
   );
   Scale_default.registerClass(OrdinalScale);
   var Ordinal_default = OrdinalScale;
 
+  // node_modules/echarts/lib/scale/minorTicks.js
+  function getMinorTicks(scale3, splitNumber, breaks, scaleInterval) {
+    var ticks = scale3.getTicks({
+      expandToNicedExtent: true
+    });
+    var minorTicks = [];
+    var extent = scale3.getExtent();
+    for (var i = 1; i < ticks.length; i++) {
+      var nextTick = ticks[i];
+      var prevTick = ticks[i - 1];
+      if (prevTick["break"] || nextTick["break"]) {
+        continue;
+      }
+      var count = 0;
+      var minorTicksGroup = [];
+      var interval = nextTick.value - prevTick.value;
+      var minorInterval = interval / splitNumber;
+      var minorIntervalPrecision = getIntervalPrecision(minorInterval);
+      while (count < splitNumber - 1) {
+        var minorTick = round(prevTick.value + (count + 1) * minorInterval, minorIntervalPrecision);
+        if (minorTick > extent[0] && minorTick < extent[1]) {
+          minorTicksGroup.push(minorTick);
+        }
+        count++;
+      }
+      var scaleBreakHelper = getScaleBreakHelper();
+      scaleBreakHelper && scaleBreakHelper.pruneTicksByBreak("auto", minorTicksGroup, breaks, function(value) {
+        return value;
+      }, scaleInterval, extent);
+      minorTicks.push(minorTicksGroup);
+    }
+    return minorTicks;
+  }
+
   // node_modules/echarts/lib/scale/Interval.js
-  var roundNumber = round;
   var IntervalScale = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(IntervalScale2, _super);
-      function IntervalScale2() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
+      function IntervalScale2(setting) {
+        var _this = _super.call(this) || this;
         _this.type = "interval";
-        _this._interval = 0;
-        _this._intervalPrecision = 2;
+        _this.parse = IntervalScale2.parse;
+        setting = setting || {};
+        var breakParsed = simplyParseBreakOption(_this, setting);
+        var res = initBreakOrLinearMapper(_this, breakParsed, null);
+        _this.brk = res.brk;
+        _this._cfg = {
+          interval: 0,
+          intervalPrecision: 2,
+          intervalCount: void 0,
+          niceExtent: void 0
+        };
         return _this;
       }
-      IntervalScale2.prototype.parse = function(val) {
-        return val;
+      IntervalScale2.parse = function(val) {
+        return val == null || val === "" ? NaN : Number(val);
       };
-      IntervalScale2.prototype.contain = function(val) {
-        return contain2(val, this._extent);
+      IntervalScale2.prototype.getConfig = function() {
+        return clone(this._cfg);
       };
-      IntervalScale2.prototype.normalize = function(val) {
-        return normalize2(val, this._extent);
-      };
-      IntervalScale2.prototype.scale = function(val) {
-        return scale3(val, this._extent);
-      };
-      IntervalScale2.prototype.setExtent = function(start2, end2) {
-        var thisExtent = this._extent;
-        if (!isNaN(start2)) {
-          thisExtent[0] = parseFloat(start2);
+      IntervalScale2.prototype.setConfig = function(cfg) {
+        var extent = getScaleExtentForTickUnsafe(this);
+        if (true) {
+          assert(cfg.interval != null);
+          if (cfg.intervalCount != null) {
+            assert(cfg.intervalCount >= -1 && cfg.intervalPrecision != null && !hasBreaks(this));
+          }
+          if (cfg.niceExtent != null) {
+            assert(isFinite(cfg.niceExtent[0]) && isFinite(cfg.niceExtent[1]));
+            assert(extent[0] <= cfg.niceExtent[0] && cfg.niceExtent[1] <= extent[1]);
+            assert(round(cfg.niceExtent[0] - cfg.niceExtent[1], getPrecision(cfg.interval)) <= cfg.interval);
+          }
         }
-        if (!isNaN(end2)) {
-          thisExtent[1] = parseFloat(end2);
+        this._cfg = cfg = clone(cfg);
+        if (cfg.niceExtent == null) {
+          cfg.niceExtent = extent.slice();
+        }
+        if (cfg.intervalPrecision == null) {
+          cfg.intervalPrecision = getIntervalPrecision(cfg.interval);
         }
       };
-      IntervalScale2.prototype.unionExtent = function(other) {
-        var extent3 = this._extent;
-        other[0] < extent3[0] && (extent3[0] = other[0]);
-        other[1] > extent3[1] && (extent3[1] = other[1]);
-        this.setExtent(extent3[0], extent3[1]);
-      };
-      IntervalScale2.prototype.getInterval = function() {
-        return this._interval;
-      };
-      IntervalScale2.prototype.setInterval = function(interval) {
-        this._interval = interval;
-        this._niceExtent = this._extent.slice();
-        this._intervalPrecision = getIntervalPrecision(interval);
-      };
-      IntervalScale2.prototype.getTicks = function(expandToNicedExtent) {
-        var interval = this._interval;
-        var extent3 = this._extent;
-        var niceTickExtent = this._niceExtent;
-        var intervalPrecision = this._intervalPrecision;
+      IntervalScale2.prototype.getTicks = function(opt) {
+        opt = opt || {};
+        var cfg = this._cfg;
+        var interval = cfg.interval;
+        var extent = getScaleExtentForTickUnsafe(this);
+        var niceExtent = cfg.niceExtent;
+        var intervalPrecision = cfg.intervalPrecision;
+        var scaleBreakHelper = getScaleBreakHelper();
+        var brk = this.brk;
+        var brkAvailable = scaleBreakHelper && brk;
         var ticks = [];
         if (!interval) {
           return ticks;
         }
-        var safeLimit = 1e4;
-        if (extent3[0] < niceTickExtent[0]) {
-          if (expandToNicedExtent) {
-            ticks.push({
-              value: roundNumber(niceTickExtent[0] - interval, intervalPrecision)
-            });
-          } else {
-            ticks.push({
-              value: extent3[0]
-            });
-          }
+        if (opt.breakTicks === "only_break" && brkAvailable) {
+          scaleBreakHelper.addBreaksToTicks(ticks, brk.breaks, extent);
+          return ticks;
         }
-        var tick = niceTickExtent[0];
-        while (tick <= niceTickExtent[1]) {
+        if (true) {
+          assert(niceExtent != null);
+        }
+        var safeLimit = 3e3;
+        if (extent[0] < niceExtent[0]) {
+          ticks.push({
+            value: opt.expandToNicedExtent ? round(niceExtent[0] - interval, intervalPrecision) : extent[0]
+          });
+        }
+        var estimateNiceMultiple = function(tickVal, targetTick) {
+          return mathRound2((targetTick - tickVal) / interval);
+        };
+        var intervalCount = cfg.intervalCount;
+        for (var tick = niceExtent[0], niceTickIdx = 0; ; niceTickIdx++) {
+          if (intervalCount == null) {
+            if (tick > niceExtent[1] || !isFinite(tick) || !isFinite(niceExtent[1])) {
+              break;
+            }
+          } else {
+            if (niceTickIdx > intervalCount) {
+              break;
+            }
+            tick = mathMin2(tick, niceExtent[1]);
+            if (niceTickIdx === intervalCount) {
+              tick = niceExtent[1];
+            }
+          }
           ticks.push({
             value: tick
           });
-          tick = roundNumber(tick + interval, intervalPrecision);
-          if (tick === ticks[ticks.length - 1].value) {
+          tick = round(tick + interval, intervalPrecision);
+          if (brk) {
+            var moreMultiple = brk.calcNiceTickMultiple(tick, estimateNiceMultiple);
+            if (moreMultiple >= 0) {
+              tick = round(tick + moreMultiple * interval, intervalPrecision);
+            }
+          }
+          if (ticks.length > 0 && tick === ticks[ticks.length - 1].value) {
             break;
           }
           if (ticks.length > safeLimit) {
+            if (true) {
+              warn('Exceed safe limit in IntervalScale["getTicks"].');
+            }
             return [];
           }
         }
-        var lastNiceTick = ticks.length ? ticks[ticks.length - 1].value : niceTickExtent[1];
-        if (extent3[1] > lastNiceTick) {
-          if (expandToNicedExtent) {
-            ticks.push({
-              value: roundNumber(lastNiceTick + interval, intervalPrecision)
-            });
-          } else {
-            ticks.push({
-              value: extent3[1]
-            });
-          }
+        var lastNiceTick = ticks.length ? ticks[ticks.length - 1].value : niceExtent[1];
+        if (extent[1] > lastNiceTick) {
+          ticks.push({
+            value: opt.expandToNicedExtent ? round(lastNiceTick + interval, intervalPrecision) : extent[1]
+          });
+        }
+        if (brkAvailable) {
+          scaleBreakHelper.pruneTicksByBreak(opt.pruneByBreak, ticks, brk.breaks, function(item) {
+            return item.value;
+          }, cfg.interval, extent);
+        }
+        if (brkAvailable && opt.breakTicks !== "none") {
+          scaleBreakHelper.addBreaksToTicks(ticks, brk.breaks, extent);
         }
         return ticks;
       };
       IntervalScale2.prototype.getMinorTicks = function(splitNumber) {
-        var ticks = this.getTicks(true);
-        var minorTicks = [];
-        var extent3 = this.getExtent();
-        for (var i = 1; i < ticks.length; i++) {
-          var nextTick = ticks[i];
-          var prevTick = ticks[i - 1];
-          var count = 0;
-          var minorTicksGroup = [];
-          var interval = nextTick.value - prevTick.value;
-          var minorInterval = interval / splitNumber;
-          while (count < splitNumber - 1) {
-            var minorTick = roundNumber(prevTick.value + (count + 1) * minorInterval);
-            if (minorTick > extent3[0] && minorTick < extent3[1]) {
-              minorTicksGroup.push(minorTick);
-            }
-            count++;
-          }
-          minorTicks.push(minorTicksGroup);
-        }
-        return minorTicks;
+        return getMinorTicks(this, splitNumber, getBreaksUnsafe(this), this._cfg.interval);
       };
-      IntervalScale2.prototype.getLabel = function(data, opt) {
-        if (data == null) {
+      IntervalScale2.prototype.getLabel = function(tick, opt) {
+        if (tick == null) {
           return "";
         }
         var precision = opt && opt.precision;
         if (precision == null) {
-          precision = getPrecision(data.value) || 0;
+          precision = getPrecision(tick.value) || 0;
         } else if (precision === "auto") {
-          precision = this._intervalPrecision;
+          precision = this._cfg.intervalPrecision;
         }
-        var dataNum = roundNumber(data.value, precision, true);
+        var dataNum = round(tick.value, precision, true);
         return addCommas(dataNum);
-      };
-      IntervalScale2.prototype.calcNiceTicks = function(splitNumber, minInterval, maxInterval) {
-        splitNumber = splitNumber || 5;
-        var extent3 = this._extent;
-        var span = extent3[1] - extent3[0];
-        if (!isFinite(span)) {
-          return;
-        }
-        if (span < 0) {
-          span = -span;
-          extent3.reverse();
-        }
-        var result = intervalScaleNiceTicks(extent3, splitNumber, minInterval, maxInterval);
-        this._intervalPrecision = result.intervalPrecision;
-        this._interval = result.interval;
-        this._niceExtent = result.niceTickExtent;
-      };
-      IntervalScale2.prototype.calcNiceExtent = function(opt) {
-        var extent3 = this._extent;
-        if (extent3[0] === extent3[1]) {
-          if (extent3[0] !== 0) {
-            var expandSize = Math.abs(extent3[0]);
-            if (!opt.fixMax) {
-              extent3[1] += expandSize / 2;
-              extent3[0] -= expandSize / 2;
-            } else {
-              extent3[0] -= expandSize / 2;
-            }
-          } else {
-            extent3[1] = 1;
-          }
-        }
-        var span = extent3[1] - extent3[0];
-        if (!isFinite(span)) {
-          extent3[0] = 0;
-          extent3[1] = 1;
-        }
-        this.calcNiceTicks(opt.splitNumber, opt.minInterval, opt.maxInterval);
-        var interval = this._interval;
-        if (!opt.fixMin) {
-          extent3[0] = roundNumber(Math.floor(extent3[0] / interval) * interval);
-        }
-        if (!opt.fixMax) {
-          extent3[1] = roundNumber(Math.ceil(extent3[1] / interval) * interval);
-        }
-      };
-      IntervalScale2.prototype.setNiceExtent = function(min3, max3) {
-        this._niceExtent = [min3, max3];
       };
       IntervalScale2.type = "interval";
       return IntervalScale2;
-    }(Scale_default)
+    })(Scale_default)
   );
   Scale_default.registerClass(IntervalScale);
   var Interval_default = IntervalScale;
-
-  // node_modules/echarts/lib/util/vendor.js
-  var supportFloat32Array = typeof Float32Array !== "undefined";
-  var Float32ArrayCtor = !supportFloat32Array ? Array : Float32Array;
-  function createFloat32Array(arg) {
-    if (isArray(arg)) {
-      return supportFloat32Array ? new Float32Array(arg) : arg;
-    }
-    return new Float32ArrayCtor(arg);
-  }
-
-  // node_modules/echarts/lib/layout/barGrid.js
-  var STACK_PREFIX = "__ec_stack_";
-  function getSeriesStackId(seriesModel) {
-    return seriesModel.get("stack") || STACK_PREFIX + seriesModel.seriesIndex;
-  }
-  function getAxisKey(axis) {
-    return axis.dim + axis.index;
-  }
-  function prepareLayoutBarSeries(seriesType2, ecModel) {
-    var seriesModels = [];
-    ecModel.eachSeriesByType(seriesType2, function(seriesModel) {
-      if (isOnCartesian(seriesModel)) {
-        seriesModels.push(seriesModel);
-      }
-    });
-    return seriesModels;
-  }
-  function getValueAxesMinGaps(barSeries) {
-    var axisValues = {};
-    each(barSeries, function(seriesModel) {
-      var cartesian = seriesModel.coordinateSystem;
-      var baseAxis = cartesian.getBaseAxis();
-      if (baseAxis.type !== "time" && baseAxis.type !== "value") {
-        return;
-      }
-      var data = seriesModel.getData();
-      var key2 = baseAxis.dim + "_" + baseAxis.index;
-      var dimIdx = data.getDimensionIndex(data.mapDimension(baseAxis.dim));
-      var store = data.getStore();
-      for (var i = 0, cnt = store.count(); i < cnt; ++i) {
-        var value = store.get(dimIdx, i);
-        if (!axisValues[key2]) {
-          axisValues[key2] = [value];
-        } else {
-          axisValues[key2].push(value);
-        }
-      }
-    });
-    var axisMinGaps = {};
-    for (var key in axisValues) {
-      if (axisValues.hasOwnProperty(key)) {
-        var valuesInAxis = axisValues[key];
-        if (valuesInAxis) {
-          valuesInAxis.sort(function(a, b) {
-            return a - b;
-          });
-          var min3 = null;
-          for (var j = 1; j < valuesInAxis.length; ++j) {
-            var delta = valuesInAxis[j] - valuesInAxis[j - 1];
-            if (delta > 0) {
-              min3 = min3 === null ? delta : Math.min(min3, delta);
-            }
-          }
-          axisMinGaps[key] = min3;
-        }
-      }
-    }
-    return axisMinGaps;
-  }
-  function makeColumnLayout(barSeries) {
-    var axisMinGaps = getValueAxesMinGaps(barSeries);
-    var seriesInfoList = [];
-    each(barSeries, function(seriesModel) {
-      var cartesian = seriesModel.coordinateSystem;
-      var baseAxis = cartesian.getBaseAxis();
-      var axisExtent = baseAxis.getExtent();
-      var bandWidth;
-      if (baseAxis.type === "category") {
-        bandWidth = baseAxis.getBandWidth();
-      } else if (baseAxis.type === "value" || baseAxis.type === "time") {
-        var key = baseAxis.dim + "_" + baseAxis.index;
-        var minGap = axisMinGaps[key];
-        var extentSpan = Math.abs(axisExtent[1] - axisExtent[0]);
-        var scale4 = baseAxis.scale.getExtent();
-        var scaleSpan = Math.abs(scale4[1] - scale4[0]);
-        bandWidth = minGap ? extentSpan / scaleSpan * minGap : extentSpan;
-      } else {
-        var data = seriesModel.getData();
-        bandWidth = Math.abs(axisExtent[1] - axisExtent[0]) / data.count();
-      }
-      var barWidth = parsePercent2(seriesModel.get("barWidth"), bandWidth);
-      var barMaxWidth = parsePercent2(seriesModel.get("barMaxWidth"), bandWidth);
-      var barMinWidth = parsePercent2(
-        // barMinWidth by default is 0.5 / 1 in cartesian. Because in value axis,
-        // the auto-calculated bar width might be less than 0.5 / 1.
-        seriesModel.get("barMinWidth") || (isInLargeMode(seriesModel) ? 0.5 : 1),
-        bandWidth
-      );
-      var barGap = seriesModel.get("barGap");
-      var barCategoryGap = seriesModel.get("barCategoryGap");
-      seriesInfoList.push({
-        bandWidth,
-        barWidth,
-        barMaxWidth,
-        barMinWidth,
-        barGap,
-        barCategoryGap,
-        axisKey: getAxisKey(baseAxis),
-        stackId: getSeriesStackId(seriesModel)
-      });
-    });
-    return doCalBarWidthAndOffset(seriesInfoList);
-  }
-  function doCalBarWidthAndOffset(seriesInfoList) {
-    var columnsMap = {};
-    each(seriesInfoList, function(seriesInfo, idx) {
-      var axisKey = seriesInfo.axisKey;
-      var bandWidth = seriesInfo.bandWidth;
-      var columnsOnAxis = columnsMap[axisKey] || {
-        bandWidth,
-        remainedWidth: bandWidth,
-        autoWidthCount: 0,
-        categoryGap: null,
-        gap: "20%",
-        stacks: {}
-      };
-      var stacks = columnsOnAxis.stacks;
-      columnsMap[axisKey] = columnsOnAxis;
-      var stackId = seriesInfo.stackId;
-      if (!stacks[stackId]) {
-        columnsOnAxis.autoWidthCount++;
-      }
-      stacks[stackId] = stacks[stackId] || {
-        width: 0,
-        maxWidth: 0
-      };
-      var barWidth = seriesInfo.barWidth;
-      if (barWidth && !stacks[stackId].width) {
-        stacks[stackId].width = barWidth;
-        barWidth = Math.min(columnsOnAxis.remainedWidth, barWidth);
-        columnsOnAxis.remainedWidth -= barWidth;
-      }
-      var barMaxWidth = seriesInfo.barMaxWidth;
-      barMaxWidth && (stacks[stackId].maxWidth = barMaxWidth);
-      var barMinWidth = seriesInfo.barMinWidth;
-      barMinWidth && (stacks[stackId].minWidth = barMinWidth);
-      var barGap = seriesInfo.barGap;
-      barGap != null && (columnsOnAxis.gap = barGap);
-      var barCategoryGap = seriesInfo.barCategoryGap;
-      barCategoryGap != null && (columnsOnAxis.categoryGap = barCategoryGap);
-    });
-    var result = {};
-    each(columnsMap, function(columnsOnAxis, coordSysName) {
-      result[coordSysName] = {};
-      var stacks = columnsOnAxis.stacks;
-      var bandWidth = columnsOnAxis.bandWidth;
-      var categoryGapPercent = columnsOnAxis.categoryGap;
-      if (categoryGapPercent == null) {
-        var columnCount = keys(stacks).length;
-        categoryGapPercent = Math.max(35 - columnCount * 4, 15) + "%";
-      }
-      var categoryGap = parsePercent2(categoryGapPercent, bandWidth);
-      var barGapPercent = parsePercent2(columnsOnAxis.gap, 1);
-      var remainedWidth = columnsOnAxis.remainedWidth;
-      var autoWidthCount = columnsOnAxis.autoWidthCount;
-      var autoWidth = (remainedWidth - categoryGap) / (autoWidthCount + (autoWidthCount - 1) * barGapPercent);
-      autoWidth = Math.max(autoWidth, 0);
-      each(stacks, function(column) {
-        var maxWidth = column.maxWidth;
-        var minWidth = column.minWidth;
-        if (!column.width) {
-          var finalWidth = autoWidth;
-          if (maxWidth && maxWidth < finalWidth) {
-            finalWidth = Math.min(maxWidth, remainedWidth);
-          }
-          if (minWidth && minWidth > finalWidth) {
-            finalWidth = minWidth;
-          }
-          if (finalWidth !== autoWidth) {
-            column.width = finalWidth;
-            remainedWidth -= finalWidth + barGapPercent * finalWidth;
-            autoWidthCount--;
-          }
-        } else {
-          var finalWidth = column.width;
-          if (maxWidth) {
-            finalWidth = Math.min(finalWidth, maxWidth);
-          }
-          if (minWidth) {
-            finalWidth = Math.max(finalWidth, minWidth);
-          }
-          column.width = finalWidth;
-          remainedWidth -= finalWidth + barGapPercent * finalWidth;
-          autoWidthCount--;
-        }
-      });
-      autoWidth = (remainedWidth - categoryGap) / (autoWidthCount + (autoWidthCount - 1) * barGapPercent);
-      autoWidth = Math.max(autoWidth, 0);
-      var widthSum = 0;
-      var lastColumn;
-      each(stacks, function(column, idx) {
-        if (!column.width) {
-          column.width = autoWidth;
-        }
-        lastColumn = column;
-        widthSum += column.width * (1 + barGapPercent);
-      });
-      if (lastColumn) {
-        widthSum -= lastColumn.width * barGapPercent;
-      }
-      var offset = -widthSum / 2;
-      each(stacks, function(column, stackId) {
-        result[coordSysName][stackId] = result[coordSysName][stackId] || {
-          bandWidth,
-          offset,
-          width: column.width
-        };
-        offset += column.width * (1 + barGapPercent);
-      });
-    });
-    return result;
-  }
-  function retrieveColumnLayout(barWidthAndOffset, axis, seriesModel) {
-    if (barWidthAndOffset && axis) {
-      var result = barWidthAndOffset[getAxisKey(axis)];
-      if (result != null && seriesModel != null) {
-        return result[getSeriesStackId(seriesModel)];
-      }
-      return result;
-    }
-  }
-  function layout(seriesType2, ecModel) {
-    var seriesModels = prepareLayoutBarSeries(seriesType2, ecModel);
-    var barWidthAndOffset = makeColumnLayout(seriesModels);
-    each(seriesModels, function(seriesModel) {
-      var data = seriesModel.getData();
-      var cartesian = seriesModel.coordinateSystem;
-      var baseAxis = cartesian.getBaseAxis();
-      var stackId = getSeriesStackId(seriesModel);
-      var columnLayoutInfo = barWidthAndOffset[getAxisKey(baseAxis)][stackId];
-      var columnOffset = columnLayoutInfo.offset;
-      var columnWidth = columnLayoutInfo.width;
-      data.setLayout({
-        bandWidth: columnLayoutInfo.bandWidth,
-        offset: columnOffset,
-        size: columnWidth
-      });
-    });
-  }
-  function createProgressiveLayout(seriesType2) {
-    return {
-      seriesType: seriesType2,
-      plan: createRenderPlanner(),
-      reset: function(seriesModel) {
-        if (!isOnCartesian(seriesModel)) {
-          return;
-        }
-        var data = seriesModel.getData();
-        var cartesian = seriesModel.coordinateSystem;
-        var baseAxis = cartesian.getBaseAxis();
-        var valueAxis2 = cartesian.getOtherAxis(baseAxis);
-        var valueDimIdx = data.getDimensionIndex(data.mapDimension(valueAxis2.dim));
-        var baseDimIdx = data.getDimensionIndex(data.mapDimension(baseAxis.dim));
-        var drawBackground = seriesModel.get("showBackground", true);
-        var valueDim = data.mapDimension(valueAxis2.dim);
-        var stackResultDim = data.getCalculationInfo("stackResultDimension");
-        var stacked = isDimensionStacked(data, valueDim) && !!data.getCalculationInfo("stackedOnSeries");
-        var isValueAxisH = valueAxis2.isHorizontal();
-        var valueAxisStart = getValueAxisStart(baseAxis, valueAxis2);
-        var isLarge = isInLargeMode(seriesModel);
-        var barMinHeight = seriesModel.get("barMinHeight") || 0;
-        var stackedDimIdx = stackResultDim && data.getDimensionIndex(stackResultDim);
-        var columnWidth = data.getLayout("size");
-        var columnOffset = data.getLayout("offset");
-        return {
-          progress: function(params, data2) {
-            var count = params.count;
-            var largePoints = isLarge && createFloat32Array(count * 3);
-            var largeBackgroundPoints = isLarge && drawBackground && createFloat32Array(count * 3);
-            var largeDataIndices = isLarge && createFloat32Array(count);
-            var coordLayout = cartesian.master.getRect();
-            var bgSize = isValueAxisH ? coordLayout.width : coordLayout.height;
-            var dataIndex;
-            var store = data2.getStore();
-            var idxOffset = 0;
-            while ((dataIndex = params.next()) != null) {
-              var value = store.get(stacked ? stackedDimIdx : valueDimIdx, dataIndex);
-              var baseValue = store.get(baseDimIdx, dataIndex);
-              var baseCoord = valueAxisStart;
-              var stackStartValue = void 0;
-              if (stacked) {
-                stackStartValue = +value - store.get(valueDimIdx, dataIndex);
-              }
-              var x = void 0;
-              var y = void 0;
-              var width = void 0;
-              var height = void 0;
-              if (isValueAxisH) {
-                var coord = cartesian.dataToPoint([value, baseValue]);
-                if (stacked) {
-                  var startCoord = cartesian.dataToPoint([stackStartValue, baseValue]);
-                  baseCoord = startCoord[0];
-                }
-                x = baseCoord;
-                y = coord[1] + columnOffset;
-                width = coord[0] - baseCoord;
-                height = columnWidth;
-                if (Math.abs(width) < barMinHeight) {
-                  width = (width < 0 ? -1 : 1) * barMinHeight;
-                }
-              } else {
-                var coord = cartesian.dataToPoint([baseValue, value]);
-                if (stacked) {
-                  var startCoord = cartesian.dataToPoint([baseValue, stackStartValue]);
-                  baseCoord = startCoord[1];
-                }
-                x = coord[0] + columnOffset;
-                y = baseCoord;
-                width = columnWidth;
-                height = coord[1] - baseCoord;
-                if (Math.abs(height) < barMinHeight) {
-                  height = (height <= 0 ? -1 : 1) * barMinHeight;
-                }
-              }
-              if (!isLarge) {
-                data2.setItemLayout(dataIndex, {
-                  x,
-                  y,
-                  width,
-                  height
-                });
-              } else {
-                largePoints[idxOffset] = x;
-                largePoints[idxOffset + 1] = y;
-                largePoints[idxOffset + 2] = isValueAxisH ? width : height;
-                if (largeBackgroundPoints) {
-                  largeBackgroundPoints[idxOffset] = isValueAxisH ? coordLayout.x : x;
-                  largeBackgroundPoints[idxOffset + 1] = isValueAxisH ? y : coordLayout.y;
-                  largeBackgroundPoints[idxOffset + 2] = bgSize;
-                }
-                largeDataIndices[dataIndex] = dataIndex;
-              }
-              idxOffset += 3;
-            }
-            if (isLarge) {
-              data2.setLayout({
-                largePoints,
-                largeDataIndices,
-                largeBackgroundPoints,
-                valueAxisHorizontal: isValueAxisH
-              });
-            }
-          }
-        };
-      }
-    };
-  }
-  function isOnCartesian(seriesModel) {
-    return seriesModel.coordinateSystem && seriesModel.coordinateSystem.type === "cartesian2d";
-  }
-  function isInLargeMode(seriesModel) {
-    return seriesModel.pipelineContext && seriesModel.pipelineContext.large;
-  }
-  function getValueAxisStart(baseAxis, valueAxis2) {
-    var startValue = valueAxis2.model.get("startValue");
-    if (!startValue) {
-      startValue = 0;
-    }
-    return valueAxis2.toGlobalCoord(valueAxis2.dataToCoord(valueAxis2.type === "log" ? startValue > 0 ? startValue : 1 : startValue));
-  }
 
   // node_modules/echarts/lib/scale/Time.js
   var bisect = function(a, x, lo, hi) {
@@ -26474,86 +27756,91 @@ var pptxPreview = (() => {
   };
   var TimeScale = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(TimeScale2, _super);
-      function TimeScale2(settings) {
-        var _this = _super.call(this, settings) || this;
+      function TimeScale2(setting) {
+        var _this = _super.call(this) || this;
         _this.type = "time";
+        _this.parse = TimeScale2.parse;
+        _this._locale = setting.locale;
+        _this._useUTC = setting.useUTC;
+        _this._interval = 0;
+        var breakParsed = simplyParseBreakOption(_this, setting);
+        var res = initBreakOrLinearMapper(_this, breakParsed, null);
+        _this.brk = res.brk;
         return _this;
       }
       TimeScale2.prototype.getLabel = function(tick) {
-        var useUTC = this.getSetting("useUTC");
-        return format(tick.value, fullLeveledFormatter[getDefaultFormatPrecisionOfInterval(getPrimaryTimeUnit(this._minLevelUnit))] || fullLeveledFormatter.second, useUTC, this.getSetting("locale"));
+        return format(tick.value, fullLeveledFormatter[getDefaultFormatPrecisionOfInterval(getPrimaryTimeUnit(this._minLevelUnit))] || fullLeveledFormatter.second, this._useUTC, this._locale);
       };
       TimeScale2.prototype.getFormattedLabel = function(tick, idx, labelFormatter) {
-        var isUTC = this.getSetting("useUTC");
-        var lang = this.getSetting("locale");
-        return leveledFormat(tick, idx, labelFormatter, lang, isUTC);
+        return leveledFormat(tick, idx, labelFormatter, this._locale, this._useUTC);
       };
-      TimeScale2.prototype.getTicks = function() {
+      TimeScale2.prototype.getTicks = function(opt) {
+        opt = opt || {};
         var interval = this._interval;
-        var extent3 = this._extent;
+        var extent = getScaleExtentForTickUnsafe(this);
+        var scaleBreakHelper = getScaleBreakHelper();
+        var brk = this.brk;
+        var brkAvailable = scaleBreakHelper && brk;
         var ticks = [];
         if (!interval) {
           return ticks;
         }
-        ticks.push({
-          value: extent3[0],
-          level: 0
+        var useUTC = this._useUTC;
+        if (brkAvailable && opt.breakTicks === "only_break") {
+          getScaleBreakHelper().addBreaksToTicks(ticks, brk.breaks, extent);
+          return ticks;
+        }
+        ticks = createIntervalTicks(this._minLevelUnit, this._approxInterval, useUTC, extent, getScaleLinearSpanEffective(this), brk);
+        var upperUnitIndex = primaryTimeUnits.length - 1;
+        var maxLevel = 0;
+        each(ticks, function(tick) {
+          if (tick.time) {
+            upperUnitIndex = Math.min(upperUnitIndex, indexOf(primaryTimeUnits, tick.time.upperTimeUnit));
+            maxLevel = Math.max(maxLevel, tick.time.level);
+          }
         });
-        var useUTC = this.getSetting("useUTC");
-        var innerTicks = getIntervalTicks(this._minLevelUnit, this._approxInterval, useUTC, extent3);
-        ticks = ticks.concat(innerTicks);
-        ticks.push({
-          value: extent3[1],
-          level: 0
-        });
+        if (brkAvailable) {
+          getScaleBreakHelper().pruneTicksByBreak(opt.pruneByBreak, ticks, brk.breaks, function(item) {
+            return item.value;
+          }, this._approxInterval, extent);
+        }
+        if (brkAvailable && opt.breakTicks !== "none") {
+          getScaleBreakHelper().addBreaksToTicks(ticks, brk.breaks, extent, function(trimmedBrk) {
+            var lowerBrkUnitIndex = Math.max(indexOf(primaryTimeUnits, getUnitFromValue(trimmedBrk.vmin, useUTC)), indexOf(primaryTimeUnits, getUnitFromValue(trimmedBrk.vmax, useUTC)));
+            var upperBrkUnitIndex = 0;
+            for (var unitIdx = 0; unitIdx < primaryTimeUnits.length; unitIdx++) {
+              if (!isPrimaryUnitValueAndGreaterSame(primaryTimeUnits[unitIdx], trimmedBrk.vmin, trimmedBrk.vmax, useUTC)) {
+                upperBrkUnitIndex = unitIdx;
+                break;
+              }
+            }
+            var upperIdx = Math.min(upperBrkUnitIndex, upperUnitIndex);
+            var lowerIdx = Math.max(upperIdx, lowerBrkUnitIndex);
+            return {
+              level: maxLevel,
+              lowerTimeUnit: primaryTimeUnits[lowerIdx],
+              upperTimeUnit: primaryTimeUnits[upperIdx]
+            };
+          });
+        }
         return ticks;
       };
-      TimeScale2.prototype.calcNiceExtent = function(opt) {
-        var extent3 = this._extent;
-        if (extent3[0] === extent3[1]) {
-          extent3[0] -= ONE_DAY;
-          extent3[1] += ONE_DAY;
-        }
-        if (extent3[1] === -Infinity && extent3[0] === Infinity) {
-          var d = /* @__PURE__ */ new Date();
-          extent3[1] = +new Date(d.getFullYear(), d.getMonth(), d.getDate());
-          extent3[0] = extent3[1] - ONE_DAY;
-        }
-        this.calcNiceTicks(opt.splitNumber, opt.minInterval, opt.maxInterval);
+      TimeScale2.prototype.getMinorTicks = function(splitNumber) {
+        return getMinorTicks(this, splitNumber, getBreaksUnsafe(this), this._interval);
       };
-      TimeScale2.prototype.calcNiceTicks = function(approxTickNum, minInterval, maxInterval) {
-        approxTickNum = approxTickNum || 10;
-        var extent3 = this._extent;
-        var span = extent3[1] - extent3[0];
-        this._approxInterval = span / approxTickNum;
-        if (minInterval != null && this._approxInterval < minInterval) {
-          this._approxInterval = minInterval;
-        }
-        if (maxInterval != null && this._approxInterval > maxInterval) {
-          this._approxInterval = maxInterval;
-        }
-        var scaleIntervalsLen = scaleIntervals.length;
-        var idx = Math.min(bisect(scaleIntervals, this._approxInterval, 0, scaleIntervalsLen), scaleIntervalsLen - 1);
-        this._interval = scaleIntervals[idx][1];
-        this._minLevelUnit = scaleIntervals[Math.max(idx - 1, 0)][0];
+      TimeScale2.prototype.setTimeInterval = function(opt) {
+        this._interval = opt.interval;
+        this._approxInterval = opt.approxInterval;
+        this._minLevelUnit = opt.minLevelUnit;
       };
-      TimeScale2.prototype.parse = function(val) {
-        return isNumber(val) ? val : +parseDate(val);
-      };
-      TimeScale2.prototype.contain = function(val) {
-        return contain2(this.parse(val), this._extent);
-      };
-      TimeScale2.prototype.normalize = function(val) {
-        return normalize2(this.parse(val), this._extent);
-      };
-      TimeScale2.prototype.scale = function(val) {
-        return scale3(val, this._extent);
+      TimeScale2.parse = function(val) {
+        return isNumber(val) ? Math.round(val) : +parseDate(val);
       };
       TimeScale2.type = "time";
       return TimeScale2;
-    }(Interval_default)
+    })(Scale_default)
   );
   var scaleIntervals = [
     // Format                           interval
@@ -26571,49 +27858,8 @@ var pptxPreview = (() => {
     ["year", ONE_YEAR]
     // 1Y
   ];
-  function isUnitValueSame(unit, valueA, valueB, isUTC) {
-    var dateA = parseDate(valueA);
-    var dateB = parseDate(valueB);
-    var isSame = function(unit2) {
-      return getUnitValue(dateA, unit2, isUTC) === getUnitValue(dateB, unit2, isUTC);
-    };
-    var isSameYear = function() {
-      return isSame("year");
-    };
-    var isSameMonth = function() {
-      return isSameYear() && isSame("month");
-    };
-    var isSameDay = function() {
-      return isSameMonth() && isSame("day");
-    };
-    var isSameHour = function() {
-      return isSameDay() && isSame("hour");
-    };
-    var isSameMinute = function() {
-      return isSameHour() && isSame("minute");
-    };
-    var isSameSecond = function() {
-      return isSameMinute() && isSame("second");
-    };
-    var isSameMilliSecond = function() {
-      return isSameSecond() && isSame("millisecond");
-    };
-    switch (unit) {
-      case "year":
-        return isSameYear();
-      case "month":
-        return isSameMonth();
-      case "day":
-        return isSameDay();
-      case "hour":
-        return isSameHour();
-      case "minute":
-        return isSameMinute();
-      case "second":
-        return isSameSecond();
-      case "millisecond":
-        return isSameMilliSecond();
-    }
+  function isPrimaryUnitValueAndGreaterSame(unit, valueA, valueB, isUTC) {
+    return roundTime(new Date(valueA), unit, isUTC).getTime() === roundTime(new Date(valueB), unit, isUTC).getTime();
   }
   function getDateInterval(approxInterval, daysInMonth) {
     approxInterval /= ONE_DAY;
@@ -26633,59 +27879,67 @@ var pptxPreview = (() => {
     return approxInterval > 30 ? 30 : approxInterval > 20 ? 20 : approxInterval > 15 ? 15 : approxInterval > 10 ? 10 : approxInterval > 5 ? 5 : approxInterval > 2 ? 2 : 1;
   }
   function getMillisecondsInterval(approxInterval) {
-    return nice(approxInterval, true);
+    return mathMax2(nice(approxInterval, true), 1);
   }
-  function getFirstTimestampOfUnit(date, unitName, isUTC) {
-    var outDate = new Date(date);
-    switch (getPrimaryTimeUnit(unitName)) {
-      case "year":
-      case "month":
-        outDate[monthSetterName(isUTC)](0);
-      case "day":
-        outDate[dateSetterName(isUTC)](1);
-      case "hour":
-        outDate[hoursSetterName(isUTC)](0);
-      case "minute":
-        outDate[minutesSetterName(isUTC)](0);
-      case "second":
-        outDate[secondsSetterName(isUTC)](0);
-        outDate[millisecondsSetterName(isUTC)](0);
-    }
-    return outDate.getTime();
+  function getFirstTimestampOfUnit(timestamp, unitName, isUTC) {
+    var upperUnitIdx = Math.max(0, indexOf(primaryTimeUnits, unitName) - 1);
+    return roundTime(new Date(timestamp), primaryTimeUnits[upperUnitIdx], isUTC).getTime();
   }
-  function getIntervalTicks(bottomUnitName, approxInterval, isUTC, extent3) {
-    var safeLimit = 1e4;
+  function createEstimateNiceMultiple(setMethodName, dateMethodInterval) {
+    var tmpDate = /* @__PURE__ */ new Date(0);
+    tmpDate[setMethodName](1);
+    var tmpTime = tmpDate.getTime();
+    tmpDate[setMethodName](1 + dateMethodInterval);
+    var approxTimeInterval = tmpDate.getTime() - tmpTime;
+    return function(tickVal, targetValue) {
+      return Math.max(0, Math.round((targetValue - tickVal) / approxTimeInterval));
+    };
+  }
+  function createIntervalTicks(bottomUnitName, approxInterval, isUTC, extent, innermostSpan, brk) {
+    var safeLimit = 3e3;
     var unitNames = timeUnits;
     var iter = 0;
     function addTicksInSpan(interval, minTimestamp, maxTimestamp, getMethodName, setMethodName, isDate, out2) {
-      var date = new Date(minTimestamp);
+      var estimateNiceMultiple = createEstimateNiceMultiple(setMethodName, interval);
       var dateTime = minTimestamp;
-      var d = date[getMethodName]();
-      while (dateTime < maxTimestamp && dateTime <= extent3[1]) {
+      var date = new Date(dateTime);
+      while (dateTime < maxTimestamp && dateTime <= extent[1]) {
         out2.push({
           value: dateTime
         });
-        d += interval;
-        date[setMethodName](d);
+        if (iter++ > safeLimit) {
+          if (true) {
+            warn('Exceed safe limit in TimeScale["getTicks"].');
+          }
+          break;
+        }
+        date[setMethodName](date[getMethodName]() + interval);
         dateTime = date.getTime();
+        if (brk) {
+          var moreMultiple = brk.calcNiceTickMultiple(dateTime, estimateNiceMultiple);
+          if (moreMultiple > 0) {
+            date[setMethodName](date[getMethodName]() + moreMultiple * interval);
+            dateTime = date.getTime();
+          }
+        }
       }
       out2.push({
         value: dateTime,
-        notAdd: true
+        // extent[1] should be added; deduplication will be performed later.
+        notAdd: dateTime > extent[1]
       });
     }
     function addLevelTicks(unitName, lastLevelTicks, levelTicks2) {
       var newAddedTicks = [];
       var isFirstLevel = !lastLevelTicks.length;
-      if (isUnitValueSame(getPrimaryTimeUnit(unitName), extent3[0], extent3[1], isUTC)) {
+      if (isPrimaryUnitValueAndGreaterSame(getPrimaryTimeUnit(unitName), extent[0], extent[1], isUTC)) {
         return;
       }
       if (isFirstLevel) {
         lastLevelTicks = [{
-          // TODO Optimize. Not include so may ticks.
-          value: getFirstTimestampOfUnit(new Date(extent3[0]), unitName, isUTC)
+          value: getFirstTimestampOfUnit(extent[0], unitName, isUTC)
         }, {
-          value: extent3[1]
+          value: extent[1]
         }];
       }
       for (var i2 = 0; i2 < lastLevelTicks.length - 1; i2++) {
@@ -26743,7 +27997,9 @@ var pptxPreview = (() => {
             setterName = millisecondsSetterName(isUTC);
             break;
         }
-        addTicksInSpan(interval, startTick, endTick, getterName, setterName, isDate, newAddedTicks);
+        if (endTick >= extent[0] && startTick <= extent[1]) {
+          addTicksInSpan(interval, startTick, endTick, getterName, setterName, isDate, newAddedTicks);
+        }
         if (unitName === "year" && levelTicks2.length > 1 && i2 === 0) {
           levelTicks2.unshift({
             value: levelTicks2[0].value - interval
@@ -26753,13 +28009,12 @@ var pptxPreview = (() => {
       for (var i2 = 0; i2 < newAddedTicks.length; i2++) {
         levelTicks2.push(newAddedTicks[i2]);
       }
-      return newAddedTicks;
     }
     var levelsTicks = [];
     var currentLevelTicks = [];
     var tickCount = 0;
     var lastLevelTickCount = 0;
-    for (var i = 0; i < unitNames.length && iter++ < safeLimit; ++i) {
+    for (var i = 0; i < unitNames.length; ++i) {
       var primaryTimeUnit = getPrimaryTimeUnit(unitNames[i]);
       if (!isPrimaryTimeUnit(unitNames[i])) {
         continue;
@@ -26777,12 +28032,12 @@ var pptxPreview = (() => {
             var tickValue = currentLevelTicks[i_1].value;
             if (i_1 === 0 || currentLevelTicks[i_1 - 1].value !== tickValue) {
               levelTicksRemoveDuplicated.push(currentLevelTicks[i_1]);
-              if (tickValue >= extent3[0] && tickValue <= extent3[1]) {
+              if (tickValue >= extent[0] && tickValue <= extent[1]) {
                 tickCount++;
               }
             }
           }
-          var targetTickNum = (extent3[1] - extent3[0]) / approxInterval;
+          var targetTickNum = innermostSpan / approxInterval;
           if (tickCount > targetTickNum * 1.5 && lastLevelTickCount > targetTickNum / 1.5) {
             break;
           }
@@ -26794,432 +28049,351 @@ var pptxPreview = (() => {
         currentLevelTicks = [];
       }
     }
-    if (true) {
-      if (iter >= safeLimit) {
-        warn("Exceed safe limit.");
-      }
-    }
     var levelsTicksInExtent = filter(map(levelsTicks, function(levelTicks2) {
       return filter(levelTicks2, function(tick) {
-        return tick.value >= extent3[0] && tick.value <= extent3[1] && !tick.notAdd;
+        return tick.value >= extent[0] && tick.value <= extent[1] && !tick.notAdd;
       });
     }), function(levelTicks2) {
       return levelTicks2.length > 0;
     });
-    var ticks = [];
     var maxLevel = levelsTicksInExtent.length - 1;
+    var ticks = [];
     for (var i = 0; i < levelsTicksInExtent.length; ++i) {
       var levelTicks = levelsTicksInExtent[i];
       for (var k = 0; k < levelTicks.length; ++k) {
+        var unit = getUnitFromValue(levelTicks[k].value, isUTC);
         ticks.push({
           value: levelTicks[k].value,
-          level: maxLevel - i
+          time: {
+            level: maxLevel - i,
+            upperTimeUnit: unit,
+            lowerTimeUnit: unit
+          }
         });
       }
     }
+    removeDuplicates(ticks, removeDuplicatesGetKeyFromValueProp, null);
     ticks.sort(function(a, b) {
       return a.value - b.value;
     });
-    var result = [];
-    for (var i = 0; i < ticks.length; ++i) {
-      if (i === 0 || ticks[i].value !== ticks[i - 1].value) {
-        result.push(ticks[i]);
-      }
+    var currMinTick = ticks[0];
+    var currMaxTick = ticks[ticks.length - 1];
+    var extent0Unit = getUnitFromValue(extent[0], isUTC);
+    var extent1Unit = getUnitFromValue(extent[1], isUTC);
+    if (!currMinTick || currMinTick.value > extent[0]) {
+      ticks.unshift({
+        value: extent[0],
+        time: {
+          level: 0,
+          upperTimeUnit: extent0Unit,
+          lowerTimeUnit: extent0Unit
+        },
+        notNice: true
+      });
     }
-    return result;
+    if (!currMaxTick || currMaxTick.value < extent[1]) {
+      ticks.push({
+        value: extent[1],
+        time: {
+          level: 0,
+          upperTimeUnit: extent1Unit,
+          lowerTimeUnit: extent1Unit
+        },
+        notNice: true
+      });
+    }
+    return ticks;
   }
+  var calcNiceForTimeScale = function(scale3, opt) {
+    var extent = scale3.getExtent();
+    if (extent[0] === extent[1]) {
+      extent[0] -= ONE_DAY;
+      extent[1] += ONE_DAY;
+    }
+    if (extent[1] === -Infinity && extent[0] === Infinity) {
+      var d = /* @__PURE__ */ new Date();
+      extent[1] = +new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      extent[0] = extent[1] - ONE_DAY;
+    }
+    scale3.setExtent(extent[0], extent[1]);
+    var splitNumber = ensureValidSplitNumber(opt.splitNumber, 10);
+    var approxInterval = getScaleLinearSpanEffective(scale3) / splitNumber;
+    var minInterval = opt.minInterval;
+    var maxInterval = opt.maxInterval;
+    if (minInterval != null && approxInterval < minInterval) {
+      approxInterval = minInterval;
+    }
+    if (maxInterval != null && approxInterval > maxInterval) {
+      approxInterval = maxInterval;
+    }
+    var scaleIntervalsLen = scaleIntervals.length;
+    var idx = Math.min(bisect(scaleIntervals, approxInterval, 0, scaleIntervalsLen), scaleIntervalsLen - 1);
+    var interval = scaleIntervals[idx][1];
+    var minLevelUnit = scaleIntervals[Math.max(idx - 1, 0)][0];
+    scale3.setTimeInterval({
+      approxInterval,
+      interval,
+      minLevelUnit
+    });
+  };
   Scale_default.registerClass(TimeScale);
   var Time_default = TimeScale;
 
   // node_modules/echarts/lib/scale/Log.js
-  var scaleProto = Scale_default.prototype;
-  var intervalScaleProto = Interval_default.prototype;
-  var roundingErrorFix = round;
-  var mathFloor = Math.floor;
-  var mathCeil = Math.ceil;
-  var mathPow2 = Math.pow;
-  var mathLog = Math.log;
+  var LOOKUP_IDX_EXTENT_START = 0;
+  var LOOKUP_IDX_EXTENT_END = 1;
+  var LOOKUP_IDX_BREAK_START = 2;
   var LogScale = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(LogScale2, _super);
-      function LogScale2() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
+      function LogScale2(setting) {
+        var _this = _super.call(this) || this;
         _this.type = "log";
-        _this.base = 10;
-        _this._originalScale = new Interval_default();
-        _this._interval = 0;
+        _this.parse = Interval_default.parse;
+        _this.base = setting.logBase || 10;
+        var lookupFrom = [];
+        var lookupTo = [];
+        var lookup = _this._lookup = {
+          from: lookupFrom,
+          to: lookupTo
+        };
+        lookupFrom[LOOKUP_IDX_EXTENT_START] = lookupFrom[LOOKUP_IDX_EXTENT_END] = lookupTo[LOOKUP_IDX_EXTENT_START] = lookupTo[LOOKUP_IDX_EXTENT_END] = NaN;
+        decorateScaleMapper(_this, LogScale2.mapperMethods);
+        var scaleBreakHelper = getScaleBreakHelper();
+        var breakOption = setting.breakOption;
+        var out2 = {
+          lookup
+        };
+        if (scaleBreakHelper) {
+          scaleBreakHelper.parseAxisBreakOptionInwardTransform(breakOption, _this, {
+            noNegative: true
+          }, LOOKUP_IDX_BREAK_START, out2);
+        }
+        _this.powStub = new Interval_default({
+          breakParsed: out2.original
+        });
+        _this.intervalStub = new Interval_default({
+          breakParsed: out2.transformed
+        });
+        enableScaleMapperFreeze(_this, _this.intervalStub);
         return _this;
       }
-      LogScale2.prototype.getTicks = function(expandToNicedExtent) {
-        var originalScale = this._originalScale;
-        var extent3 = this._extent;
-        var originalExtent = originalScale.getExtent();
-        var ticks = intervalScaleProto.getTicks.call(this, expandToNicedExtent);
-        return map(ticks, function(tick) {
+      LogScale2.prototype.getTicks = function(opt) {
+        var base2 = this.base;
+        var powStub = this.powStub;
+        var scaleBreakHelper = getScaleBreakHelper();
+        var intervalStub = this.intervalStub;
+        var intervalExtent = intervalStub.getExtent();
+        var powExtent = powStub.getExtent();
+        var powOpt = {
+          lookup: {
+            from: intervalExtent,
+            to: powExtent
+          }
+        };
+        return map(intervalStub.getTicks(opt || {}), function(tick) {
           var val = tick.value;
-          var powVal = round(mathPow2(this.base, val));
-          powVal = val === extent3[0] && this._fixMin ? fixRoundingError(powVal, originalExtent[0]) : powVal;
-          powVal = val === extent3[1] && this._fixMax ? fixRoundingError(powVal, originalExtent[1]) : powVal;
+          var powVal = logScalePowTick(val, base2, powOpt);
+          var vBreak;
+          if (scaleBreakHelper) {
+            var brkPowResult = scaleBreakHelper.getTicksBreakOutwardTransform(this, tick, getBreaksUnsafe(powStub), this._lookup);
+            if (brkPowResult) {
+              vBreak = brkPowResult.vBreak;
+              powVal = brkPowResult.tickVal;
+            }
+          }
           return {
-            value: powVal
+            value: powVal,
+            "break": vBreak
           };
         }, this);
       };
-      LogScale2.prototype.setExtent = function(start2, end2) {
-        var base2 = mathLog(this.base);
-        start2 = mathLog(Math.max(0, start2)) / base2;
-        end2 = mathLog(Math.max(0, end2)) / base2;
-        intervalScaleProto.setExtent.call(this, start2, end2);
+      LogScale2.prototype.getMinorTicks = function(splitNumber) {
+        return getMinorTicks(
+          this,
+          splitNumber,
+          getBreaksUnsafe(this.powStub),
+          // NOTE: minor ticks are in the log scale value to visually hint users "logarithm".
+          this.intervalStub.getConfig().interval
+        );
       };
-      LogScale2.prototype.getExtent = function() {
-        var base2 = this.base;
-        var extent3 = scaleProto.getExtent.call(this);
-        extent3[0] = mathPow2(base2, extent3[0]);
-        extent3[1] = mathPow2(base2, extent3[1]);
-        var originalScale = this._originalScale;
-        var originalExtent = originalScale.getExtent();
-        this._fixMin && (extent3[0] = fixRoundingError(extent3[0], originalExtent[0]));
-        this._fixMax && (extent3[1] = fixRoundingError(extent3[1], originalExtent[1]));
-        return extent3;
-      };
-      LogScale2.prototype.unionExtent = function(extent3) {
-        this._originalScale.unionExtent(extent3);
-        var base2 = this.base;
-        extent3[0] = mathLog(extent3[0]) / mathLog(base2);
-        extent3[1] = mathLog(extent3[1]) / mathLog(base2);
-        scaleProto.unionExtent.call(this, extent3);
-      };
-      LogScale2.prototype.unionExtentFromData = function(data, dim) {
-        this.unionExtent(data.getApproximateExtent(dim));
-      };
-      LogScale2.prototype.calcNiceTicks = function(approxTickNum) {
-        approxTickNum = approxTickNum || 10;
-        var extent3 = this._extent;
-        var span = extent3[1] - extent3[0];
-        if (span === Infinity || span <= 0) {
-          return;
-        }
-        var interval = quantity(span);
-        var err = approxTickNum / span * interval;
-        if (err <= 0.5) {
-          interval *= 10;
-        }
-        while (!isNaN(interval) && Math.abs(interval) < 1 && Math.abs(interval) > 0) {
-          interval *= 10;
-        }
-        var niceExtent = [round(mathCeil(extent3[0] / interval) * interval), round(mathFloor(extent3[1] / interval) * interval)];
-        this._interval = interval;
-        this._niceExtent = niceExtent;
-      };
-      LogScale2.prototype.calcNiceExtent = function(opt) {
-        intervalScaleProto.calcNiceExtent.call(this, opt);
-        this._fixMin = opt.fixMin;
-        this._fixMax = opt.fixMax;
-      };
-      LogScale2.prototype.parse = function(val) {
-        return val;
-      };
-      LogScale2.prototype.contain = function(val) {
-        val = mathLog(val) / mathLog(this.base);
-        return contain2(val, this._extent);
-      };
-      LogScale2.prototype.normalize = function(val) {
-        val = mathLog(val) / mathLog(this.base);
-        return normalize2(val, this._extent);
-      };
-      LogScale2.prototype.scale = function(val) {
-        val = scale3(val, this._extent);
-        return mathPow2(this.base, val);
+      LogScale2.prototype.getLabel = function(data, opt) {
+        return this.intervalStub.getLabel(data, opt);
       };
       LogScale2.type = "log";
+      LogScale2.mapperMethods = {
+        needTransform: function() {
+          return true;
+        },
+        normalize: function(val) {
+          return this.intervalStub.normalize(logScaleLogTick(val, this.base));
+        },
+        scale: function(val) {
+          return logScalePowTick(this.intervalStub.scale(val), this.base, null);
+        },
+        transformIn: function(val, opt) {
+          val = logScaleLogTick(val, this.base);
+          return opt && opt.depth === SCALE_MAPPER_DEPTH_OUT_OF_BREAK ? val : this.intervalStub.transformIn(val, opt);
+        },
+        transformOut: function(val, opt) {
+          var depth = opt ? opt.depth : null;
+          tmpTransformOutOpt1.depth = depth;
+          tmpTransformOutOpt2.lookup = this._lookup;
+          return logScalePowTick(depth === SCALE_MAPPER_DEPTH_OUT_OF_BREAK ? val : this.intervalStub.transformOut(val, tmpTransformOutOpt1), this.base, tmpTransformOutOpt2);
+        },
+        contain: function(val) {
+          return this.powStub.contain(val);
+        },
+        /**
+         * NOTICE: The caller should ensure `start` and `end` are both non-negative.
+         */
+        setExtent: function(start2, end2) {
+          this.setExtent2(SCALE_EXTENT_KIND_EFFECTIVE, start2, end2);
+        },
+        setExtent2: function(kind, start2, end2) {
+          if (!isValidBoundsForExtent(start2, end2) || start2 <= 0 || end2 <= 0) {
+            return;
+          }
+          var lookupTo = tmpNotUsedArr;
+          var lookupFrom = tmpNotUsedArr;
+          if (kind === SCALE_EXTENT_KIND_EFFECTIVE) {
+            var lookup = this._lookup;
+            lookupTo = lookup.to;
+            lookupFrom = lookup.from;
+          }
+          this.powStub.setExtent2(kind, lookupTo[LOOKUP_IDX_EXTENT_START] = start2, lookupTo[LOOKUP_IDX_EXTENT_END] = end2);
+          var base2 = this.base;
+          this.intervalStub.setExtent2(kind, lookupFrom[LOOKUP_IDX_EXTENT_START] = logScaleLogTick(start2, base2), lookupFrom[LOOKUP_IDX_EXTENT_END] = logScaleLogTick(end2, base2));
+        },
+        getFilter: function() {
+          return {
+            g: 0
+          };
+        },
+        sanitize: function(value, dataExtent) {
+          if (isValidBoundsForExtent(dataExtent[0], dataExtent[1]) && isNullableNumberFinite(value) && value <= 0) {
+            value = dataExtent[0];
+          }
+          return value;
+        },
+        getDefaultStartValue: function() {
+          return 1;
+        },
+        getExtent: function() {
+          return this.powStub.getExtent();
+        },
+        getExtentUnsafe: function(kind, depth) {
+          return depth === null ? this.powStub.getExtentUnsafe(kind, null) : this.intervalStub.getExtentUnsafe(kind, depth);
+        }
+      };
       return LogScale2;
-    }(Scale_default)
+    })(Scale_default)
   );
-  var proto = LogScale.prototype;
-  proto.getMinorTicks = intervalScaleProto.getMinorTicks;
-  proto.getLabel = intervalScaleProto.getLabel;
-  function fixRoundingError(val, originalVal) {
-    return roundingErrorFix(val, getPrecision(originalVal));
-  }
   Scale_default.registerClass(LogScale);
+  var tmpTransformOutOpt1 = {};
+  var tmpTransformOutOpt2 = {};
+  var tmpNotUsedArr = [];
   var Log_default = LogScale;
 
-  // node_modules/echarts/lib/coord/scaleRawExtentInfo.js
-  var ScaleRawExtentInfo = (
-    /** @class */
-    function() {
-      function ScaleRawExtentInfo2(scale4, model, originalExtent) {
-        this._prepareParams(scale4, model, originalExtent);
-      }
-      ScaleRawExtentInfo2.prototype._prepareParams = function(scale4, model, dataExtent) {
-        if (dataExtent[1] < dataExtent[0]) {
-          dataExtent = [NaN, NaN];
-        }
-        this._dataMin = dataExtent[0];
-        this._dataMax = dataExtent[1];
-        var isOrdinal = this._isOrdinal = scale4.type === "ordinal";
-        this._needCrossZero = scale4.type === "interval" && model.getNeedCrossZero && model.getNeedCrossZero();
-        var axisMinValue = model.get("min", true);
-        if (axisMinValue == null) {
-          axisMinValue = model.get("startValue", true);
-        }
-        var modelMinRaw = this._modelMinRaw = axisMinValue;
-        if (isFunction(modelMinRaw)) {
-          this._modelMinNum = parseAxisModelMinMax(scale4, modelMinRaw({
-            min: dataExtent[0],
-            max: dataExtent[1]
-          }));
-        } else if (modelMinRaw !== "dataMin") {
-          this._modelMinNum = parseAxisModelMinMax(scale4, modelMinRaw);
-        }
-        var modelMaxRaw = this._modelMaxRaw = model.get("max", true);
-        if (isFunction(modelMaxRaw)) {
-          this._modelMaxNum = parseAxisModelMinMax(scale4, modelMaxRaw({
-            min: dataExtent[0],
-            max: dataExtent[1]
-          }));
-        } else if (modelMaxRaw !== "dataMax") {
-          this._modelMaxNum = parseAxisModelMinMax(scale4, modelMaxRaw);
-        }
-        if (isOrdinal) {
-          this._axisDataLen = model.getCategories().length;
-        } else {
-          var boundaryGap = model.get("boundaryGap");
-          var boundaryGapArr = isArray(boundaryGap) ? boundaryGap : [boundaryGap || 0, boundaryGap || 0];
-          if (typeof boundaryGapArr[0] === "boolean" || typeof boundaryGapArr[1] === "boolean") {
-            if (true) {
-              console.warn('Boolean type for boundaryGap is only allowed for ordinal axis. Please use string in percentage instead, e.g., "20%". Currently, boundaryGap is set to be 0.');
-            }
-            this._boundaryGapInner = [0, 0];
-          } else {
-            this._boundaryGapInner = [parsePercent(boundaryGapArr[0], 1), parsePercent(boundaryGapArr[1], 1)];
-          }
-        }
-      };
-      ScaleRawExtentInfo2.prototype.calculate = function() {
-        var isOrdinal = this._isOrdinal;
-        var dataMin = this._dataMin;
-        var dataMax = this._dataMax;
-        var axisDataLen = this._axisDataLen;
-        var boundaryGapInner = this._boundaryGapInner;
-        var span = !isOrdinal ? dataMax - dataMin || Math.abs(dataMin) : null;
-        var min3 = this._modelMinRaw === "dataMin" ? dataMin : this._modelMinNum;
-        var max3 = this._modelMaxRaw === "dataMax" ? dataMax : this._modelMaxNum;
-        var minFixed = min3 != null;
-        var maxFixed = max3 != null;
-        if (min3 == null) {
-          min3 = isOrdinal ? axisDataLen ? 0 : NaN : dataMin - boundaryGapInner[0] * span;
-        }
-        if (max3 == null) {
-          max3 = isOrdinal ? axisDataLen ? axisDataLen - 1 : NaN : dataMax + boundaryGapInner[1] * span;
-        }
-        (min3 == null || !isFinite(min3)) && (min3 = NaN);
-        (max3 == null || !isFinite(max3)) && (max3 = NaN);
-        var isBlank = eqNaN(min3) || eqNaN(max3) || isOrdinal && !axisDataLen;
-        if (this._needCrossZero) {
-          if (min3 > 0 && max3 > 0 && !minFixed) {
-            min3 = 0;
-          }
-          if (min3 < 0 && max3 < 0 && !maxFixed) {
-            max3 = 0;
-          }
-        }
-        var determinedMin = this._determinedMin;
-        var determinedMax = this._determinedMax;
-        if (determinedMin != null) {
-          min3 = determinedMin;
-          minFixed = true;
-        }
-        if (determinedMax != null) {
-          max3 = determinedMax;
-          maxFixed = true;
-        }
-        return {
-          min: min3,
-          max: max3,
-          minFixed,
-          maxFixed,
-          isBlank
-        };
-      };
-      ScaleRawExtentInfo2.prototype.modifyDataMinMax = function(minMaxName, val) {
-        if (true) {
-          assert(!this.frozen);
-        }
-        this[DATA_MIN_MAX_ATTR[minMaxName]] = val;
-      };
-      ScaleRawExtentInfo2.prototype.setDeterminedMinMax = function(minMaxName, val) {
-        var attr = DETERMINED_MIN_MAX_ATTR[minMaxName];
-        if (true) {
-          assert(!this.frozen && this[attr] == null);
-        }
-        this[attr] = val;
-      };
-      ScaleRawExtentInfo2.prototype.freeze = function() {
-        this.frozen = true;
-      };
-      return ScaleRawExtentInfo2;
-    }()
-  );
-  var DETERMINED_MIN_MAX_ATTR = {
-    min: "_determinedMin",
-    max: "_determinedMax"
+  // node_modules/echarts/lib/coord/axisCommonTypes.js
+  var AXIS_TYPES = {
+    value: 1,
+    category: 1,
+    time: 1,
+    log: 1
   };
-  var DATA_MIN_MAX_ATTR = {
-    min: "_dataMin",
-    max: "_dataMax"
-  };
-  function ensureScaleRawExtentInfo(scale4, model, originalExtent) {
-    var rawExtentInfo = scale4.rawExtentInfo;
-    if (rawExtentInfo) {
-      return rawExtentInfo;
-    }
-    rawExtentInfo = new ScaleRawExtentInfo(scale4, model, originalExtent);
-    scale4.rawExtentInfo = rawExtentInfo;
-    return rawExtentInfo;
-  }
-  function parseAxisModelMinMax(scale4, minMax) {
-    return minMax == null ? null : eqNaN(minMax) ? NaN : scale4.parse(minMax);
-  }
 
   // node_modules/echarts/lib/coord/axisHelper.js
-  function getScaleExtent(scale4, model) {
-    var scaleType = scale4.type;
-    var rawExtentResult = ensureScaleRawExtentInfo(scale4, model, scale4.getExtent()).calculate();
-    scale4.setBlank(rawExtentResult.isBlank);
-    var min3 = rawExtentResult.min;
-    var max3 = rawExtentResult.max;
-    var ecModel = model.ecModel;
-    if (ecModel && scaleType === "time") {
-      var barSeriesModels = prepareLayoutBarSeries("bar", ecModel);
-      var isBaseAxisAndHasBarSeries_1 = false;
-      each(barSeriesModels, function(seriesModel) {
-        isBaseAxisAndHasBarSeries_1 = isBaseAxisAndHasBarSeries_1 || seriesModel.getBaseAxis() === model.axis;
-      });
-      if (isBaseAxisAndHasBarSeries_1) {
-        var barWidthAndOffset = makeColumnLayout(barSeriesModels);
-        var adjustedScale = adjustScaleForOverflow(min3, max3, model, barWidthAndOffset);
-        min3 = adjustedScale.min;
-        max3 = adjustedScale.max;
-      }
+  var axisInner = makeInner();
+  function determineAxisType(model) {
+    var type = model.get("type");
+    if (
+      // In ec option, `xxxAxis.type` may be undefined.
+      type == null || !hasOwn(AXIS_TYPES, type) && !Scale_default.getClass(type)
+    ) {
+      type = "value";
     }
-    return {
-      extent: [min3, max3],
-      // "fix" means "fixed", the value should not be
-      // changed in the subsequent steps.
-      fixMin: rawExtentResult.minFixed,
-      fixMax: rawExtentResult.maxFixed
-    };
+    return type;
   }
-  function adjustScaleForOverflow(min3, max3, model, barWidthAndOffset) {
-    var axisExtent = model.axis.getExtent();
-    var axisLength = Math.abs(axisExtent[1] - axisExtent[0]);
-    var barsOnCurrentAxis = retrieveColumnLayout(barWidthAndOffset, model.axis);
-    if (barsOnCurrentAxis === void 0) {
-      return {
-        min: min3,
-        max: max3
-      };
+  function createScaleByModel(model, type, coordSysSupportAxisBreaks) {
+    var breakHelper = getScaleBreakHelper();
+    var breakOption;
+    if (breakHelper) {
+      breakOption = retrieveAxisBreaksOption(model, type, coordSysSupportAxisBreaks);
     }
-    var minOverflow = Infinity;
-    each(barsOnCurrentAxis, function(item) {
-      minOverflow = Math.min(item.offset, minOverflow);
-    });
-    var maxOverflow = -Infinity;
-    each(barsOnCurrentAxis, function(item) {
-      maxOverflow = Math.max(item.offset + item.width, maxOverflow);
-    });
-    minOverflow = Math.abs(minOverflow);
-    maxOverflow = Math.abs(maxOverflow);
-    var totalOverFlow = minOverflow + maxOverflow;
-    var oldRange = max3 - min3;
-    var oldRangePercentOfNew = 1 - (minOverflow + maxOverflow) / axisLength;
-    var overflowBuffer = oldRange / oldRangePercentOfNew - oldRange;
-    max3 += overflowBuffer * (maxOverflow / totalOverFlow);
-    min3 -= overflowBuffer * (minOverflow / totalOverFlow);
-    return {
-      min: min3,
-      max: max3
-    };
-  }
-  function niceScaleExtent(scale4, inModel) {
-    var model = inModel;
-    var extentInfo = getScaleExtent(scale4, model);
-    var extent3 = extentInfo.extent;
-    var splitNumber = model.get("splitNumber");
-    if (scale4 instanceof Log_default) {
-      scale4.base = model.get("logBase");
-    }
-    var scaleType = scale4.type;
-    var interval = model.get("interval");
-    var isIntervalOrTime = scaleType === "interval" || scaleType === "time";
-    scale4.setExtent(extent3[0], extent3[1]);
-    scale4.calcNiceExtent({
-      splitNumber,
-      fixMin: extentInfo.fixMin,
-      fixMax: extentInfo.fixMax,
-      minInterval: isIntervalOrTime ? model.get("minInterval") : null,
-      maxInterval: isIntervalOrTime ? model.get("maxInterval") : null
-    });
-    if (interval != null) {
-      scale4.setInterval && scale4.setInterval(interval);
+    switch (type) {
+      case "category":
+        return new Ordinal_default({
+          ordinalMeta: model.getOrdinalMeta ? model.getOrdinalMeta() : model.getCategories(),
+          extent: initExtentForUnion()
+        });
+      case "time":
+        return new Time_default({
+          locale: model.ecModel.getLocaleModel(),
+          useUTC: model.ecModel.get("useUTC"),
+          breakOption
+        });
+      case "log":
+        return new Log_default({
+          logBase: model.get("logBase"),
+          breakOption
+        });
+      case "value":
+        return new Interval_default({
+          breakOption
+        });
+      default:
+        return new (Scale_default.getClass(type) || Interval_default)({});
     }
   }
-  function createScaleByModel(model, axisType) {
-    axisType = axisType || model.get("type");
-    if (axisType) {
-      switch (axisType) {
-        // Buildin scale
-        case "category":
-          return new Ordinal_default({
-            ordinalMeta: model.getOrdinalMeta ? model.getOrdinalMeta() : model.getCategories(),
-            extent: [Infinity, -Infinity]
-          });
-        case "time":
-          return new Time_default({
-            locale: model.ecModel.getLocaleModel(),
-            useUTC: model.ecModel.get("useUTC")
-          });
-        default:
-          return new (Scale_default.getClass(axisType) || Interval_default)();
-      }
-    }
-  }
-  function ifAxisCrossZero(axis) {
-    var dataExtent = axis.scale.getExtent();
+  function getScaleValuePositionKind(scale3, value, considerMappingExtent) {
+    var dataExtent = considerMappingExtent ? getScaleExtentForMappingUnsafe(scale3, null) : scale3.getExtentUnsafe(SCALE_EXTENT_KIND_EFFECTIVE, null);
     var min3 = dataExtent[0];
     var max3 = dataExtent[1];
-    return !(min3 > 0 && max3 > 0 || min3 < 0 && max3 < 0);
+    return !isValidBoundsForExtent(min3, max3) ? SCALE_VALUE_POSITION_KIND_OUTSIDE : min3 === value || max3 === value ? SCALE_VALUE_POSITION_KIND_EDGE : min3 < value && max3 > value ? SCALE_VALUE_POSITION_KIND_INSIDE : SCALE_VALUE_POSITION_KIND_OUTSIDE;
+  }
+  var SCALE_VALUE_POSITION_KIND_INSIDE = 1;
+  var SCALE_VALUE_POSITION_KIND_EDGE = 2;
+  var SCALE_VALUE_POSITION_KIND_OUTSIDE = 3;
+  function discourageOnAxisZero(axis) {
+    axisInner(axis).noOnMyZero = true;
+  }
+  function isOnAxisZeroDiscouraged(axis) {
+    return axisInner(axis).noOnMyZero;
   }
   function makeLabelFormatter(axis) {
     var labelFormatter = axis.getLabelModel().get("formatter");
-    var categoryTickStart = axis.type === "category" ? axis.scale.getExtent()[0] : null;
-    if (axis.scale.type === "time") {
-      return /* @__PURE__ */ function(tpl) {
-        return function(tick, idx) {
-          return axis.scale.getFormattedLabel(tick, idx, tpl);
-        };
-      }(labelFormatter);
+    if (axis.type === "time") {
+      var parsed_1 = parseTimeAxisLabelFormatter(labelFormatter);
+      return function(tick, idx) {
+        return axis.scale.getFormattedLabel(tick, idx, parsed_1);
+      };
     } else if (isString(labelFormatter)) {
-      return /* @__PURE__ */ function(tpl) {
-        return function(tick) {
-          var label = axis.scale.getLabel(tick);
-          var text = tpl.replace("{value}", label != null ? label : "");
-          return text;
-        };
-      }(labelFormatter);
+      return function(tick) {
+        var label = axis.scale.getLabel(tick);
+        var text = labelFormatter.replace("{value}", label != null ? label : "");
+        return text;
+      };
     } else if (isFunction(labelFormatter)) {
-      return /* @__PURE__ */ function(cb) {
+      if (axis.type === "category") {
         return function(tick, idx) {
-          if (categoryTickStart != null) {
-            idx = tick.value - categoryTickStart;
-          }
-          return cb(getAxisRawValue(axis, tick), idx, tick.level != null ? {
-            level: tick.level
-          } : null);
+          return labelFormatter(
+            getAxisRawValue(axis, tick),
+            tick.value - axis.scale.getExtent()[0],
+            null
+            // Using `null` just for backward compat.
+          );
         };
-      }(labelFormatter);
+      }
+      var scaleBreakHelper_1 = getScaleBreakHelper();
+      return function(tick, idx) {
+        var extra = null;
+        if (scaleBreakHelper_1) {
+          extra = scaleBreakHelper_1.makeAxisLabelFormatterParamBreak(extra, tick["break"]);
+        }
+        return labelFormatter(getAxisRawValue(axis, tick), idx, extra);
+      };
     } else {
       return function(tick) {
         return axis.scale.getLabel(tick);
@@ -27227,49 +28401,8 @@ var pptxPreview = (() => {
     }
   }
   function getAxisRawValue(axis, tick) {
-    return axis.type === "category" ? axis.scale.getLabel(tick) : tick.value;
-  }
-  function estimateLabelUnionRect(axis) {
-    var axisModel = axis.model;
-    var scale4 = axis.scale;
-    if (!axisModel.get(["axisLabel", "show"]) || scale4.isBlank()) {
-      return;
-    }
-    var realNumberScaleTicks;
-    var tickCount;
-    var categoryScaleExtent = scale4.getExtent();
-    if (scale4 instanceof Ordinal_default) {
-      tickCount = scale4.count();
-    } else {
-      realNumberScaleTicks = scale4.getTicks();
-      tickCount = realNumberScaleTicks.length;
-    }
-    var axisLabelModel = axis.getLabelModel();
-    var labelFormatter = makeLabelFormatter(axis);
-    var rect;
-    var step = 1;
-    if (tickCount > 40) {
-      step = Math.ceil(tickCount / 40);
-    }
-    for (var i = 0; i < tickCount; i += step) {
-      var tick = realNumberScaleTicks ? realNumberScaleTicks[i] : {
-        value: categoryScaleExtent[0] + i
-      };
-      var label = labelFormatter(tick, i);
-      var unrotatedSingleRect = axisLabelModel.getTextRect(label);
-      var singleRect = rotateTextRect(unrotatedSingleRect, axisLabelModel.get("rotate") || 0);
-      rect ? rect.union(singleRect) : rect = singleRect;
-    }
-    return rect;
-  }
-  function rotateTextRect(textRect, rotate2) {
-    var rotateRadians = rotate2 * Math.PI / 180;
-    var beforeWidth = textRect.width;
-    var beforeHeight = textRect.height;
-    var afterWidth = beforeWidth * Math.abs(Math.cos(rotateRadians)) + Math.abs(beforeHeight * Math.sin(rotateRadians));
-    var afterHeight = beforeWidth * Math.abs(Math.sin(rotateRadians)) + Math.abs(beforeHeight * Math.cos(rotateRadians));
-    var rotatedRect = new BoundingRect_default(textRect.x, textRect.y, afterWidth, afterHeight);
-    return rotatedRect;
+    var scale3 = axis.scale;
+    return isOrdinalScale(scale3) ? scale3.getLabel(tick) : tick.value;
   }
   function getOptionCategoryInterval(model) {
     var interval = model.get("interval");
@@ -27285,23 +28418,713 @@ var pptxPreview = (() => {
     });
     return keys(dataDimMap);
   }
+  function isNameLocationCenter(nameLocation) {
+    return nameLocation === "middle" || nameLocation === "center";
+  }
+  function shouldAxisShow(axisModel) {
+    return axisModel.getShallow("show");
+  }
+  function retrieveAxisBreaksOption(model, axisType, coordSysSupportAxisBreaks) {
+    var option = model.get("breaks", true);
+    if (option != null) {
+      if (!getScaleBreakHelper()) {
+        if (true) {
+          error('Must `import {AxisBreak} from "echarts/features.js"; use(AxisBreak);` first if using breaks option.');
+        }
+        return void 0;
+      }
+      if (!coordSysSupportAxisBreaks || !isAxisTypeSupportAxisBreak(axisType)) {
+        if (true) {
+          var axisInfo = model instanceof Component_default ? " " + model.type + "[" + model.componentIndex + "]" : "";
+          error("Axis" + axisInfo + " does not support break.");
+        }
+        return void 0;
+      }
+      return option;
+    }
+  }
+  function isAxisTypeSupportAxisBreak(axisType) {
+    return axisType !== "category";
+  }
+  function updateIntervalOrLogScaleForNiceOrAligned(scale3, fixMinMax, oldIntervalExtent, newIntervalExtent, oldOutermostExtent, cfg) {
+    var isTargetLogScale = isLogScale(scale3);
+    var intervalStub = isTargetLogScale ? scale3.intervalStub : scale3;
+    intervalStub.setExtent(newIntervalExtent[0], newIntervalExtent[1]);
+    if (isTargetLogScale) {
+      var powStub = scale3.powStub;
+      var opt = {
+        depth: SCALE_MAPPER_DEPTH_OUT_OF_BREAK
+      };
+      var minPow = scale3.transformOut(newIntervalExtent[0], opt);
+      var maxPow = scale3.transformOut(newIntervalExtent[1], opt);
+      var extentChanged = extentDiffers(oldIntervalExtent, newIntervalExtent);
+      if (fixMinMax[0] && !extentChanged[0]) {
+        minPow = oldOutermostExtent[0];
+      }
+      if (fixMinMax[1] && !extentChanged[1]) {
+        maxPow = oldOutermostExtent[1];
+      }
+      powStub.setExtent(minPow, maxPow);
+    }
+    intervalStub.setConfig(cfg);
+  }
+  function getTickValueOutermost(scale3, tick) {
+    return isOrdinalScale(scale3) ? scale3.getRawOrdinalNumber(tick.value) : tick.value;
+  }
+  function isAxisOnBand(scale3, axisModel) {
+    return isOrdinalScale(scale3) && !!axisModel.get("boundaryGap");
+  }
 
   // node_modules/echarts/lib/coord/axisModelCommonMixin.js
   var AxisModelCommonMixin = (
     /** @class */
-    function() {
+    (function() {
       function AxisModelCommonMixin2() {
       }
-      AxisModelCommonMixin2.prototype.getNeedCrossZero = function() {
-        var option = this.option;
-        return !option.scale;
+      AxisModelCommonMixin2.prototype.needIncludeZero = function() {
+        return !this.option.scale;
       };
       AxisModelCommonMixin2.prototype.getCoordSysModel = function() {
         return;
       };
       return AxisModelCommonMixin2;
-    }()
+    })()
   );
+
+  // node_modules/echarts/lib/coord/axisStatistics.js
+  var callOnlyOnce = makeCallOnlyOnce();
+  var AXIS_STAT_KEY_DELIMITER = "|&";
+  var ecModelCacheFullUpdateInner = makeInner();
+  var LINEAR_POSITIVE_MIN_GAP_SINGLE_VALID_VALUE = -2;
+  var LINEAR_POSITIVE_MIN_GAP_NO_VALID_VALUE = -1;
+  var ecModelCachePrepareInner = makeInner();
+  var validateInputAxis;
+  if (true) {
+    validateInputAxis = function(axis) {
+      assert(axis && axis.model && axis.model.uid && axis.model.ecModel);
+    };
+  }
+  function getAxisStatPerKeyPerAxis(axis, axisStatKey) {
+    var axisModel = axis.model;
+    var keyed = ecModelCacheFullUpdateInner(getCachePerECFullUpdate(axisModel.ecModel)).keyed;
+    var perKey = keyed && keyed.get(axisStatKey);
+    return perKey && perKey.get(axisModel.uid);
+  }
+  function getAxisStat(axis, axisStatKey) {
+    if (true) {
+      assert(axisStatKey != null);
+      validateInputAxis(axis);
+    }
+    return wrapStatResult(getAxisStatPerKeyPerAxis(axis, axisStatKey));
+  }
+  function getAxisStatBySeries(axis, seriesList) {
+    if (true) {
+      validateInputAxis(axis);
+    }
+    var result = [];
+    eachKeyEachAxis(axis.model.ecModel, function(perKeyPerAxis) {
+      for (var idx = 0; idx < seriesList.length; idx++) {
+        if (seriesList[idx] && perKeyPerAxis.serByIdx[seriesList[idx].seriesIndex]) {
+          result.push(wrapStatResult(perKeyPerAxis));
+        }
+      }
+    });
+    return result;
+  }
+  function eachKeyEachAxis(ecModel, cb) {
+    var keyed = ecModelCacheFullUpdateInner(getCachePerECFullUpdate(ecModel)).keyed;
+    keyed && keyed.each(function(perKey, axisStatKey) {
+      perKey.each(function(perKeyPerAxis, axisModelUid) {
+        cb(perKeyPerAxis, axisStatKey, axisModelUid);
+      });
+    });
+  }
+  function wrapStatResult(record) {
+    return {
+      liPosMinGap: record ? record.liPosMinGap : void 0
+    };
+  }
+  function eachSeriesOnAxis(axis, cb) {
+    if (true) {
+      validateInputAxis(axis);
+    }
+    var ecModel = axis.model.ecModel;
+    var seriesOnAxisMap = ecModelCacheFullUpdateInner(getCachePerECFullUpdate(ecModel)).axSer;
+    seriesOnAxisMap && eachSeriesDealForAxisStat(ecModel, seriesOnAxisMap.get(axis.model.uid), cb);
+  }
+  function eachSeriesOnAxisOnKey(axis, axisStatKey, cb) {
+    if (true) {
+      assert(axisStatKey != null);
+      validateInputAxis(axis);
+    }
+    var perKeyPerAxis = getAxisStatPerKeyPerAxis(axis, axisStatKey);
+    perKeyPerAxis && eachSeriesDealForAxisStat(axis.model.ecModel, perKeyPerAxis.sers, cb);
+  }
+  function eachSeriesDealForAxisStat(ecModel, seriesList, cb) {
+    if (!seriesList) {
+      return;
+    }
+    for (var i = 0; i < seriesList.length; i++) {
+      var seriesModel = seriesList[i];
+      if (!ecModel.isSeriesFiltered(seriesModel)) {
+        cb(seriesModel);
+      }
+    }
+  }
+  function eachAxisOnKey(ecModel, axisStatKey, cb) {
+    if (true) {
+      assert(axisStatKey != null);
+    }
+    var keyed = ecModelCacheFullUpdateInner(getCachePerECFullUpdate(ecModel)).keyed;
+    var perKey = keyed && keyed.get(axisStatKey);
+    perKey && perKey.each(function(perKeyPerAxis) {
+      if (true) {
+        assert(perKeyPerAxis.sers.length > 0);
+      }
+      cb(perKeyPerAxis.axis);
+    });
+  }
+  function eachKeyOnAxis(axis, cb) {
+    if (true) {
+      validateInputAxis(axis);
+    }
+    var model = axis.model;
+    var keysByAxisModelUid = ecModelCacheFullUpdateInner(getCachePerECFullUpdate(model.ecModel)).keys;
+    keysByAxisModelUid && each(keysByAxisModelUid.get(model.uid), function(axisStatKey) {
+      if (true) {
+        var stat = getAxisStatPerKeyPerAxis(axis, axisStatKey);
+        assert(stat && stat.sers.length > 0);
+      }
+      cb(axisStatKey);
+    });
+  }
+  function performAxisStatisticsOnOverallReset(ecModel) {
+    var ecPrepareCache = ecModelCachePrepareInner(getCachePerECPrepare(ecModel));
+    var ecPrepareCacheKeyed = ecPrepareCache.keyed || (ecPrepareCache.keyed = createHashMap());
+    eachKeyEachAxis(ecModel, function(perKeyPerAxis, axisStatKey, axisModelUid) {
+      var ecPrepareCachePerKey = ecPrepareCacheKeyed.get(axisStatKey) || ecPrepareCacheKeyed.set(axisStatKey, createHashMap());
+      var ecPreparePerKeyPerAxis = ecPrepareCachePerKey.get(axisModelUid) || ecPrepareCachePerKey.set(axisModelUid, {});
+      if (perKeyPerAxis.metrics.liPosMinGap) {
+        _metricImpl.liPosMinGap(ecModel, perKeyPerAxis, ecPreparePerKeyPerAxis);
+      }
+    });
+  }
+  function registerMetricImpl(metricType, impl) {
+    _metricImpl[metricType] = impl;
+  }
+  var _metricImpl = {};
+  function associateSeriesWithAxis(axis, seriesModel, coordSysType) {
+    if (!axis) {
+      return;
+    }
+    var ecModel = seriesModel.ecModel;
+    var ecFullUpdateCache = ecModelCacheFullUpdateInner(getCachePerECFullUpdate(ecModel));
+    var axisModelUid = axis.model.uid;
+    if (true) {
+      validateInputAxis(axis);
+      var axSerPairCheck = ecFullUpdateCache.axSerPairCheck || (ecFullUpdateCache.axSerPairCheck = createHashMap());
+      var pairKey = "" + axisModelUid + AXIS_STAT_KEY_DELIMITER + seriesModel.uid;
+      assert(!axSerPairCheck.get(pairKey));
+      axSerPairCheck.set(pairKey, 1);
+    }
+    var seriesOnAxisMap = ecFullUpdateCache.axSer || (ecFullUpdateCache.axSer = createHashMap());
+    var seriesListPerAxis = seriesOnAxisMap.get(axisModelUid) || seriesOnAxisMap.set(axisModelUid, []);
+    if (true) {
+      var lastSeries = seriesListPerAxis[seriesListPerAxis.length - 1];
+      if (lastSeries) {
+        assert(lastSeries.seriesIndex < seriesModel.seriesIndex);
+      }
+    }
+    seriesListPerAxis.push(seriesModel);
+    var seriesType2 = seriesModel.subType;
+    var isBaseAxis = seriesModel.getBaseAxis() === axis;
+    var client = clientsForLookup.get(makeClientLookupKey(seriesType2, isBaseAxis, coordSysType)) || clientsForLookup.get(makeClientLookupKey(seriesType2, isBaseAxis, null));
+    if (!client) {
+      return;
+    }
+    var keyed = ecFullUpdateCache.keyed || (ecFullUpdateCache.keyed = createHashMap());
+    var keys2 = ecFullUpdateCache.keys || (ecFullUpdateCache.keys = createHashMap());
+    var axisStatKey = client.key;
+    var perKey = keyed.get(axisStatKey) || keyed.set(axisStatKey, createHashMap());
+    var perKeyPerAxis = perKey.get(axisModelUid);
+    if (!perKeyPerAxis) {
+      perKeyPerAxis = perKey.set(axisModelUid, {
+        axis,
+        sers: [],
+        serByIdx: []
+      });
+      perKeyPerAxis.metrics = client.getMetrics(axis);
+      (keys2.get(axisModelUid) || keys2.set(axisModelUid, [])).push(axisStatKey);
+    }
+    perKeyPerAxis.sers.push(seriesModel);
+    perKeyPerAxis.serByIdx[seriesModel.seriesIndex] = seriesModel;
+  }
+  function makeClientLookupKey(seriesType2, isBaseAxis, coordSysType) {
+    return seriesType2 + AXIS_STAT_KEY_DELIMITER + retrieve2(isBaseAxis, true) + AXIS_STAT_KEY_DELIMITER + (coordSysType || "");
+  }
+  function requireAxisStatistics(registers, client) {
+    var clientKey = makeClientLookupKey(client.seriesType, client.baseAxis, client.coordSysType);
+    if (true) {
+      assert(client.seriesType && client.key && !clientsForCheckingStatKey.get(client.key) && !clientsForLookup.get(clientKey));
+      clientsForCheckingStatKey.set(client.key, 1);
+    }
+    clientsForLookup.set(clientKey, client);
+    callOnlyOnce(registers, function() {
+      registers.registerProcessor(registers.PRIORITY.PROCESSOR.AXIS_STATISTICS, {
+        // NOTE: Theoretically, `appendData` requires `dirtyOnOverallProgress: true` here to re-calculate them.
+        // But this OVERALL_STAGE_TASK is applied to all series (no `getTargetSeries` specified),
+        // `dirtyOnOverallProgress: true` can cause irrelevant series (e.g., series on geo)
+        // to be re-rendered when `appendData` is called, which cause `appendData` meaningless,
+        // thereby not setting `dirtyOnOverallProgress: true`.
+        overallReset: performAxisStatisticsOnOverallReset
+      });
+    });
+  }
+  var clientsForCheckingStatKey;
+  if (true) {
+    clientsForCheckingStatKey = createHashMap();
+  }
+  var clientsForLookup = createHashMap();
+
+  // node_modules/echarts/lib/coord/scaleRawExtentInfo.js
+  var scaleInner = makeInner();
+  var AXIS_EXTENT_INFO_BUILD_FROM_COORD_SYS_UPDATE = 1;
+  var AXIS_EXTENT_INFO_BUILD_FROM_DATA_ZOOM = 2;
+  var AXIS_EXTENT_INFO_BUILD_FROM_EMPTY = 3;
+  var ScaleRawExtentInfo = (
+    /** @class */
+    (function() {
+      function ScaleRawExtentInfo2(scale3, model, dataExtent, requireStartValue, requireContainShape) {
+        var isOrdinal = isOrdinalScale(scale3);
+        var axisDataLen = isOrdinal ? model.getCategories().length : null;
+        var categoryAxisModelDataIsEmptyArray;
+        if (isOrdinal) {
+          var axisModelDataArray = model.getCategories(true);
+          categoryAxisModelDataIsEmptyArray = axisModelDataArray && !axisModelDataArray.length;
+        }
+        var dataMM = dataExtent.slice();
+        if (isIntervalScale(scale3) || isLogScale(scale3) || isTimeScale(scale3)) {
+          unionExtentStartFromNumber(dataMM, parseAxisModelMinMax(scale3, model.get("dataMin", true)));
+          unionExtentEndFromNumber(dataMM, parseAxisModelMinMax(scale3, model.get("dataMax", true)));
+        }
+        if (!extentHasValue(dataMM)) {
+          dataMM[0] = dataMM[1] = NaN;
+        }
+        var noZoomEffMM = [];
+        var fixMM = [false, false];
+        var modelMinRaw = model.get("min", true);
+        if (modelMinRaw === "dataMin") {
+          noZoomEffMM[0] = dataMM[0];
+          fixMM[0] = true;
+        } else {
+          noZoomEffMM[0] = parseAxisModelMinMax(scale3, isFunction(modelMinRaw) ? modelMinRaw({
+            min: dataMM[0],
+            max: dataMM[1]
+          }) : modelMinRaw);
+          fixMM[0] = noZoomEffMM[0] != null;
+        }
+        var modelMaxRaw = model.get("max", true);
+        if (modelMaxRaw === "dataMax") {
+          noZoomEffMM[1] = dataMM[1];
+          fixMM[1] = true;
+        } else {
+          noZoomEffMM[1] = parseAxisModelMinMax(scale3, isFunction(modelMaxRaw) ? modelMaxRaw({
+            min: dataMM[0],
+            max: dataMM[1]
+          }) : modelMaxRaw);
+          fixMM[1] = noZoomEffMM[1] != null;
+        }
+        var boundaryGap = parseBoundaryGapOption(scale3, model);
+        var span = !isOrdinal ? dataMM[1] - dataMM[0] || Math.abs(dataMM[0]) : null;
+        if (noZoomEffMM[0] == null) {
+          noZoomEffMM[0] = isOrdinal ? categoryAxisModelDataIsEmptyArray ? dataMM[0] : axisDataLen ? 0 : NaN : dataMM[0] - boundaryGap[0] * span;
+        }
+        if (noZoomEffMM[1] == null) {
+          noZoomEffMM[1] = isOrdinal ? categoryAxisModelDataIsEmptyArray ? dataMM[1] : axisDataLen ? axisDataLen - 1 : NaN : dataMM[1] + boundaryGap[1] * span;
+        }
+        !isValidNumberForExtent(noZoomEffMM[0]) && (noZoomEffMM[0] = NaN);
+        !isValidNumberForExtent(noZoomEffMM[1]) && (noZoomEffMM[1] = NaN);
+        var isBlank = categoryAxisModelDataIsEmptyArray || eqNaN(noZoomEffMM[0]) || eqNaN(noZoomEffMM[1]) || isOrdinal && !axisDataLen;
+        var needIncludeZeroApplicable = isIntervalScale(scale3);
+        var needIncludeZero = needIncludeZeroApplicable && model.needIncludeZero && model.needIncludeZero();
+        if (needIncludeZero) {
+          if (noZoomEffMM[0] > 0 && noZoomEffMM[1] > 0 && !fixMM[0]) {
+            noZoomEffMM[0] = 0;
+          }
+          if (noZoomEffMM[0] < 0 && noZoomEffMM[1] < 0 && !fixMM[1]) {
+            noZoomEffMM[1] = 0;
+          }
+        }
+        var needToggleAxisInverse = false;
+        if (noZoomEffMM[0] > noZoomEffMM[1]) {
+          noZoomEffMM.reverse();
+          needToggleAxisInverse = true;
+        }
+        var startValue = parseAxisModelMinMax(scale3, model.get("startValue", true));
+        var startValueSpecified = startValue != null;
+        if (!isNullableNumberFinite(startValue) && requireStartValue) {
+          startValue = scale3.getDefaultStartValue ? scale3.getDefaultStartValue() : 0;
+        }
+        if (isNullableNumberFinite(startValue) && (startValueSpecified || !needIncludeZeroApplicable || needIncludeZero)) {
+          if (startValue < noZoomEffMM[0] && !fixMM[0]) {
+            noZoomEffMM[0] = startValue;
+            fixMM[0] = true;
+          } else if (startValue > noZoomEffMM[1] && !fixMM[1]) {
+            noZoomEffMM[1] = startValue;
+            fixMM[1] = true;
+          }
+        }
+        var internal = this._i = {
+          scale: scale3,
+          dataMM,
+          noZoomEffMM,
+          zoomMM: [],
+          fixMM,
+          zoomFixMM: [false, false],
+          startValue,
+          isBlank,
+          incl0: needIncludeZero,
+          tggAxInv: needToggleAxisInverse,
+          ctnShp: requireContainShape
+        };
+        sanitizeExtent(internal, noZoomEffMM);
+      }
+      ScaleRawExtentInfo2.prototype.makeNoZoom = function() {
+        return this._i.noZoomEffMM.slice();
+      };
+      ScaleRawExtentInfo2.prototype.makeFinal = function() {
+        var internal = this._i;
+        var zoomMM = internal.zoomMM;
+        var noZoomEffMM = internal.noZoomEffMM;
+        var zoomFixMM = internal.zoomFixMM;
+        var fixMM = internal.fixMM;
+        var result = {
+          fixMM,
+          zoomFixMM,
+          isBlank: internal.isBlank,
+          incl0: internal.incl0,
+          tggAxInv: internal.tggAxInv,
+          ctnShp: internal.ctnShp,
+          effMM: noZoomEffMM.slice()
+        };
+        var effMM = result.effMM;
+        if (zoomMM[0] != null) {
+          effMM[0] = zoomMM[0];
+          fixMM[0] = zoomFixMM[0] = true;
+        }
+        if (zoomMM[1] != null) {
+          effMM[1] = zoomMM[1];
+          fixMM[1] = zoomFixMM[1] = true;
+        }
+        sanitizeExtent(internal, effMM);
+        return result;
+      };
+      ScaleRawExtentInfo2.prototype.makeRenderInfo = function() {
+        return {
+          startValue: this._i.startValue
+        };
+      };
+      ScaleRawExtentInfo2.prototype.setZoomMM = function(idxMinMax, val) {
+        this._i.zoomMM[idxMinMax] = val;
+      };
+      return ScaleRawExtentInfo2;
+    })()
+  );
+  function sanitizeExtent(internal, mm) {
+    var scale3 = internal.scale;
+    var dataMM = internal.dataMM;
+    if (scale3.sanitize) {
+      mm[0] = scale3.sanitize(mm[0], dataMM);
+      mm[1] = scale3.sanitize(mm[1], dataMM);
+      ensureExtentAscSimply(mm);
+    }
+  }
+  function parseAxisModelMinMax(scale3, minMax) {
+    return minMax == null ? null : eqNaN(minMax) ? NaN : scale3.parse(minMax);
+  }
+  function parseBoundaryGapOption(scale3, model) {
+    var boundaryGapOptionArr;
+    if (isOrdinalScale(scale3)) {
+      boundaryGapOptionArr = [0, 0];
+    } else {
+      var boundaryGap = model.get("boundaryGap");
+      if (typeof boundaryGap === "boolean") {
+        if (true) {
+          if (boundaryGap === true) {
+            console.warn('Boolean type for boundaryGap is only allowed for ordinal axis. Please use string in percentage instead, e.g., "20%". Currently, boundaryGap is set to 0.');
+          }
+        }
+        boundaryGap = null;
+      }
+      boundaryGapOptionArr = isArray(boundaryGap) ? boundaryGap : [boundaryGap, boundaryGap];
+    }
+    return [parseBoundaryGapOptionItem(boundaryGapOptionArr[0]), parseBoundaryGapOptionItem(boundaryGapOptionArr[1])];
+  }
+  function parseBoundaryGapOptionItem(opt) {
+    return parsePercent(typeof opt === "boolean" ? 0 : opt, 1) || 0;
+  }
+  function ensureScaleStore(axisLike) {
+    var store = scaleInner(axisLike.scale);
+    if (!store.extent) {
+      store.extent = initExtentForUnion();
+    }
+    return store;
+  }
+  function scaleRawExtentInfoEnableBoxCoordSysUsage(axisLike, coordSysDimIdxMap) {
+    ensureScaleStore(axisLike).dimIdxInCoord = coordSysDimIdxMap.get(axisLike.dim);
+  }
+  function scaleRawExtentInfoCreate(axis, from) {
+    var scale3 = axis.scale;
+    var model = axis.model;
+    var axisDim = axis.dim;
+    if (true) {
+      assert(scale3 && model && axisDim);
+    }
+    if (scale3.rawExtentInfo) {
+      if (true) {
+        assert(scale3.rawExtentInfo.from !== from || from === AXIS_EXTENT_INFO_BUILD_FROM_DATA_ZOOM);
+      }
+      return;
+    }
+    scaleRawExtentInfoCreateDeal(scale3, axis, axisDim, model, from);
+  }
+  function scaleRawExtentInfoCreateDeal(scale3, axis, axisDim, model, from) {
+    var scaleStore = ensureScaleStore(axis);
+    var extent = scaleStore.extent;
+    var requireStartValue = false;
+    eachSeriesOnAxis(axis, function(seriesModel) {
+      if (seriesModel.boxCoordinateSystem) {
+        var coord = getCoordForCoordSysUsageKindBox(seriesModel).coord;
+        var dimIdx = scaleStore.dimIdxInCoord;
+        if (!(dimIdx >= 0)) {
+          if (true) {
+            error('Property "series.coord" is not supported on axis ' + seriesModel.boxCoordinateSystem.type + ".");
+          }
+        } else if (isArray(coord)) {
+          var coordItem = coord[dimIdx];
+          if (coordItem != null && !isArray(coordItem)) {
+            unionExtentFromNumber(extent, scale3.parse(coordItem));
+          }
+        }
+      } else if (seriesModel.coordinateSystem) {
+        var data_1 = seriesModel.getData();
+        if (data_1) {
+          var filter_1 = scale3.getFilter ? scale3.getFilter() : null;
+          each(getDataDimensionsOnAxis(data_1, axisDim), function(dim) {
+            unionExtentFromExtent(extent, data_1.getApproximateExtent(dim, filter_1));
+          });
+        }
+        if (seriesModel.__requireStartValue && seriesModel.__requireStartValue(axis)) {
+          requireStartValue = true;
+        }
+      }
+    });
+    var requireContainShape = determineRequireContainShape(scale3, axis, model);
+    var rawExtentInfo = new ScaleRawExtentInfo(scale3, model, extent, requireStartValue, requireContainShape);
+    injectScaleRawExtentInfo(scale3, rawExtentInfo, from);
+    scaleStore.extent = null;
+  }
+  function scaleRawExtentInfoBuildDefault(axisLike, dataExtent) {
+    var scale3 = axisLike.scale;
+    if (true) {
+      assert(!scale3.rawExtentInfo);
+    }
+    injectScaleRawExtentInfo(scale3, new ScaleRawExtentInfo(scale3, axisLike.model, dataExtent, false, false), AXIS_EXTENT_INFO_BUILD_FROM_EMPTY);
+  }
+  function injectScaleRawExtentInfo(scale3, scaleRawExtentInfo, from) {
+    scale3.rawExtentInfo = scaleRawExtentInfo;
+    scaleRawExtentInfo.from = from;
+  }
+  function registerAxisContainShapeHandler(axisStatKey, handler) {
+    if (true) {
+      assert(!axisContainShapeHandlerMap.get(axisStatKey));
+    }
+    axisContainShapeHandlerMap.set(axisStatKey, handler);
+  }
+  var axisContainShapeHandlerMap = createHashMap();
+  function adoptScaleRawExtentInfoAndPrepare(scale3, model, ecModel, axis, externalDataExtent) {
+    if (true) {
+      assert(!externalDataExtent || !scale3.rawExtentInfo);
+    }
+    if (!scale3.rawExtentInfo) {
+      scaleRawExtentInfoBuildDefault({
+        scale: scale3,
+        model
+      }, externalDataExtent || initExtentForUnion());
+    }
+    var rawExtentResult = scale3.rawExtentInfo.makeFinal();
+    var effectiveMinMax = rawExtentResult.effMM;
+    scale3.setExtent(effectiveMinMax[0], effectiveMinMax[1]);
+    scale3.setBlank(rawExtentResult.isBlank);
+    if (axis && rawExtentResult.tggAxInv && ecModel && !ecModel.get("legacyMinMaxDontInverseAxis")) {
+      axis.inverse = !axis.inverse;
+    }
+    return rawExtentResult;
+  }
+  function determineRequireContainShape(scale3, axis, model) {
+    var onBand = isAxisOnBand(scale3, model);
+    var modelContainShape = model.get("containShape", true);
+    if (modelContainShape == null && !onBand) {
+      modelContainShape = true;
+    }
+    if (!modelContainShape) {
+      return false;
+    }
+    var requireContainShape = false;
+    eachKeyOnAxis(axis, function(axisStatKey) {
+      requireContainShape = !!axisContainShapeHandlerMap.get(axisStatKey) || requireContainShape;
+    });
+    return requireContainShape;
+  }
+  function adoptScaleExtentKindMapping(axis, scale3, rawExtentResult, ecModel) {
+    if (!rawExtentResult.ctnShp) {
+      return;
+    }
+    var linearSupplement;
+    eachKeyOnAxis(axis, function(axisStatKey) {
+      var handler = axisContainShapeHandlerMap.get(axisStatKey);
+      if (handler) {
+        var singleLinearSupplement = handler(axis, ecModel);
+        if (singleLinearSupplement) {
+          linearSupplement = linearSupplement || [0, 0];
+          unionExtentStartFromNumber(linearSupplement, singleLinearSupplement[0]);
+          unionExtentEndFromNumber(linearSupplement, singleLinearSupplement[1]);
+          discourageOnAxisZero(axis);
+        }
+      }
+    });
+    if (!linearSupplement) {
+      return;
+    }
+    var scaleExtent = scale3.getExtent();
+    if (isOrdinalScale(scale3)) {
+      if (!axis.onBand) {
+        scale3.setExtent2(SCALE_EXTENT_KIND_MAPPING, mathMin2(scaleExtent[0], scaleExtent[0] + linearSupplement[0]), mathMax2(scaleExtent[1], scaleExtent[1] + linearSupplement[1]));
+      }
+    } else {
+      var scaleExtentExpanded = scaleExtent.slice();
+      if (!rawExtentResult.zoomFixMM[0]) {
+        scaleExtentExpanded[0] = mathMin2(scaleExtentExpanded[0], scale3.transformOut(scale3.transformIn(scaleExtentExpanded[0], null) + linearSupplement[0], null));
+      }
+      if (!rawExtentResult.zoomFixMM[1]) {
+        scaleExtentExpanded[1] = mathMax2(scaleExtentExpanded[1], scale3.transformOut(scale3.transformIn(scaleExtentExpanded[1], null) + linearSupplement[1], null));
+      }
+      if (scaleExtentExpanded[0] < scaleExtent[0] || scaleExtentExpanded[1] > scaleExtent[1]) {
+        scale3.setExtent2(SCALE_EXTENT_KIND_MAPPING, scaleExtentExpanded[0], scaleExtentExpanded[1]);
+      }
+    }
+  }
+
+  // node_modules/echarts/lib/coord/axisNiceTicks.js
+  function calcNiceForIntervalOrLogScale(scale3, opt) {
+    var isTargetLogScale = isLogScale(scale3);
+    var intervalStub = isTargetLogScale ? scale3.intervalStub : scale3;
+    var fixMinMax = opt.fixMinMax || [];
+    var oldOutermostExtent = isTargetLogScale ? scale3.getExtent() : null;
+    var oldIntervalExtent = intervalStub.getExtent();
+    var newIntervalExtent = intervalScaleEnsureValidExtent(oldIntervalExtent, fixMinMax, opt.rawExtentResult);
+    intervalStub.setExtent(newIntervalExtent[0], newIntervalExtent[1]);
+    newIntervalExtent = intervalStub.getExtent();
+    var config = isTargetLogScale ? logScaleCalcNiceTicks(intervalStub, opt) : intervalScaleCalcNiceTicks(intervalStub, opt);
+    var autoIntervalPrecision = config.intervalPrecision;
+    var autoInterval = config.interval;
+    var userInterval = opt.userInterval;
+    if (userInterval != null) {
+      config.interval = userInterval;
+      config.intervalPrecision = getIntervalPrecision(userInterval);
+    }
+    if (!fixMinMax[0]) {
+      newIntervalExtent[0] = round(mathFloor(newIntervalExtent[0] / autoInterval) * autoInterval, autoIntervalPrecision);
+    }
+    if (!fixMinMax[1]) {
+      newIntervalExtent[1] = round(mathCeil(newIntervalExtent[1] / autoInterval) * autoInterval, autoIntervalPrecision);
+    }
+    if (userInterval != null) {
+      config.niceExtent = newIntervalExtent.slice();
+    }
+    updateIntervalOrLogScaleForNiceOrAligned(scale3, fixMinMax, oldIntervalExtent, newIntervalExtent, oldOutermostExtent, config);
+  }
+  function intervalScaleCalcNiceTicks(scale3, opt) {
+    var splitNumber = ensureValidSplitNumber(opt.splitNumber, 5);
+    var span = getScaleLinearSpanEffective(scale3);
+    if (true) {
+      assert(isFinite(span) && span > 0);
+    }
+    var minInterval = opt.minInterval;
+    var maxInterval = opt.maxInterval;
+    var interval = nice(span / splitNumber, true);
+    if (minInterval != null && interval < minInterval) {
+      interval = minInterval;
+    }
+    if (maxInterval != null && interval > maxInterval) {
+      interval = maxInterval;
+    }
+    var intervalPrecision = getIntervalPrecision(interval);
+    var extent = scale3.getExtent();
+    var niceExtent = [round(mathCeil(extent[0] / interval) * interval, intervalPrecision), round(mathFloor(extent[1] / interval) * interval, intervalPrecision)];
+    return {
+      interval,
+      intervalPrecision,
+      niceExtent
+    };
+  }
+  function logScaleCalcNiceTicks(intervalStub, opt) {
+    var splitNumber = ensureValidSplitNumber(opt.splitNumber, 10);
+    var intervalExtent = intervalStub.getExtent();
+    var span = getScaleLinearSpanEffective(intervalStub);
+    if (true) {
+      assert(isFinite(span) && span > 0);
+    }
+    var interval = mathMax2(quantity(span), 1);
+    var err = splitNumber / span * interval;
+    if (err <= 0.5) {
+      interval *= 10;
+    }
+    var intervalPrecision = getIntervalPrecision(interval);
+    var niceExtent = [round(mathCeil(intervalExtent[0] / interval) * interval, intervalPrecision), round(mathFloor(intervalExtent[1] / interval) * interval, intervalPrecision)];
+    return {
+      intervalPrecision,
+      interval,
+      niceExtent
+    };
+  }
+  function scaleCalcNice(axisLike) {
+    var scale3 = axisLike.scale;
+    var model = axisLike.model;
+    var axis = model.axis;
+    var ecModel = model.ecModel;
+    if (true) {
+      assert(axis && ecModel);
+    }
+    scaleCalcNice2(scale3, model, axis, ecModel, null);
+  }
+  function scaleCalcNice2(scale3, model, axis, ecModel, externalDataExtent) {
+    var rawExtentResult = adoptScaleRawExtentInfoAndPrepare(scale3, model, ecModel, axis, externalDataExtent);
+    var isIntervalOrTime = isIntervalScale(scale3) || isTimeScale(scale3);
+    scaleCalcNiceDirectly(scale3, {
+      splitNumber: model.get("splitNumber"),
+      fixMinMax: rawExtentResult.fixMM,
+      userInterval: model.get("interval"),
+      minInterval: isIntervalOrTime ? model.get("minInterval") : null,
+      maxInterval: isIntervalOrTime ? model.get("maxInterval") : null,
+      rawExtentResult
+    });
+    if (axis && ecModel) {
+      adoptScaleExtentKindMapping(axis, scale3, rawExtentResult, ecModel);
+    }
+    if (true) {
+      scale3.freeze();
+    }
+  }
+  function scaleCalcNiceDirectly(scale3, opt) {
+    scaleCalcNiceMethods[scale3.type](scale3, opt);
+  }
+  var scaleCalcNiceMethods = {
+    interval: calcNiceForIntervalOrLogScale,
+    log: calcNiceForIntervalOrLogScale,
+    time: calcNiceForTimeScale,
+    ordinal: noop
+  };
 
   // node_modules/echarts/lib/extension.js
   var extensions = [];
@@ -27337,6 +29160,9 @@ var pptxPreview = (() => {
     registerChartView: function(ChartViewClass) {
       Chart_default.registerClass(ChartViewClass);
     },
+    registerCustomSeries: function(seriesType2, renderItem) {
+      registerCustomSeries(seriesType2, renderItem);
+    },
     registerSubTypeDefaulter: function(componentType, defaulter) {
       Component_default.registerSubTypeDefaulter(componentType, defaulter);
     },
@@ -27364,91 +29190,108 @@ var pptxPreview = (() => {
   }
 
   // node_modules/echarts/lib/coord/axisTickLabelBuilder.js
-  var inner6 = makeInner();
-  function tickValuesToNumbers(axis, values) {
-    var nums = map(values, function(val) {
-      return axis.scale.parse(val);
-    });
-    if (axis.type === "time" && nums.length > 0) {
-      nums.sort();
-      nums.unshift(nums[0]);
-      nums.push(nums[nums.length - 1]);
-    }
-    return nums;
+  var modelInner = makeInner();
+  var axisInner2 = makeInner();
+  var AxisTickLabelComputingKind = {
+    estimate: 1,
+    determine: 2
+  };
+  function createAxisLabelsComputingContext(kind) {
+    return {
+      out: {
+        noPxChangeTryDetermine: []
+      },
+      kind
+    };
   }
-  function createAxisLabels(axis) {
+  function createAxisLabels(axis, ctx) {
     var custom = axis.getLabelModel().get("customValues");
     if (custom) {
-      var labelFormatter_1 = makeLabelFormatter(axis);
-      var extent_1 = axis.scale.getExtent();
-      var tickNumbers = tickValuesToNumbers(axis, custom);
-      var ticks = filter(tickNumbers, function(val) {
-        return val >= extent_1[0] && val <= extent_1[1];
-      });
+      var scale_1 = axis.scale;
       return {
-        labels: map(ticks, function(numval) {
-          var tick = {
-            value: numval
-          };
+        labels: map(parseTickLabelCustomValues(custom, scale_1), function(tick, index) {
           return {
-            formattedLabel: labelFormatter_1(tick),
-            rawLabel: axis.scale.getLabel(tick),
-            tickValue: numval
+            formattedLabel: makeLabelFormatter(axis)(tick, index),
+            rawLabel: scale_1.getLabel(tick),
+            tick
           };
         })
       };
     }
-    return axis.type === "category" ? makeCategoryLabels(axis) : makeRealNumberLabels(axis);
+    return axis.type === "category" ? makeCategoryLabels(axis, ctx) : makeRealNumberLabels(axis);
   }
-  function createAxisTicks(axis, tickModel) {
+  function createAxisTicks(axis, tickModel, opt) {
+    var scale3 = axis.scale;
     var custom = axis.getTickModel().get("customValues");
     if (custom) {
-      var extent_2 = axis.scale.getExtent();
-      var tickNumbers = tickValuesToNumbers(axis, custom);
       return {
-        ticks: filter(tickNumbers, function(val) {
-          return val >= extent_2[0] && val <= extent_2[1];
-        })
+        ticks: parseTickLabelCustomValues(custom, scale3)
       };
     }
     return axis.type === "category" ? makeCategoryTicks(axis, tickModel) : {
-      ticks: map(axis.scale.getTicks(), function(tick) {
-        return tick.value;
-      })
+      ticks: scale3.getTicks(opt)
     };
   }
-  function makeCategoryLabels(axis) {
+  function parseTickLabelCustomValues(customValues, scale3) {
+    var extent = scale3.getExtent();
+    var tickNumbers = [];
+    each(customValues, function(val) {
+      val = scale3.parse(val);
+      if (val >= extent[0] && val <= extent[1]) {
+        tickNumbers.push(val);
+      }
+    });
+    removeDuplicates(tickNumbers, removeDuplicatesGetKeyFromItemItself, null);
+    asc(tickNumbers);
+    return map(tickNumbers, function(tickVal) {
+      return {
+        value: tickVal
+      };
+    });
+  }
+  function makeCategoryLabels(axis, ctx) {
     var labelModel = axis.getLabelModel();
-    var result = makeCategoryLabelsActually(axis, labelModel);
+    var result = makeCategoryLabelsActually(axis, labelModel, ctx);
     return !labelModel.get("show") || axis.scale.isBlank() ? {
-      labels: [],
-      labelCategoryInterval: result.labelCategoryInterval
+      labels: []
     } : result;
   }
-  function makeCategoryLabelsActually(axis, labelModel) {
-    var labelsCache = getListCache(axis, "labels");
+  function makeCategoryLabelsActually(axis, labelModel, ctx) {
+    var labelsCache = ensureCategoryLabelCache(axis);
     var optionLabelInterval = getOptionCategoryInterval(labelModel);
-    var result = listCacheGet(labelsCache, optionLabelInterval);
-    if (result) {
-      return result;
+    var isEstimate = ctx.kind === AxisTickLabelComputingKind.estimate;
+    if (!isEstimate) {
+      var result_1 = axisCacheGet(labelsCache, optionLabelInterval);
+      if (result_1) {
+        return result_1;
+      }
     }
     var labels;
     var numericLabelInterval;
     if (isFunction(optionLabelInterval)) {
-      labels = makeLabelsByCustomizedCategoryInterval(axis, optionLabelInterval);
+      labels = makeTicksLabelsByCategoryIntervalNumOrCb(axis, optionLabelInterval, false);
     } else {
-      numericLabelInterval = optionLabelInterval === "auto" ? makeAutoCategoryInterval(axis) : optionLabelInterval;
-      labels = makeLabelsByNumericCategoryInterval(axis, numericLabelInterval);
+      numericLabelInterval = optionLabelInterval === "auto" ? makeAutoCategoryInterval(axis, ctx) : optionLabelInterval;
+      labels = makeTicksLabelsByCategoryIntervalNumOrCb(axis, numericLabelInterval, false);
     }
-    return listCacheSet(labelsCache, optionLabelInterval, {
+    var result = {
       labels,
       labelCategoryInterval: numericLabelInterval
-    });
+    };
+    if (!isEstimate) {
+      axisCacheSet(labelsCache, optionLabelInterval, result);
+    } else {
+      ctx.out.noPxChangeTryDetermine.push(function() {
+        axisCacheSet(labelsCache, optionLabelInterval, result);
+        return true;
+      });
+    }
+    return result;
   }
   function makeCategoryTicks(axis, tickModel) {
-    var ticksCache = getListCache(axis, "ticks");
+    var ticksCache = ensureCategoryTickCache(axis);
     var optionTickInterval = getOptionCategoryInterval(tickModel);
-    var result = listCacheGet(ticksCache, optionTickInterval);
+    var result = axisCacheGet(ticksCache, optionTickInterval);
     if (result) {
       return result;
     }
@@ -27458,18 +29301,18 @@ var pptxPreview = (() => {
       ticks = [];
     }
     if (isFunction(optionTickInterval)) {
-      ticks = makeLabelsByCustomizedCategoryInterval(axis, optionTickInterval, true);
+      ticks = makeTicksLabelsByCategoryIntervalNumOrCb(axis, optionTickInterval, true);
     } else if (optionTickInterval === "auto") {
-      var labelsResult = makeCategoryLabelsActually(axis, axis.getLabelModel());
+      var labelsResult = makeCategoryLabelsActually(axis, axis.getLabelModel(), createAxisLabelsComputingContext(AxisTickLabelComputingKind.determine));
       tickCategoryInterval = labelsResult.labelCategoryInterval;
       ticks = map(labelsResult.labels, function(labelItem) {
-        return labelItem.tickValue;
+        return labelItem.tick;
       });
     } else {
       tickCategoryInterval = optionTickInterval;
-      ticks = makeLabelsByNumericCategoryInterval(axis, tickCategoryInterval, true);
+      ticks = makeTicksLabelsByCategoryIntervalNumOrCb(axis, tickCategoryInterval, true);
     }
-    return listCacheSet(ticksCache, optionTickInterval, {
+    return axisCacheSet(ticksCache, optionTickInterval, {
       ticks,
       tickCategoryInterval
     });
@@ -27480,36 +29323,50 @@ var pptxPreview = (() => {
     return {
       labels: map(ticks, function(tick, idx) {
         return {
-          level: tick.level,
           formattedLabel: labelFormatter(tick, idx),
           rawLabel: axis.scale.getLabel(tick),
-          tickValue: tick.value
+          tick
         };
       })
     };
   }
-  function getListCache(axis, prop) {
-    return inner6(axis)[prop] || (inner6(axis)[prop] = []);
+  var ensureCategoryTickCache = initAxisCacheMethod("axisTick");
+  var ensureCategoryLabelCache = initAxisCacheMethod("axisLabel");
+  function initAxisCacheMethod(prop) {
+    return function ensureCache(axis) {
+      return axisInner2(axis)[prop] || (axisInner2(axis)[prop] = {
+        list: []
+      });
+    };
   }
-  function listCacheGet(cache, key) {
-    for (var i = 0; i < cache.length; i++) {
-      if (cache[i].key === key) {
-        return cache[i].value;
+  function axisCacheGet(cache, key2) {
+    for (var i = 0; i < cache.list.length; i++) {
+      if (cache.list[i].key === key2) {
+        return cache.list[i].value;
       }
     }
   }
-  function listCacheSet(cache, key, value) {
-    cache.push({
-      key,
+  function axisCacheSet(cache, key2, value) {
+    cache.list.push({
+      key: key2,
       value
     });
     return value;
   }
-  function makeAutoCategoryInterval(axis) {
-    var result = inner6(axis).autoInterval;
-    return result != null ? result : inner6(axis).autoInterval = axis.calculateCategoryInterval();
+  function makeAutoCategoryInterval(axis, ctx) {
+    if (ctx.kind === AxisTickLabelComputingKind.estimate) {
+      var result_2 = axis.calculateCategoryInterval(ctx);
+      ctx.out.noPxChangeTryDetermine.push(function() {
+        axisInner2(axis).autoInterval = result_2;
+        return true;
+      });
+      return result_2;
+    }
+    var result = axisInner2(axis).autoInterval;
+    return result != null ? result : axisInner2(axis).autoInterval = axis.calculateCategoryInterval(ctx);
   }
-  function calculateCategoryInterval(axis) {
+  function calculateCategoryInterval(axis, ctx) {
+    var kind = ctx.kind;
     var params = fetchAutoCategoryIntervalCalculationParams(axis);
     var labelFormatter = makeLabelFormatter(axis);
     var rotation = (params.axisRotate - params.labelRotate) / 180 * Math.PI;
@@ -27520,8 +29377,9 @@ var pptxPreview = (() => {
       return 0;
     }
     var step = 1;
-    if (tickCount > 40) {
-      step = Math.max(1, Math.floor(tickCount / 40));
+    var maxCount = 40;
+    if (tickCount > maxCount) {
+      step = Math.max(1, Math.floor(tickCount / maxCount));
     }
     var tickValue = ordinalExtent[0];
     var unitSpan = axis.dataToCoord(tickValue + 1) - axis.dataToCoord(tickValue);
@@ -27545,19 +29403,29 @@ var pptxPreview = (() => {
     isNaN(dw) && (dw = Infinity);
     isNaN(dh) && (dh = Infinity);
     var interval = Math.max(0, Math.floor(Math.min(dw, dh)));
-    var cache = inner6(axis.model);
+    if (kind === AxisTickLabelComputingKind.estimate) {
+      ctx.out.noPxChangeTryDetermine.push(bind(calculateCategoryIntervalTryDetermine, null, axis, interval, tickCount));
+      return interval;
+    }
+    var lastInterval = calculateCategoryIntervalDealCache(axis, interval, tickCount);
+    return lastInterval != null ? lastInterval : interval;
+  }
+  function calculateCategoryIntervalTryDetermine(axis, interval, tickCount) {
+    return calculateCategoryIntervalDealCache(axis, interval, tickCount) == null;
+  }
+  function calculateCategoryIntervalDealCache(axis, interval, tickCount) {
+    var cache = modelInner(axis.model);
     var axisExtent = axis.getExtent();
     var lastAutoInterval = cache.lastAutoInterval;
     var lastTickCount = cache.lastTickCount;
     if (lastAutoInterval != null && lastTickCount != null && Math.abs(lastAutoInterval - interval) <= 1 && Math.abs(lastTickCount - tickCount) <= 1 && lastAutoInterval > interval && cache.axisExtent0 === axisExtent[0] && cache.axisExtent1 === axisExtent[1]) {
-      interval = lastAutoInterval;
+      return lastAutoInterval;
     } else {
       cache.lastTickCount = tickCount;
       cache.lastAutoInterval = interval;
       cache.axisExtent0 = axisExtent[0];
       cache.axisExtent1 = axisExtent[1];
     }
-    return interval;
   }
   function fetchAutoCategoryIntervalCalculationParams(axis) {
     var labelModel = axis.getLabelModel();
@@ -27567,133 +29435,163 @@ var pptxPreview = (() => {
       font: labelModel.getFont()
     };
   }
-  function makeLabelsByNumericCategoryInterval(axis, categoryInterval, onlyTick) {
+  function makeTicksLabelsByCategoryIntervalNumOrCb(axis, categoryInterval, onlyTick) {
     var labelFormatter = makeLabelFormatter(axis);
     var ordinalScale = axis.scale;
-    var ordinalExtent = ordinalScale.getExtent();
-    var labelModel = axis.getLabelModel();
     var result = [];
-    var step = Math.max((categoryInterval || 0) + 1, 1);
-    var startTick = ordinalExtent[0];
-    var tickCount = ordinalScale.count();
-    if (startTick !== 0 && step > 1 && tickCount / step > 2) {
-      startTick = Math.round(Math.ceil(startTick / step) * step);
-    }
-    var showAllLabel = shouldShowAllLabels(axis);
-    var includeMinLabel = labelModel.get("showMinLabel") || showAllLabel;
-    var includeMaxLabel = labelModel.get("showMaxLabel") || showAllLabel;
-    if (includeMinLabel && startTick !== ordinalExtent[0]) {
-      addItem(ordinalExtent[0]);
-    }
-    var tickValue = startTick;
-    for (; tickValue <= ordinalExtent[1]; tickValue += step) {
-      addItem(tickValue);
-    }
-    if (includeMaxLabel && tickValue - step !== ordinalExtent[1]) {
-      addItem(ordinalExtent[1]);
-    }
-    function addItem(tickValue2) {
-      var tickObj = {
-        value: tickValue2
-      };
-      result.push(onlyTick ? tickValue2 : {
-        formattedLabel: labelFormatter(tickObj),
-        rawLabel: ordinalScale.getLabel(tickObj),
-        tickValue: tickValue2
-      });
-    }
-    return result;
-  }
-  function makeLabelsByCustomizedCategoryInterval(axis, categoryInterval, onlyTick) {
-    var ordinalScale = axis.scale;
-    var labelFormatter = makeLabelFormatter(axis);
-    var result = [];
-    each(ordinalScale.getTicks(), function(tick) {
-      var rawLabel = ordinalScale.getLabel(tick);
-      var tickValue = tick.value;
-      if (categoryInterval(tick.value, rawLabel)) {
-        result.push(onlyTick ? tickValue : {
-          formattedLabel: labelFormatter(tick),
-          rawLabel,
-          tickValue
-        });
+    var categoryIntervalIsCb = isFunction(categoryInterval);
+    ordinalScaleCreateTicks(ordinalScale, categoryIntervalIsCb ? 0 : categoryInterval, function(tickObj, isExtentBoundary) {
+      var tickLabel = ordinalScale.getLabel(tickObj);
+      if (categoryIntervalIsCb) {
+        var isOnInterval = !!categoryInterval(tickObj.value, tickLabel);
+        tickObj.offInterval = !isOnInterval;
+        if (!isOnInterval && !isExtentBoundary) {
+          return;
+        }
       }
+      result.push(onlyTick ? tickObj : {
+        formattedLabel: labelFormatter(tickObj),
+        rawLabel: tickLabel,
+        tick: tickObj
+      });
     });
     return result;
+  }
+
+  // node_modules/echarts/lib/coord/axisBand.js
+  var FALLBACK_BAND_WIDTH_RATIO = 0.8;
+  function calcBandWidth(axis, opt) {
+    opt = opt || {};
+    var out2 = {
+      w: NaN,
+      w2: NaN
+    };
+    var scale3 = axis.scale;
+    var fromStat = opt.fromStat;
+    var min3 = opt.min;
+    var scaleLinearSpan = getScaleLinearSpanForMapping(scale3);
+    if (!isNullableNumberFinite(scaleLinearSpan)) {
+      scaleLinearSpan = NaN;
+    }
+    var axisExtent = axis.getExtent();
+    var pxSpan = mathAbs2(axisExtent[1] - axisExtent[0]);
+    if (isOrdinalScale(scale3)) {
+      calcBandWidthForCategoryAxis(out2, axis, scaleLinearSpan, pxSpan);
+    } else if (fromStat) {
+      calcBandWidthForNumericAxis(out2, axis, scaleLinearSpan, pxSpan, fromStat);
+    } else if (min3 == null) {
+      if (true) {
+        assert(false);
+      }
+    }
+    if (min3 != null) {
+      out2.w = isNullableNumberFinite(out2.w) ? mathMax2(min3, out2.w) : min3;
+    }
+    return out2;
+  }
+  function calcBandWidthForCategoryAxis(out2, axis, scaleLinearSpan, pxSpan) {
+    var onBand = axis.onBand;
+    var len2 = scaleLinearSpan + (onBand ? 1 : 0);
+    len2 === 0 && (len2 = 1);
+    out2.w = pxSpan / len2;
+    if (!onBand && scaleLinearSpan && pxSpan) {
+      out2.w2 = out2.w * scaleLinearSpan / pxSpan;
+    }
+  }
+  function calcBandWidthForNumericAxis(out2, axis, scaleLinearSpan, pxSpan, fromStat) {
+    if (true) {
+      assert(fromStat);
+    }
+    var onlySingular = false;
+    var bandWidthInData = -Infinity;
+    each(fromStat.key ? [getAxisStat(axis, fromStat.key)] : getAxisStatBySeries(axis, fromStat.sers || []), function(stat) {
+      var liPosMinGap = stat.liPosMinGap;
+      if (liPosMinGap != null) {
+        if (liPosMinGap > 0) {
+          if (liPosMinGap > bandWidthInData) {
+            bandWidthInData = liPosMinGap;
+          }
+          onlySingular = false;
+        } else if (liPosMinGap === LINEAR_POSITIVE_MIN_GAP_SINGLE_VALID_VALUE) {
+          onlySingular = true;
+        }
+      }
+    });
+    if (isNullableNumberFinite(scaleLinearSpan) && scaleLinearSpan > 0 && isNullableNumberFinite(bandWidthInData)) {
+      out2.w = pxSpan / scaleLinearSpan * bandWidthInData;
+      out2.w2 = bandWidthInData;
+    } else if (onlySingular) {
+      out2.w = pxSpan * FALLBACK_BAND_WIDTH_RATIO;
+      out2.w2 = out2.w * scaleLinearSpan / pxSpan;
+    }
   }
 
   // node_modules/echarts/lib/coord/Axis.js
   var NORMALIZED_EXTENT = [0, 1];
   var Axis = (
     /** @class */
-    function() {
-      function Axis2(dim, scale4, extent3) {
+    (function() {
+      function Axis2(dim, scale3, extent) {
         this.onBand = false;
         this.inverse = false;
         this.dim = dim;
-        this.scale = scale4;
-        this._extent = extent3 || [0, 0];
+        this.scale = scale3;
+        this._extent = extent || [0, 0];
       }
       Axis2.prototype.contain = function(coord) {
-        var extent3 = this._extent;
-        var min3 = Math.min(extent3[0], extent3[1]);
-        var max3 = Math.max(extent3[0], extent3[1]);
+        var extent = this._extent;
+        var min3 = Math.min(extent[0], extent[1]);
+        var max3 = Math.max(extent[0], extent[1]);
         return coord >= min3 && coord <= max3;
       };
       Axis2.prototype.containData = function(data) {
-        return this.scale.contain(data);
+        return this.scale.contain(this.scale.parse(data));
       };
       Axis2.prototype.getExtent = function() {
         return this._extent.slice();
       };
-      Axis2.prototype.getPixelPrecision = function(dataExtent) {
-        return getPixelPrecision(dataExtent || this.scale.getExtent(), this._extent);
-      };
       Axis2.prototype.setExtent = function(start2, end2) {
-        var extent3 = this._extent;
-        extent3[0] = start2;
-        extent3[1] = end2;
+        var extent = this._extent;
+        extent[0] = start2;
+        extent[1] = end2;
       };
-      Axis2.prototype.dataToCoord = function(data, clamp2) {
-        var extent3 = this._extent;
-        var scale4 = this.scale;
-        data = scale4.normalize(data);
-        if (this.onBand && scale4.type === "ordinal") {
-          extent3 = extent3.slice();
-          fixExtentWithBands(extent3, scale4.count());
-        }
-        return linearMap(data, NORMALIZED_EXTENT, extent3, clamp2);
+      Axis2.prototype.dataToCoord = function(data, clamp) {
+        var scale3 = this.scale;
+        data = scale3.normalize(scale3.parse(data));
+        return linearMap(data, NORMALIZED_EXTENT, makeExtentWithBands(this), clamp);
       };
-      Axis2.prototype.coordToData = function(coord, clamp2) {
-        var extent3 = this._extent;
-        var scale4 = this.scale;
-        if (this.onBand && scale4.type === "ordinal") {
-          extent3 = extent3.slice();
-          fixExtentWithBands(extent3, scale4.count());
-        }
-        var t = linearMap(coord, extent3, NORMALIZED_EXTENT, clamp2);
+      Axis2.prototype.coordToData = function(coord, clamp) {
+        var t = linearMap(coord, makeExtentWithBands(this), NORMALIZED_EXTENT, clamp);
         return this.scale.scale(t);
       };
-      Axis2.prototype.pointToData = function(point, clamp2) {
+      Axis2.prototype.pointToData = function(point, clamp) {
         return;
       };
       Axis2.prototype.getTicksCoords = function(opt) {
         opt = opt || {};
         var tickModel = opt.tickModel || this.getTickModel();
-        var result = createAxisTicks(this, tickModel);
-        var ticks = result.ticks;
-        var ticksCoords = map(ticks, function(tickVal) {
+        var result = createAxisTicks(this, tickModel, {
+          breakTicks: opt.breakTicks,
+          pruneByBreak: opt.pruneByBreak
+        });
+        var preTicksCoords = map(result.ticks, function(tick) {
           return {
-            coord: this.dataToCoord(this.scale.type === "ordinal" ? this.scale.getRawOrdinalNumber(tickVal) : tickVal),
-            tickValue: tickVal
+            coord: this.dataToCoord(getTickValueOutermost(this.scale, tick)),
+            tick
           };
         }, this);
         var alignWithLabel = tickModel.get("alignWithLabel");
-        fixOnBandTicksCoords(this, ticksCoords, alignWithLabel, opt.clamp);
-        return ticksCoords;
+        var onBandModified = fixOnBandTicksCoords(this, preTicksCoords, alignWithLabel);
+        return map(preTicksCoords, function(item) {
+          return {
+            coord: item.coord,
+            tickValue: item.tick.value,
+            onBand: onBandModified
+          };
+        });
       };
       Axis2.prototype.getMinorTicksCoords = function() {
-        if (this.scale.type === "ordinal") {
+        if (isOrdinalScale(this.scale)) {
           return [];
         }
         var minorTickModel = this.model.getModel("minorTick");
@@ -27712,8 +29610,9 @@ var pptxPreview = (() => {
         }, this);
         return minorTicksCoords;
       };
-      Axis2.prototype.getViewLabels = function() {
-        return createAxisLabels(this).labels;
+      Axis2.prototype.getViewLabels = function(ctx) {
+        ctx = ctx || createAxisLabelsComputingContext(AxisTickLabelComputingKind.determine);
+        return createAxisLabels(this, ctx).labels;
       };
       Axis2.prototype.getLabelModel = function() {
         return this.model.getModel("axisLabel");
@@ -27722,76 +29621,51 @@ var pptxPreview = (() => {
         return this.model.getModel("axisTick");
       };
       Axis2.prototype.getBandWidth = function() {
-        var axisExtent = this._extent;
-        var dataExtent = this.scale.getExtent();
-        var len2 = dataExtent[1] - dataExtent[0] + (this.onBand ? 1 : 0);
-        len2 === 0 && (len2 = 1);
-        var size = Math.abs(axisExtent[1] - axisExtent[0]);
-        return Math.abs(size) / len2;
+        return calcBandWidth(this, {
+          min: 1
+        }).w;
       };
-      Axis2.prototype.calculateCategoryInterval = function() {
-        return calculateCategoryInterval(this);
+      Axis2.prototype.calculateCategoryInterval = function(ctx) {
+        ctx = ctx || createAxisLabelsComputingContext(AxisTickLabelComputingKind.determine);
+        return calculateCategoryInterval(this, ctx);
       };
       return Axis2;
-    }()
+    })()
   );
-  function fixExtentWithBands(extent3, nTick) {
-    var size = extent3[1] - extent3[0];
-    var len2 = nTick;
-    var margin = size / len2 / 2;
-    extent3[0] += margin;
-    extent3[1] -= margin;
+  function makeExtentWithBands(axis) {
+    var extent = axis.getExtent();
+    if (axis.onBand) {
+      var size = extent[1] - extent[0];
+      var margin = size / axis.scale.count() / 2;
+      extent[0] += margin;
+      extent[1] -= margin;
+    }
+    return extent;
   }
-  function fixOnBandTicksCoords(axis, ticksCoords, alignWithLabel, clamp2) {
-    var ticksLen = ticksCoords.length;
+  function fixOnBandTicksCoords(axis, preTicksCoords, alignWithLabel) {
+    var ticksLen = preTicksCoords.length;
     if (!axis.onBand || alignWithLabel || !ticksLen) {
-      return;
+      return false;
     }
-    var axisExtent = axis.getExtent();
-    var last;
-    var diffSize;
-    if (ticksLen === 1) {
-      ticksCoords[0].coord = axisExtent[0];
-      last = ticksCoords[1] = {
-        coord: axisExtent[1],
-        tickValue: ticksCoords[0].tickValue
-      };
-    } else {
-      var crossLen = ticksCoords[ticksLen - 1].tickValue - ticksCoords[0].tickValue;
-      var shift_1 = (ticksCoords[ticksLen - 1].coord - ticksCoords[0].coord) / crossLen;
-      each(ticksCoords, function(ticksItem) {
-        ticksItem.coord -= shift_1 / 2;
-      });
-      var dataExtent = axis.scale.getExtent();
-      diffSize = 1 + dataExtent[1] - ticksCoords[ticksLen - 1].tickValue;
-      last = {
-        coord: ticksCoords[ticksLen - 1].coord + shift_1 * diffSize,
-        tickValue: dataExtent[1] + 1
-      };
-      ticksCoords.push(last);
+    var bandWidth = calcBandWidth(axis).w;
+    if (!bandWidth) {
+      return false;
     }
-    var inverse = axisExtent[0] > axisExtent[1];
-    if (littleThan(ticksCoords[0].coord, axisExtent[0])) {
-      clamp2 ? ticksCoords[0].coord = axisExtent[0] : ticksCoords.shift();
+    each(preTicksCoords, function(ticksItem) {
+      ticksItem.coord -= bandWidth / 2;
+    });
+    var dataExtent = axis.scale.getExtent();
+    var oldLast = preTicksCoords[ticksLen - 1];
+    if (oldLast.tick.offInterval) {
+      preTicksCoords.pop();
     }
-    if (clamp2 && littleThan(axisExtent[0], ticksCoords[0].coord)) {
-      ticksCoords.unshift({
-        coord: axisExtent[0]
-      });
-    }
-    if (littleThan(axisExtent[1], last.coord)) {
-      clamp2 ? last.coord = axisExtent[1] : ticksCoords.pop();
-    }
-    if (clamp2 && littleThan(last.coord, axisExtent[1])) {
-      ticksCoords.push({
-        coord: axisExtent[1]
-      });
-    }
-    function littleThan(a, b) {
-      a = round(a);
-      b = round(b);
-      return inverse ? a > b : a < b;
-    }
+    preTicksCoords.push({
+      coord: oldLast.coord + bandWidth,
+      tick: {
+        value: dataExtent[1] + 1
+      }
+    });
+    return true;
   }
   var Axis_default = Axis;
 
@@ -28123,13 +29997,9 @@ var pptxPreview = (() => {
     var stateObj = isNormal ? labelLine : labelLine.ensureState(stateName);
     stateObj.ignore = ignore;
     var smooth = stateModel.get("smooth");
-    if (smooth && smooth === true) {
-      smooth = 0.3;
-    }
+    smooth = smooth === true ? 0.3 : Math.max(+smooth, 0) || 0;
     stateObj.shape = stateObj.shape || {};
-    if (smooth > 0) {
-      stateObj.shape.smooth = smooth;
-    }
+    stateObj.shape.smooth = smooth;
     var styleObj = stateModel.getModel("lineStyle").getLineStyle();
     isNormal ? labelLine.useStyle(styleObj) : stateObj.style = styleObj;
   }
@@ -28224,44 +30094,119 @@ var pptxPreview = (() => {
   }
 
   // node_modules/echarts/lib/label/labelLayoutHelper.js
-  function prepareLayoutList(input) {
-    var list = [];
-    for (var i = 0; i < input.length; i++) {
-      var rawItem = input[i];
-      if (rawItem.defaultAttr.ignore) {
-        continue;
-      }
-      var label = rawItem.label;
-      var transform = label.getComputedTransform();
-      var localRect = label.getBoundingRect();
-      var isAxisAligned = !transform || transform[1] < 1e-5 && transform[2] < 1e-5;
-      var minMargin = label.style.margin || 0;
-      var globalRect = localRect.clone();
-      globalRect.applyTransform(transform);
-      globalRect.x -= minMargin / 2;
-      globalRect.y -= minMargin / 2;
-      globalRect.width += minMargin;
-      globalRect.height += minMargin;
-      var obb = isAxisAligned ? new OrientedBoundingRect_default(localRect, transform) : null;
-      list.push({
-        label,
-        labelLine: rawItem.labelLine,
-        rect: globalRect,
-        localRect,
-        obb,
-        priority: rawItem.priority,
-        defaultAttr: rawItem.defaultAttr,
-        layoutOption: rawItem.computedLayoutOption,
-        axisAligned: isAxisAligned,
-        transform
-      });
-    }
-    return list;
+  var LABEL_LAYOUT_BASE_PROPS = ["label", "labelLine", "layoutOption", "priority", "defaultAttr", "marginForce", "minMarginForce", "marginDefault", "suggestIgnore"];
+  var LABEL_LAYOUT_DIRTY_BIT_OTHERS = 1;
+  var LABEL_LAYOUT_DIRTY_BIT_OBB = 2;
+  var LABEL_LAYOUT_DIRTY_ALL = LABEL_LAYOUT_DIRTY_BIT_OTHERS | LABEL_LAYOUT_DIRTY_BIT_OBB;
+  function setLabelLayoutDirty(labelGeometry, dirtyOrClear, dirtyBits) {
+    dirtyBits = dirtyBits || LABEL_LAYOUT_DIRTY_ALL;
+    dirtyOrClear ? labelGeometry.dirty |= dirtyBits : labelGeometry.dirty &= ~dirtyBits;
   }
-  function shiftLayout(list, xyDim, sizeDim, minBound, maxBound, balanceShift) {
-    var len2 = list.length;
-    if (len2 < 2) {
+  function isLabelLayoutDirty(labelGeometry, dirtyBits) {
+    dirtyBits = dirtyBits || LABEL_LAYOUT_DIRTY_ALL;
+    return labelGeometry.dirty == null || !!(labelGeometry.dirty & dirtyBits);
+  }
+  function ensureLabelLayoutWithGeometry(labelLayout) {
+    if (!labelLayout) {
       return;
+    }
+    if (isLabelLayoutDirty(labelLayout)) {
+      computeLabelGeometry(labelLayout, labelLayout.label, labelLayout);
+    }
+    return labelLayout;
+  }
+  function computeLabelGeometry(out2, label, opt) {
+    var rawTransform = label.getComputedTransform();
+    out2.transform = ensureCopyTransform(out2.transform, rawTransform);
+    var outLocalRect = out2.localRect = ensureCopyRect(out2.localRect, label.getBoundingRect());
+    var labelStyleExt = label.style;
+    var margin = labelStyleExt.margin;
+    var marginForce = opt && opt.marginForce;
+    var minMarginForce = opt && opt.minMarginForce;
+    var marginDefault = opt && opt.marginDefault;
+    var marginType = labelStyleExt.__marginType;
+    if (marginType == null && marginDefault) {
+      margin = marginDefault;
+      marginType = LabelMarginType.textMargin;
+    }
+    for (var i = 0; i < 4; i++) {
+      _tmpLabelMargin[i] = marginType === LabelMarginType.minMargin && minMarginForce && minMarginForce[i] != null ? minMarginForce[i] : marginForce && marginForce[i] != null ? marginForce[i] : margin ? margin[i] : 0;
+    }
+    if (marginType === LabelMarginType.textMargin) {
+      expandOrShrinkRect(outLocalRect, _tmpLabelMargin, false, false);
+    }
+    var outGlobalRect = out2.rect = ensureCopyRect(out2.rect, outLocalRect);
+    if (rawTransform) {
+      outGlobalRect.applyTransform(rawTransform);
+    }
+    if (marginType === LabelMarginType.minMargin) {
+      expandOrShrinkRect(outGlobalRect, _tmpLabelMargin, false, false);
+    }
+    out2.axisAligned = isBoundingRectAxisAligned(rawTransform);
+    (out2.label = out2.label || {}).ignore = label.ignore;
+    setLabelLayoutDirty(out2, false);
+    setLabelLayoutDirty(out2, true, LABEL_LAYOUT_DIRTY_BIT_OBB);
+    return out2;
+  }
+  var _tmpLabelMargin = [0, 0, 0, 0];
+  function computeLabelGeometry2(out2, rawLocalRect, rawTransform) {
+    out2.transform = ensureCopyTransform(out2.transform, rawTransform);
+    out2.localRect = ensureCopyRect(out2.localRect, rawLocalRect);
+    out2.rect = ensureCopyRect(out2.rect, rawLocalRect);
+    if (rawTransform) {
+      out2.rect.applyTransform(rawTransform);
+    }
+    out2.axisAligned = isBoundingRectAxisAligned(rawTransform);
+    out2.obb = void 0;
+    (out2.label = out2.label || {}).ignore = false;
+    return out2;
+  }
+  function labelLayoutApplyTranslation(labelLayout, offset) {
+    if (!labelLayout) {
+      return;
+    }
+    labelLayout.label.x += offset.x;
+    labelLayout.label.y += offset.y;
+    labelLayout.label.markRedraw();
+    var transform = labelLayout.transform;
+    if (transform) {
+      transform[4] += offset.x;
+      transform[5] += offset.y;
+    }
+    var globalRect = labelLayout.rect;
+    if (globalRect) {
+      globalRect.x += offset.x;
+      globalRect.y += offset.y;
+    }
+    var obb = labelLayout.obb;
+    if (obb) {
+      obb.fromBoundingRect(labelLayout.localRect, transform);
+    }
+  }
+  function newLabelLayoutWithGeometry(newBaseWithDefaults, source) {
+    for (var i = 0; i < LABEL_LAYOUT_BASE_PROPS.length; i++) {
+      var prop = LABEL_LAYOUT_BASE_PROPS[i];
+      if (newBaseWithDefaults[prop] == null) {
+        newBaseWithDefaults[prop] = source[prop];
+      }
+    }
+    return ensureLabelLayoutWithGeometry(newBaseWithDefaults);
+  }
+  function ensureOBB(labelGeometry) {
+    var obb = labelGeometry.obb;
+    if (!obb || isLabelLayoutDirty(labelGeometry, LABEL_LAYOUT_DIRTY_BIT_OBB)) {
+      labelGeometry.obb = obb = obb || new OrientedBoundingRect_default();
+      obb.fromBoundingRect(labelGeometry.localRect, labelGeometry.transform);
+      setLabelLayoutDirty(labelGeometry, false, LABEL_LAYOUT_DIRTY_BIT_OBB);
+    }
+    return obb;
+  }
+  function shiftLayoutOnXY(list, xyDimIdx, minBound, maxBound, balanceShift) {
+    var len2 = list.length;
+    var xyDim = XY2[xyDimIdx];
+    var sizeDim = WH2[xyDimIdx];
+    if (len2 < 2) {
+      return false;
     }
     list.sort(function(a, b) {
       return a.rect[xyDim] - b.rect[xyDim];
@@ -28269,7 +30214,6 @@ var pptxPreview = (() => {
     var lastPos = 0;
     var delta;
     var adjusted = false;
-    var shifts = [];
     var totalShifts = 0;
     for (var i = 0; i < len2; i++) {
       var item = list[i];
@@ -28281,7 +30225,6 @@ var pptxPreview = (() => {
         adjusted = true;
       }
       var shift = Math.max(-delta, 0);
-      shifts.push(shift);
       totalShifts += shift;
       lastPos = rect[xyDim] + rect[sizeDim];
     }
@@ -28377,18 +30320,20 @@ var pptxPreview = (() => {
     }
     return adjusted;
   }
-  function shiftLayoutOnX(list, leftBound, rightBound, balanceShift) {
-    return shiftLayout(list, "x", "width", leftBound, rightBound, balanceShift);
-  }
-  function shiftLayoutOnY(list, topBound, bottomBound, balanceShift) {
-    return shiftLayout(list, "y", "height", topBound, bottomBound, balanceShift);
+  function restoreIgnore(labelList) {
+    for (var i = 0; i < labelList.length; i++) {
+      var labelItem = labelList[i];
+      var defaultAttr = labelItem.defaultAttr;
+      var labelLine = labelItem.labelLine;
+      labelItem.label.attr("ignore", defaultAttr.ignore);
+      labelLine && labelLine.attr("ignore", defaultAttr.labelGuideIgnore);
+    }
   }
   function hideOverlap(labelList) {
     var displayedLabels = [];
     labelList.sort(function(a, b) {
-      return b.priority - a.priority;
+      return (b.suggestIgnore ? 1 : 0) - (a.suggestIgnore ? 1 : 0) || b.priority - a.priority;
     });
-    var globalRect = new BoundingRect_default(0, 0, 0, 0);
     function hideEl(el2) {
       if (!el2.ignore) {
         var emphasisState = el2.ensureState("emphasis");
@@ -28399,35 +30344,17 @@ var pptxPreview = (() => {
       el2.ignore = true;
     }
     for (var i = 0; i < labelList.length; i++) {
-      var labelItem = labelList[i];
-      var isAxisAligned = labelItem.axisAligned;
-      var localRect = labelItem.localRect;
-      var transform = labelItem.transform;
+      var labelItem = ensureLabelLayoutWithGeometry(labelList[i]);
+      if (labelItem.label.ignore) {
+        continue;
+      }
       var label = labelItem.label;
       var labelLine = labelItem.labelLine;
-      globalRect.copy(labelItem.rect);
-      globalRect.width -= 0.1;
-      globalRect.height -= 0.1;
-      globalRect.x += 0.05;
-      globalRect.y += 0.05;
-      var obb = labelItem.obb;
       var overlapped = false;
       for (var j = 0; j < displayedLabels.length; j++) {
-        var existsTextCfg = displayedLabels[j];
-        if (!globalRect.intersect(existsTextCfg.rect)) {
-          continue;
-        }
-        if (isAxisAligned && existsTextCfg.axisAligned) {
-          overlapped = true;
-          break;
-        }
-        if (!existsTextCfg.obb) {
-          existsTextCfg.obb = new OrientedBoundingRect_default(existsTextCfg.localRect, existsTextCfg.transform);
-        }
-        if (!obb) {
-          obb = new OrientedBoundingRect_default(localRect, transform);
-        }
-        if (obb.intersect(existsTextCfg.obb)) {
+        if (labelIntersect(labelItem, displayedLabels[j], null, {
+          touchThreshold: 0.05
+        })) {
           overlapped = true;
           break;
         }
@@ -28436,11 +30363,24 @@ var pptxPreview = (() => {
         hideEl(label);
         labelLine && hideEl(labelLine);
       } else {
-        label.attr("ignore", labelItem.defaultAttr.ignore);
-        labelLine && labelLine.attr("ignore", labelItem.defaultAttr.labelGuideIgnore);
         displayedLabels.push(labelItem);
       }
     }
+  }
+  function labelIntersect(baseLayoutInfo, targetLayoutInfo, mtv, intersectOpt) {
+    if (!baseLayoutInfo || !targetLayoutInfo) {
+      return false;
+    }
+    if (baseLayoutInfo.label && baseLayoutInfo.label.ignore || targetLayoutInfo.label && targetLayoutInfo.label.ignore) {
+      return false;
+    }
+    if (!baseLayoutInfo.rect.intersect(targetLayoutInfo.rect, mtv, intersectOpt)) {
+      return false;
+    }
+    if (baseLayoutInfo.axisAligned && targetLayoutInfo.axisAligned) {
+      return true;
+    }
+    return ensureOBB(baseLayoutInfo).intersect(ensureOBB(targetLayoutInfo), mtv, intersectOpt);
   }
 
   // node_modules/echarts/lib/label/LabelManager.js
@@ -28476,16 +30416,16 @@ var pptxPreview = (() => {
   var labelLineAnimationStore = makeInner();
   function extendWithKeys(target, source, keys2) {
     for (var i = 0; i < keys2.length; i++) {
-      var key = keys2[i];
-      if (source[key] != null) {
-        target[key] = source[key];
+      var key2 = keys2[i];
+      if (source[key2] != null) {
+        target[key2] = source[key2];
       }
     }
   }
   var LABEL_LAYOUT_PROPS = ["x", "y", "rotation"];
   var LabelManager = (
     /** @class */
-    function() {
+    (function() {
       function LabelManager2() {
         this._labelList = [];
         this._chartViewList = [];
@@ -28494,7 +30434,7 @@ var pptxPreview = (() => {
         this._labelList = [];
         this._chartViewList = [];
       };
-      LabelManager2.prototype._addLabel = function(dataIndex, dataType, seriesModel, label, layoutOption) {
+      LabelManager2.prototype._addLabel = function(dataIndex, dataType, seriesModel, label, layoutOptionOrCb) {
         var labelStyle = label.style;
         var hostEl = label.__hostTarget;
         var textConfig = hostEl.textConfig || {};
@@ -28522,8 +30462,8 @@ var pptxPreview = (() => {
           seriesModel,
           dataIndex,
           dataType,
-          layoutOption,
-          computedLayoutOption: null,
+          layoutOptionOrCb,
+          layoutOption: null,
           rect: labelRect,
           hostRect,
           // Label with lower priority will be hidden when overlapped
@@ -28587,13 +30527,13 @@ var pptxPreview = (() => {
           var hostEl = label.__hostTarget;
           var defaultLabelAttr = labelItem.defaultAttr;
           var layoutOption = void 0;
-          if (isFunction(labelItem.layoutOption)) {
-            layoutOption = labelItem.layoutOption(prepareLayoutCallbackParams(labelItem, hostEl));
+          if (isFunction(labelItem.layoutOptionOrCb)) {
+            layoutOption = labelItem.layoutOptionOrCb(prepareLayoutCallbackParams(labelItem, hostEl));
           } else {
-            layoutOption = labelItem.layoutOption;
+            layoutOption = labelItem.layoutOptionOrCb;
           }
           layoutOption = layoutOption || {};
-          labelItem.computedLayoutOption = layoutOption;
+          labelItem.layoutOption = layoutOption;
           var degreeToRadian = Math.PI / 180;
           if (hostEl) {
             hostEl.setTextConfig({
@@ -28638,8 +30578,8 @@ var pptxPreview = (() => {
           label.scaleX = defaultLabelAttr.scaleX;
           label.scaleY = defaultLabelAttr.scaleY;
           for (var k = 0; k < LABEL_OPTION_TO_STYLE_KEYS.length; k++) {
-            var key = LABEL_OPTION_TO_STYLE_KEYS[k];
-            label.setStyle(key, layoutOption[key] != null ? layoutOption[key] : defaultLabelAttr.style[key]);
+            var key2 = LABEL_OPTION_TO_STYLE_KEYS[k];
+            label.setStyle(key2, layoutOption[key2] != null ? layoutOption[key2] : defaultLabelAttr.style[key2]);
           }
           if (layoutOption.draggable) {
             label.draggable = true;
@@ -28661,18 +30601,24 @@ var pptxPreview = (() => {
       LabelManager2.prototype.layout = function(api) {
         var width = api.getWidth();
         var height = api.getHeight();
-        var labelList = prepareLayoutList(this._labelList);
+        var labelList = [];
+        each(this._labelList, function(inputItem) {
+          if (!inputItem.defaultAttr.ignore) {
+            labelList.push(newLabelLayoutWithGeometry({}, inputItem));
+          }
+        });
         var labelsNeedsAdjustOnX = filter(labelList, function(item) {
           return item.layoutOption.moveOverlap === "shiftX";
         });
         var labelsNeedsAdjustOnY = filter(labelList, function(item) {
           return item.layoutOption.moveOverlap === "shiftY";
         });
-        shiftLayoutOnX(labelsNeedsAdjustOnX, 0, width);
-        shiftLayoutOnY(labelsNeedsAdjustOnY, 0, height);
+        shiftLayoutOnXY(labelsNeedsAdjustOnX, 0, 0, width);
+        shiftLayoutOnXY(labelsNeedsAdjustOnY, 1, 0, height);
         var labelsNeedsHideOverlap = filter(labelList, function(item) {
           return item.layoutOption.hideOverlap;
         });
+        restoreIgnore(labelsNeedsHideOverlap);
         hideOverlap(labelsNeedsHideOverlap);
       };
       LabelManager2.prototype.processLabelsOverall = function() {
@@ -28794,7 +30740,7 @@ var pptxPreview = (() => {
         }
       };
       return LabelManager2;
-    }()
+    })()
   );
   var LabelManager_default = LabelManager;
 
@@ -28810,7 +30756,7 @@ var pptxPreview = (() => {
     });
     registers.registerUpdateLifecycle("series:layoutlabels", function(ecModel, api, params) {
       var labelManager = getLabelManager(api).labelManager;
-      params.updatedSeries.forEach(function(series) {
+      each(params.updatedSeries, function(series) {
         labelManager.addLabelsOfSeries(api.getViewOfSeriesModel(series));
       });
       labelManager.updateLayoutConfig(api);
@@ -28822,7 +30768,7 @@ var pptxPreview = (() => {
   // node_modules/echarts/lib/chart/line/LineSeries.js
   var LineSeriesModel = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(LineSeriesModel2, _super);
       function LineSeriesModel2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -28858,7 +30804,7 @@ var pptxPreview = (() => {
         symbol.setOrigin([opt.itemWidth / 2, opt.itemHeight / 2]);
         if (symbolType.indexOf("empty") > -1) {
           symbol.style.stroke = symbol.style.fill;
-          symbol.style.fill = "#fff";
+          symbol.style.fill = tokens_default.color.neutral00;
           symbol.style.lineWidth = 2;
         }
         return group;
@@ -28901,7 +30847,7 @@ var pptxPreview = (() => {
         smooth: false,
         smoothMonotone: null,
         symbol: "emptyCircle",
-        symbolSize: 4,
+        symbolSize: 6,
         symbolRotate: null,
         showSymbol: true,
         // `false`: follow the label interval strategy.
@@ -28909,7 +30855,7 @@ var pptxPreview = (() => {
         // `'auto'`: If possible, show all symbols, otherwise
         //           follow the label interval strategy.
         showAllSymbol: "auto",
-        // Whether to connect break point.
+        // Whether to connect break point. (non-finite values)
         connectNulls: false,
         // Sampling for large data. Can be: 'average', 'max', 'min', 'sum', 'lttb'.
         sampling: "none",
@@ -28920,10 +30866,14 @@ var pptxPreview = (() => {
         universalTransition: {
           divideShape: "clone"
         },
-        triggerLineEvent: false
+        /**
+         * @deprecated
+         */
+        triggerLineEvent: false,
+        triggerEvent: false
       };
       return LineSeriesModel2;
-    }(Series_default)
+    })(Series_default)
   );
   var LineSeries_default = LineSeriesModel;
 
@@ -28960,18 +30910,18 @@ var pptxPreview = (() => {
   // node_modules/echarts/lib/chart/helper/Symbol.js
   var Symbol2 = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(Symbol3, _super);
       function Symbol3(data, idx, seriesScope, opts) {
         var _this = _super.call(this) || this;
         _this.updateData(data, idx, seriesScope, opts);
         return _this;
       }
-      Symbol3.prototype._createSymbol = function(symbolType, data, idx, symbolSize, keepAspect) {
+      Symbol3.prototype._createSymbol = function(symbolType, data, idx, symbolSize, z2, keepAspect) {
         this.removeAll();
         var symbolPath = createSymbol(symbolType, -1, -1, 2, 2, null, keepAspect);
         symbolPath.attr({
-          z2: 100,
+          z2: retrieve2(z2, 100),
           culling: true,
           scaleX: symbolSize[0] / 2,
           scaleY: symbolSize[1] / 2
@@ -29010,11 +30960,12 @@ var pptxPreview = (() => {
         var symbolType = data.getItemVisual(idx, "symbol") || "circle";
         var seriesModel = data.hostModel;
         var symbolSize = Symbol3.getSymbolSize(data, idx);
+        var z2 = Symbol3.getSymbolZ2(data, idx);
         var isInit = symbolType !== this._symbolType;
         var disableAnimation = opts && opts.disableAnimation;
         if (isInit) {
           var keepAspect = data.getItemVisual(idx, "symbolKeepAspect");
-          this._createSymbol(symbolType, data, idx, symbolSize, keepAspect);
+          this._createSymbol(symbolType, data, idx, symbolSize, z2, keepAspect);
         } else {
           var symbolPath = this.childAt(0);
           symbolPath.silent = false;
@@ -29146,8 +31097,8 @@ var pptxPreview = (() => {
         this.setSymbolScale(1);
         toggleHoverEmphasis(this, focus, blurScope, emphasisDisabled);
       };
-      Symbol3.prototype.setSymbolScale = function(scale4) {
-        this.scaleX = this.scaleY = scale4;
+      Symbol3.prototype.setSymbolScale = function(scale3) {
+        this.scaleX = this.scaleY = scale3;
       };
       Symbol3.prototype.fadeOut = function(cb, seriesModel, opt) {
         var symbolPath = this.childAt(0);
@@ -29187,8 +31138,11 @@ var pptxPreview = (() => {
       Symbol3.getSymbolSize = function(data, idx) {
         return normalizeSymbolSize(data.getItemVisual(idx, "symbolSize"));
       };
+      Symbol3.getSymbolZ2 = function(data, idx) {
+        return data.getItemVisual(idx, "z2");
+      };
       return Symbol3;
-    }(Group_default)
+    })(Group_default)
   );
   function driftSymbol(dx, dy) {
     this.parent.drift(dx, dy);
@@ -29197,7 +31151,7 @@ var pptxPreview = (() => {
 
   // node_modules/echarts/lib/chart/helper/SymbolDraw.js
   function symbolNeedsDraw(data, point, idx, opt) {
-    return point && !isNaN(point[0]) && !isNaN(point[1]) && !(opt.isIgnore && opt.isIgnore(idx)) && !(opt.clipShape && !opt.clipShape.contain(point[0], point[1])) && data.getItemVisual(idx, "symbol") !== "none";
+    return point && !isNaN(point[0]) && !isNaN(point[1]) && !(opt && opt.isIgnore && opt.isIgnore(idx)) && !(opt && opt.clipShape && !opt.clipShape.contain(point[0], point[1])) && data.getItemVisual(idx, "symbol") !== "none";
   }
   function normalizeUpdateOpt(opt) {
     if (opt != null && !isObject(opt)) {
@@ -29222,9 +31176,16 @@ var pptxPreview = (() => {
       cursorStyle: seriesModel.get("cursor")
     };
   }
+  function createEl(SymbolCtor, data, newIdx, seriesScope, symbolUpdateOpt, point, group) {
+    var symbolEl = new SymbolCtor(data, newIdx, seriesScope, symbolUpdateOpt);
+    symbolEl.setPosition(point);
+    data.setItemGraphicEl(newIdx, symbolEl);
+    group.add(symbolEl);
+    return symbolEl;
+  }
   var SymbolDraw = (
     /** @class */
-    function() {
+    (function() {
       function SymbolDraw2(SymbolCtor) {
         this.group = new Group_default();
         this._SymbolCtor = SymbolCtor || Symbol_default;
@@ -29237,7 +31198,7 @@ var pptxPreview = (() => {
         var oldData = this._data;
         var SymbolCtor = this._SymbolCtor;
         var disableAnimation = opt.disableAnimation;
-        var seriesScope = makeSeriesScope(data);
+        var seriesScope = this._seriesScope = makeSeriesScope(data);
         var symbolUpdateOpt = {
           disableAnimation
         };
@@ -29250,10 +31211,7 @@ var pptxPreview = (() => {
         data.diff(oldData).add(function(newIdx) {
           var point = getSymbolPoint(newIdx);
           if (symbolNeedsDraw(data, point, newIdx, opt)) {
-            var symbolEl = new SymbolCtor(data, newIdx, seriesScope, symbolUpdateOpt);
-            symbolEl.setPosition(point);
-            data.setItemGraphicEl(newIdx, symbolEl);
-            group.add(symbolEl);
+            createEl(SymbolCtor, data, newIdx, seriesScope, symbolUpdateOpt, point, group);
           }
         }).update(function(newIdx, oldIdx) {
           var symbolEl = oldData.getItemGraphicEl(oldIdx);
@@ -29288,15 +31246,27 @@ var pptxPreview = (() => {
         this._data = data;
       };
       ;
-      SymbolDraw2.prototype.updateLayout = function() {
-        var _this = this;
+      SymbolDraw2.prototype.updateLayout = function(opt) {
         var data = this._data;
-        if (data) {
-          data.eachItemGraphicEl(function(el2, idx) {
-            var point = _this._getSymbolPoint(idx);
+        if (!data) {
+          return;
+        }
+        var symbolDraw = this;
+        var store = data.getStore();
+        for (var idx = 0, len2 = store.count(); idx < len2; idx++) {
+          var el2 = data.getItemGraphicEl(idx);
+          var point = symbolDraw._getSymbolPoint(idx);
+          if (symbolNeedsDraw(data, point, idx, opt)) {
+            el2 = el2 || createEl(symbolDraw._SymbolCtor, data, idx, symbolDraw._seriesScope, {
+              disableAnimation: true
+            }, point, symbolDraw.group);
+            el2.stopAnimation();
             el2.setPosition(point);
             el2.markRedraw();
-          });
+          } else if (el2) {
+            symbolDraw.group.remove(el2);
+            data.setItemGraphicEl(idx, null);
+          }
         }
       };
       ;
@@ -29306,13 +31276,13 @@ var pptxPreview = (() => {
         this.group.removeAll();
       };
       ;
-      SymbolDraw2.prototype.incrementalUpdate = function(taskParams, data, opt) {
+      SymbolDraw2.prototype.incrementalUpdate = function(taskParams, data, incrementalId, opt) {
         this._progressiveEls = [];
         opt = normalizeUpdateOpt(opt);
         function updateIncrementalAndHover(el3) {
           if (!el3.isGroup) {
-            el3.incremental = true;
-            el3.ensureState("emphasis").hoverLayer = true;
+            el3.incremental = incrementalId;
+            el3.ensureState("emphasis").hoverLayer = HOVER_LAYER_FOR_INCREMENTAL;
           }
         }
         for (var idx = taskParams.start; idx < taskParams.end; idx++) {
@@ -29346,7 +31316,7 @@ var pptxPreview = (() => {
       };
       ;
       return SymbolDraw2;
-    }()
+    })()
   );
   var SymbolDraw_default = SymbolDraw;
 
@@ -29395,18 +31365,18 @@ var pptxPreview = (() => {
   }
   function getValueStart(valueAxis2, valueOrigin) {
     var valueStart = 0;
-    var extent3 = valueAxis2.scale.getExtent();
+    var extent = valueAxis2.scale.getExtent();
     if (valueOrigin === "start") {
-      valueStart = extent3[0];
+      valueStart = extent[0];
     } else if (valueOrigin === "end") {
-      valueStart = extent3[1];
+      valueStart = extent[1];
     } else if (isNumber(valueOrigin) && !isNaN(valueOrigin)) {
       valueStart = valueOrigin;
     } else {
-      if (extent3[0] > 0) {
-        valueStart = extent3[0];
-      } else if (extent3[1] < 0) {
-        valueStart = extent3[1];
+      if (extent[0] > 0) {
+        valueStart = extent[0];
+      } else if (extent[1] < 0) {
+        valueStart = extent[1];
       }
     }
     return valueStart;
@@ -29424,6 +31394,53 @@ var pptxPreview = (() => {
     stackedData[baseDataOffset] = data.get(dataCoordInfo.baseDim, idx);
     stackedData[1 - baseDataOffset] = value;
     return coordSys.dataToPoint(stackedData);
+  }
+  function isPointIllegal(xOrY, yOrX) {
+    return !isFinite(xOrY) || !isFinite(yOrX);
+  }
+
+  // node_modules/echarts/lib/util/vendor.js
+  var Float32ArrayCtor = typeof Float32Array !== UNDEFINED_STR ? Float32Array : void 0;
+  var Float64ArrayCtor = typeof Float64Array !== UNDEFINED_STR ? Float64Array : void 0;
+  function createFloat32Array(capacity) {
+    return tryEnsureTypedArray({
+      ctor: Float32ArrayCtor
+    }, capacity).arr;
+  }
+  function tryEnsureTypedArray(tyArr, capacity) {
+    if (true) {
+      assert(capacity != null && isFinite(capacity) && capacity >= 0 && tyArr.hasOwnProperty("ctor"));
+    }
+    var existingArr = tyArr.arr;
+    var ctor = tyArr.ctor;
+    if (capacity > MAX_SAFE_INTEGER2) {
+      capacity = MAX_SAFE_INTEGER2;
+    }
+    if (!existingArr || tyArr.typed && existingArr.length < capacity) {
+      var nextArr = void 0;
+      if (ctor) {
+        try {
+          nextArr = new ctor(capacity);
+          tyArr.typed = true;
+          existingArr && nextArr.set(existingArr);
+        } catch (e2) {
+          if (true) {
+            error(e2);
+          }
+        }
+      }
+      if (!nextArr) {
+        nextArr = [];
+        tyArr.typed = false;
+        if (existingArr) {
+          for (var i = 0, len2 = existingArr.length; i < len2; i++) {
+            nextArr[i] = existingArr[i];
+          }
+        }
+      }
+      tyArr.arr = nextArr;
+    }
+    return tyArr;
   }
 
   // node_modules/echarts/lib/chart/line/lineAnimationDiff.js
@@ -29536,11 +31553,8 @@ var pptxPreview = (() => {
   }
 
   // node_modules/echarts/lib/chart/line/poly.js
-  var mathMin6 = Math.min;
-  var mathMax6 = Math.max;
-  function isPointNull(x, y) {
-    return isNaN(x) || isNaN(y);
-  }
+  var mathMin7 = Math.min;
+  var mathMax7 = Math.max;
   function drawSegment(ctx, points2, start2, segLen, allLen, dir3, smooth, smoothMonotone, connectNulls) {
     var prevX;
     var prevY;
@@ -29556,7 +31570,7 @@ var pptxPreview = (() => {
       if (idx >= allLen || idx < 0) {
         break;
       }
-      if (isPointNull(x, y)) {
+      if (isPointIllegal(x, y)) {
         if (connectNulls) {
           idx += dir3;
           continue;
@@ -29591,7 +31605,7 @@ var pptxPreview = (() => {
           }
           var tmpK = k + 1;
           if (connectNulls) {
-            while (isPointNull(nextX, nextY) && tmpK < segLen) {
+            while (isPointIllegal(nextX, nextY) && tmpK < segLen) {
               tmpK++;
               nextIdx += dir3;
               nextX = points2[nextIdx * 2];
@@ -29603,7 +31617,7 @@ var pptxPreview = (() => {
           var vy = 0;
           var nextCpx0 = void 0;
           var nextCpy0 = void 0;
-          if (tmpK >= segLen || isPointNull(nextX, nextY)) {
+          if (tmpK >= segLen || isPointIllegal(nextX, nextY)) {
             cpx1 = x;
             cpy1 = y;
           } else {
@@ -29639,18 +31653,18 @@ var pptxPreview = (() => {
               cpy1 = y - vy * smooth * (1 - ratioNextSeg);
               nextCpx0 = x + vx * smooth * ratioNextSeg;
               nextCpy0 = y + vy * smooth * ratioNextSeg;
-              nextCpx0 = mathMin6(nextCpx0, mathMax6(nextX, x));
-              nextCpy0 = mathMin6(nextCpy0, mathMax6(nextY, y));
-              nextCpx0 = mathMax6(nextCpx0, mathMin6(nextX, x));
-              nextCpy0 = mathMax6(nextCpy0, mathMin6(nextY, y));
+              nextCpx0 = mathMin7(nextCpx0, mathMax7(nextX, x));
+              nextCpy0 = mathMin7(nextCpy0, mathMax7(nextY, y));
+              nextCpx0 = mathMax7(nextCpx0, mathMin7(nextX, x));
+              nextCpy0 = mathMax7(nextCpy0, mathMin7(nextY, y));
               vx = nextCpx0 - x;
               vy = nextCpy0 - y;
               cpx1 = x - vx * lenPrevSeg / lenNextSeg;
               cpy1 = y - vy * lenPrevSeg / lenNextSeg;
-              cpx1 = mathMin6(cpx1, mathMax6(prevX, x));
-              cpy1 = mathMin6(cpy1, mathMax6(prevY, y));
-              cpx1 = mathMax6(cpx1, mathMin6(prevX, x));
-              cpy1 = mathMax6(cpy1, mathMin6(prevY, y));
+              cpx1 = mathMin7(cpx1, mathMax7(prevX, x));
+              cpy1 = mathMin7(cpy1, mathMax7(prevY, y));
+              cpx1 = mathMax7(cpx1, mathMin7(prevX, x));
+              cpy1 = mathMax7(cpy1, mathMin7(prevY, y));
               vx = x - cpx1;
               vy = y - cpy1;
               nextCpx0 = x + vx * lenNextSeg / lenPrevSeg;
@@ -29672,17 +31686,17 @@ var pptxPreview = (() => {
   }
   var ECPolylineShape = (
     /** @class */
-    /* @__PURE__ */ function() {
+    /* @__PURE__ */ (function() {
       function ECPolylineShape2() {
         this.smooth = 0;
         this.smoothConstraint = true;
       }
       return ECPolylineShape2;
-    }()
+    })()
   );
   var ECPolyline = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(ECPolyline2, _super);
       function ECPolyline2(opts) {
         var _this = _super.call(this, opts) || this;
@@ -29691,7 +31705,7 @@ var pptxPreview = (() => {
       }
       ECPolyline2.prototype.getDefaultStyle = function() {
         return {
-          stroke: "#000",
+          stroke: tokens_default.color.neutral99,
           fill: null
         };
       };
@@ -29704,12 +31718,12 @@ var pptxPreview = (() => {
         var len2 = points2.length / 2;
         if (shape.connectNulls) {
           for (; len2 > 0; len2--) {
-            if (!isPointNull(points2[len2 * 2 - 2], points2[len2 * 2 - 1])) {
+            if (!isPointIllegal(points2[len2 * 2 - 2], points2[len2 * 2 - 1])) {
               break;
             }
           }
           for (; i < len2; i++) {
-            if (!isPointNull(points2[i * 2], points2[i * 2 + 1])) {
+            if (!isPointIllegal(points2[i * 2], points2[i * 2 + 1])) {
               break;
             }
           }
@@ -29779,21 +31793,21 @@ var pptxPreview = (() => {
         }
       };
       return ECPolyline2;
-    }(Path_default)
+    })(Path_default)
   );
   var ECPolygonShape = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(ECPolygonShape2, _super);
       function ECPolygonShape2() {
         return _super !== null && _super.apply(this, arguments) || this;
       }
       return ECPolygonShape2;
-    }(ECPolylineShape)
+    })(ECPolylineShape)
   );
   var ECPolygon = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(ECPolygon2, _super);
       function ECPolygon2(opts) {
         var _this = _super.call(this, opts) || this;
@@ -29811,12 +31825,12 @@ var pptxPreview = (() => {
         var smoothMonotone = shape.smoothMonotone;
         if (shape.connectNulls) {
           for (; len2 > 0; len2--) {
-            if (!isPointNull(points2[len2 * 2 - 2], points2[len2 * 2 - 1])) {
+            if (!isPointIllegal(points2[len2 * 2 - 2], points2[len2 * 2 - 1])) {
               break;
             }
           }
           for (; i < len2; i++) {
-            if (!isPointNull(points2[i * 2], points2[i * 2 + 1])) {
+            if (!isPointIllegal(points2[i * 2], points2[i * 2 + 1])) {
               break;
             }
           }
@@ -29829,7 +31843,7 @@ var pptxPreview = (() => {
         }
       };
       return ECPolygon2;
-    }(Path_default)
+    })(Path_default)
   );
 
   // node_modules/echarts/lib/chart/helper/createClipPathFromCoordSys.js
@@ -29933,6 +31947,18 @@ var pptxPreview = (() => {
     return coordSys.type === type;
   }
 
+  // node_modules/echarts/lib/util/styleCompat.js
+  var deprecatedLogs = {};
+  function warnDeprecated(deprecated, insteadApproach) {
+    if (true) {
+      var key2 = deprecated + "^_^" + insteadApproach;
+      if (!deprecatedLogs[key2]) {
+        console.warn('[ECharts] DEPRECATED: "' + deprecated + '" has been deprecated. ' + insteadApproach);
+        deprecatedLogs[key2] = true;
+      }
+    }
+  }
+
   // node_modules/echarts/lib/chart/line/LineView.js
   function isPointsSame(points1, points2) {
     if (points1.length !== points2.length) {
@@ -29945,35 +31971,29 @@ var pptxPreview = (() => {
     }
     return true;
   }
-  function bboxFromPoints(points2) {
-    var minX = Infinity;
-    var minY = Infinity;
-    var maxX = -Infinity;
-    var maxY = -Infinity;
+  function xyExtentFromPoints(points2) {
+    var xExtent = initExtentForUnion();
+    var yExtent = initExtentForUnion();
     for (var i = 0; i < points2.length; ) {
       var x = points2[i++];
       var y = points2[i++];
-      if (!isNaN(x)) {
-        minX = Math.min(x, minX);
-        maxX = Math.max(x, maxX);
-      }
-      if (!isNaN(y)) {
-        minY = Math.min(y, minY);
-        maxY = Math.max(y, maxY);
+      if (!isPointIllegal(x, y)) {
+        unionExtentFromNumber(xExtent, x);
+        unionExtentFromNumber(yExtent, y);
       }
     }
-    return [[minX, minY], [maxX, maxY]];
+    return [xExtent, yExtent];
   }
   function getBoundingDiff(points1, points2) {
-    var _a2 = bboxFromPoints(points1), min1 = _a2[0], max1 = _a2[1];
-    var _b2 = bboxFromPoints(points2), min23 = _b2[0], max23 = _b2[1];
-    return Math.max(Math.abs(min1[0] - min23[0]), Math.abs(min1[1] - min23[1]), Math.abs(max1[0] - max23[0]), Math.abs(max1[1] - max23[1]));
+    var _a2 = xyExtentFromPoints(points1), xExtent1 = _a2[0], yExtent1 = _a2[1];
+    var _b2 = xyExtentFromPoints(points2), xExtent2 = _b2[0], yExtent2 = _b2[1];
+    return Math.max(Math.abs(xExtent1[0] - xExtent2[0]), Math.abs(yExtent1[0] - yExtent2[0]), Math.abs(xExtent1[1] - xExtent2[1]), Math.abs(yExtent1[1] - yExtent2[1]));
   }
   function getSmooth(smooth) {
     return isNumber(smooth) ? smooth : smooth ? 0.5 : 0;
   }
   function getStackedOnPoints(coordSys, data, dataCoordInfo) {
-    if (!dataCoordInfo.valueDim) {
+    if (dataCoordInfo.valueDim == null) {
       return [];
     }
     var len2 = data.count();
@@ -29997,7 +32017,7 @@ var pptxPreview = (() => {
     if (connectNulls) {
       for (i = 0; i < points2.length; i += 2) {
         var reference = basePoints || points2;
-        if (!isNaN(reference[i]) && !isNaN(reference[i + 1])) {
+        if (!isPointIllegal(reference[i], reference[i + 1])) {
           filteredPoints.push(points2[i], points2[i + 1]);
         }
       }
@@ -30041,10 +32061,10 @@ var pptxPreview = (() => {
     function lerpStop(stop0, stop1, clippedCoord) {
       var coord0 = stop0.coord;
       var p = (clippedCoord - coord0) / (stop1.coord - coord0);
-      var color = lerp2(p, [stop0.color, stop1.color]);
+      var color3 = lerp2(p, [stop0.color, stop1.color]);
       return {
         coord: clippedCoord,
-        color
+        color: color3
       };
     }
     for (var i = 0; i < len2; i++) {
@@ -30155,8 +32175,9 @@ var pptxPreview = (() => {
     var categoryDataDim = data.mapDimension(categoryAxis2.dim);
     var labelMap = {};
     each(categoryAxis2.getViewLabels(), function(labelItem) {
-      var ordinalNumber = categoryAxis2.scale.getRawOrdinalNumber(labelItem.tickValue);
-      labelMap[ordinalNumber] = 1;
+      if (!labelItem.tick.offInterval) {
+        labelMap[getTickValueOutermost(categoryAxis2.scale, labelItem.tick)] = 1;
+      }
     });
     return function(dataIndex) {
       return !labelMap.hasOwnProperty(data.get(categoryDataDim, dataIndex));
@@ -30179,13 +32200,10 @@ var pptxPreview = (() => {
     }
     return true;
   }
-  function isPointNull2(x, y) {
-    return isNaN(x) || isNaN(y);
-  }
   function getLastIndexNotNull(points2) {
     var len2 = points2.length / 2;
     for (; len2 > 0; len2--) {
-      if (!isPointNull2(points2[len2 * 2 - 2], points2[len2 * 2 - 1])) {
+      if (!isPointIllegal(points2[len2 * 2 - 2], points2[len2 * 2 - 1])) {
         break;
       }
     }
@@ -30203,7 +32221,7 @@ var pptxPreview = (() => {
     var nextIndex = -1;
     for (var i = 0; i < len2; i++) {
       b = points2[i * 2 + dimIdx];
-      if (isNaN(b) || isNaN(points2[i * 2 + 1 - dimIdx])) {
+      if (isPointIllegal(b, points2[i * 2 + 1 - dimIdx])) {
         continue;
       }
       if (i === 0) {
@@ -30295,7 +32313,7 @@ var pptxPreview = (() => {
   }
   var LineView = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(LineView2, _super);
       function LineView2() {
         return _super !== null && _super.apply(this, arguments) || this;
@@ -30490,20 +32508,27 @@ var pptxPreview = (() => {
         this._points = points2;
         this._step = step;
         this._valueOrigin = valueOrigin;
-        if (seriesModel.get("triggerLineEvent")) {
-          this.packEventData(seriesModel, polyline);
-          polygon && this.packEventData(seriesModel, polygon);
+        var triggerEvent = seriesModel.get("triggerEvent");
+        var triggerLineEvent = seriesModel.get("triggerLineEvent");
+        if (true) {
+          triggerLineEvent && warnDeprecated("triggerLineEvent", "Use the `triggerEvent` option instead.");
         }
+        var shouldTriggerLineEvent = triggerLineEvent === true || triggerEvent === true || triggerEvent === "line";
+        var shouldTriggerAreaEvent = triggerLineEvent === true || triggerEvent === true || triggerEvent === "area";
+        this.packEventData(seriesModel, polyline, shouldTriggerLineEvent);
+        polygon && this.packEventData(seriesModel, polygon, shouldTriggerAreaEvent);
       };
-      LineView2.prototype.packEventData = function(seriesModel, el2) {
-        getECData(el2).eventData = {
+      LineView2.prototype.packEventData = function(seriesModel, el2, enable) {
+        getECData(el2).eventData = enable ? {
           componentType: "series",
           componentSubType: "line",
           componentIndex: seriesModel.componentIndex,
           seriesIndex: seriesModel.seriesIndex,
           seriesName: seriesModel.name,
-          seriesType: "line"
-        };
+          seriesType: "line",
+          // for determining this event is triggered by area or line
+          selfType: el2 === this._polygon ? "area" : "line"
+        } : null;
       };
       LineView2.prototype.highlight = function(seriesModel, ecModel, api, payload) {
         var data = seriesModel.getData();
@@ -30515,7 +32540,7 @@ var pptxPreview = (() => {
           if (!symbol) {
             var x = points2[dataIndex * 2];
             var y = points2[dataIndex * 2 + 1];
-            if (isNaN(x) || isNaN(y)) {
+            if (isPointIllegal(x, y)) {
               return;
             }
             if (this._clipShapeForSymbol && !this._clipShapeForSymbol.contain(x, y)) {
@@ -30776,9 +32801,9 @@ var pptxPreview = (() => {
             });
           }
           if (valueAnimation) {
-            var inner11 = labelInner(endLabel);
-            if (typeof inner11.setLabelText === "function") {
-              inner11.setLabelText(value);
+            var inner10 = labelInner(endLabel);
+            if (typeof inner10.setLabelText === "function") {
+              inner10.setLabelText(value);
             }
           }
         }
@@ -30884,7 +32909,7 @@ var pptxPreview = (() => {
       };
       LineView2.type = "line";
       return LineView2;
-    }(Chart_default)
+    })(Chart_default)
   );
   var LineView_default = LineView;
 
@@ -30938,7 +32963,13 @@ var pptxPreview = (() => {
                 data2.setItemLayout(i, point.slice());
               }
             }
-            useTypedArray && data2.setLayout("points", points2);
+            if (useTypedArray) {
+              data2.setLayout("points", points2);
+              data2.setLayout("pointsRange", {
+                start: params.start,
+                end: params.end
+              });
+            }
           }
         };
       }
@@ -31001,9 +33032,9 @@ var pptxPreview = (() => {
         if (count > 10 && coordSys.type === "cartesian2d" && sampling) {
           var baseAxis = coordSys.getBaseAxis();
           var valueAxis2 = coordSys.getOtherAxis(baseAxis);
-          var extent3 = baseAxis.getExtent();
+          var extent = baseAxis.getExtent();
           var dpr2 = api.getDevicePixelRatio();
-          var size = Math.abs(extent3[1] - extent3[0]) * (dpr2 || 1);
+          var size = Math.abs(extent[1] - extent[0]) * (dpr2 || 1);
           var rate = Math.round(count / size);
           if (isFinite(rate) && rate > 1) {
             if (sampling === "lttb") {
@@ -31045,10 +33076,1496 @@ var pptxPreview = (() => {
     registers.registerProcessor(registers.PRIORITY.PROCESSOR.STATISTIC, dataSample("line"));
   }
 
+  // node_modules/echarts/lib/coord/cartesian/Axis2D.js
+  var Axis2D = (
+    /** @class */
+    (function(_super) {
+      __extends(Axis2D2, _super);
+      function Axis2D2(dim, scale3, coordExtent, axisType, position) {
+        var _this = _super.call(this, dim, scale3, coordExtent) || this;
+        _this.index = 0;
+        _this.type = axisType || "value";
+        _this.position = position || "bottom";
+        return _this;
+      }
+      Axis2D2.prototype.isHorizontal = function() {
+        var position = this.position;
+        return position === "top" || position === "bottom";
+      };
+      Axis2D2.prototype.getGlobalExtent = function(asc2) {
+        var ret = this.getExtent();
+        ret[0] = this.toGlobalCoord(ret[0]);
+        ret[1] = this.toGlobalCoord(ret[1]);
+        asc2 && ret[0] > ret[1] && ret.reverse();
+        return ret;
+      };
+      Axis2D2.prototype.pointToData = function(point, clamp) {
+        return this.coordToData(this.toLocalCoord(point[this.dim === "x" ? 0 : 1]), clamp);
+      };
+      Axis2D2.prototype.setCategorySortInfo = function(info) {
+        if (this.type !== "category") {
+          return false;
+        }
+        this.model.option.categorySortInfo = info;
+        this.scale.setSortInfo(info);
+      };
+      return Axis2D2;
+    })(Axis_default)
+  );
+  var Axis2D_default = Axis2D;
+
+  // node_modules/echarts/lib/component/axis/axisBreakHelper.js
+  var _impl2 = null;
+  function getAxisBreakHelper() {
+    return _impl2;
+  }
+
+  // node_modules/echarts/lib/component/axis/axisAction.js
+  var AXIS_BREAK_EXPAND_ACTION_TYPE = "expandAxisBreak";
+
+  // node_modules/echarts/lib/component/axis/AxisBuilder.js
+  var PI6 = Math.PI;
+  var DEFAULT_CENTER_NAME_MARGIN_LEVELS = [[1, 2, 1, 2], [5, 3, 5, 3], [8, 3, 8, 3]];
+  var DEFAULT_ENDS_NAME_MARGIN_LEVELS = [[0, 1, 0, 1], [0, 3, 0, 3], [0, 3, 0, 3]];
+  var getLabelInner = makeInner();
+  var getTickInner = makeInner();
+  var AxisBuilderSharedContext = (
+    /** @class */
+    (function() {
+      function AxisBuilderSharedContext2(resolveAxisNameOverlap) {
+        this.recordMap = {};
+        this.resolveAxisNameOverlap = resolveAxisNameOverlap;
+      }
+      AxisBuilderSharedContext2.prototype.ensureRecord = function(axisModel) {
+        var dim = axisModel.axis.dim;
+        var idx = axisModel.componentIndex;
+        var recordMap = this.recordMap;
+        var records = recordMap[dim] || (recordMap[dim] = []);
+        return records[idx] || (records[idx] = {
+          ready: {}
+        });
+      };
+      return AxisBuilderSharedContext2;
+    })()
+  );
+  function resetOverlapRecordToShared(cfg, shared, axisModel, labelLayoutList) {
+    var axis = axisModel.axis;
+    var record = shared.ensureRecord(axisModel);
+    var labelInfoList = [];
+    var stOccupiedRect;
+    var useStOccupiedRect = hasAxisName(cfg.axisName) && isNameLocationCenter(cfg.nameLocation);
+    each(labelLayoutList, function(layout2) {
+      var layoutInfo = ensureLabelLayoutWithGeometry(layout2);
+      if (!layoutInfo || layoutInfo.label.ignore) {
+        return;
+      }
+      labelInfoList.push(layoutInfo);
+      var transGroup = record.transGroup;
+      if (useStOccupiedRect) {
+        transGroup.transform ? invert(_stTransTmp, transGroup.transform) : identity(_stTransTmp);
+        if (layoutInfo.transform) {
+          mul(_stTransTmp, _stTransTmp, layoutInfo.transform);
+        }
+        BoundingRect_default.copy(_stLabelRectTmp, layoutInfo.localRect);
+        _stLabelRectTmp.applyTransform(_stTransTmp);
+        stOccupiedRect ? stOccupiedRect.union(_stLabelRectTmp) : BoundingRect_default.copy(stOccupiedRect = new BoundingRect_default(0, 0, 0, 0), _stLabelRectTmp);
+      }
+    });
+    var sortByDim = Math.abs(record.dirVec.x) > 0.1 ? "x" : "y";
+    var sortByValue = record.transGroup[sortByDim];
+    labelInfoList.sort(function(info1, info2) {
+      return Math.abs(info1.label[sortByDim] - sortByValue) - Math.abs(info2.label[sortByDim] - sortByValue);
+    });
+    if (useStOccupiedRect && stOccupiedRect) {
+      var extent = axis.getExtent();
+      var axisLineX = Math.min(extent[0], extent[1]);
+      var axisLineWidth = Math.max(extent[0], extent[1]) - axisLineX;
+      stOccupiedRect.union(new BoundingRect_default(axisLineX, 0, axisLineWidth, 1));
+    }
+    record.stOccupiedRect = stOccupiedRect;
+    record.labelInfoList = labelInfoList;
+  }
+  var _stTransTmp = create2();
+  var _stLabelRectTmp = new BoundingRect_default(0, 0, 0, 0);
+  var resolveAxisNameOverlapDefault = function(cfg, ctx, axisModel, nameLayoutInfo, nameMoveDirVec, thisRecord) {
+    if (isNameLocationCenter(cfg.nameLocation)) {
+      var stOccupiedRect = thisRecord.stOccupiedRect;
+      if (stOccupiedRect) {
+        moveIfOverlap(computeLabelGeometry2({}, stOccupiedRect, thisRecord.transGroup.transform), nameLayoutInfo, nameMoveDirVec);
+      }
+    } else {
+      moveIfOverlapByLinearLabels(thisRecord.labelInfoList, thisRecord.dirVec, nameLayoutInfo, nameMoveDirVec);
+    }
+  };
+  function moveIfOverlap(basedLayoutInfo, movableLayoutInfo, moveDirVec) {
+    var mtv = new Point_default();
+    if (labelIntersect(basedLayoutInfo, movableLayoutInfo, mtv, {
+      direction: Math.atan2(moveDirVec.y, moveDirVec.x),
+      bidirectional: false,
+      touchThreshold: 0.05
+    })) {
+      labelLayoutApplyTranslation(movableLayoutInfo, mtv);
+    }
+  }
+  function moveIfOverlapByLinearLabels(baseLayoutInfoList, baseDirVec, movableLayoutInfo, moveDirVec) {
+    var sameDir = Point_default.dot(moveDirVec, baseDirVec) >= 0;
+    for (var idx = 0, len2 = baseLayoutInfoList.length; idx < len2; idx++) {
+      var labelInfo = baseLayoutInfoList[sameDir ? idx : len2 - 1 - idx];
+      if (!labelInfo.label.ignore) {
+        moveIfOverlap(labelInfo, movableLayoutInfo, moveDirVec);
+      }
+    }
+  }
+  var AxisBuilder = (
+    /** @class */
+    (function() {
+      function AxisBuilder2(axisModel, api, opt, shared) {
+        this.group = new Group_default();
+        this._axisModel = axisModel;
+        this._api = api;
+        this._local = {};
+        this._shared = shared || new AxisBuilderSharedContext(resolveAxisNameOverlapDefault);
+        this._resetCfgDetermined(opt);
+      }
+      AxisBuilder2.prototype.updateCfg = function(opt) {
+        if (true) {
+          var ready = this._shared.ensureRecord(this._axisModel).ready;
+          assert(!ready.axisLine && !ready.axisTickLabelDetermine);
+          ready.axisName = ready.axisTickLabelEstimate = false;
+        }
+        var raw = this._cfg.raw;
+        raw.position = opt.position;
+        raw.labelOffset = opt.labelOffset;
+        this._resetCfgDetermined(raw);
+      };
+      AxisBuilder2.prototype.__getRawCfg = function() {
+        return this._cfg.raw;
+      };
+      AxisBuilder2.prototype._resetCfgDetermined = function(raw) {
+        var axisModel = this._axisModel;
+        var axisModelDefaultOption = axisModel.getDefaultOption ? axisModel.getDefaultOption() : {};
+        var axisName = retrieve2(raw.axisName, axisModel.get("name"));
+        var nameMoveOverlapOption = axisModel.get("nameMoveOverlap");
+        if (nameMoveOverlapOption == null || nameMoveOverlapOption === "auto") {
+          nameMoveOverlapOption = retrieve2(raw.defaultNameMoveOverlap, true);
+        }
+        var cfg = {
+          raw,
+          position: raw.position,
+          rotation: raw.rotation,
+          nameDirection: retrieve2(raw.nameDirection, 1),
+          tickDirection: retrieve2(raw.tickDirection, 1),
+          labelDirection: retrieve2(raw.labelDirection, 1),
+          labelOffset: retrieve2(raw.labelOffset, 0),
+          silent: retrieve2(raw.silent, true),
+          axisName,
+          nameLocation: retrieve3(axisModel.get("nameLocation"), axisModelDefaultOption.nameLocation, "end"),
+          shouldNameMoveOverlap: hasAxisName(axisName) && nameMoveOverlapOption,
+          optionHideOverlap: axisModel.get(["axisLabel", "hideOverlap"]),
+          showMinorTicks: axisModel.get(["minorTick", "show"])
+        };
+        if (true) {
+          assert(cfg.position != null);
+          assert(cfg.rotation != null);
+        }
+        this._cfg = cfg;
+        var transformGroup = new Group_default({
+          x: cfg.position[0],
+          y: cfg.position[1],
+          rotation: cfg.rotation
+        });
+        transformGroup.updateTransform();
+        this._transformGroup = transformGroup;
+        var record = this._shared.ensureRecord(axisModel);
+        record.transGroup = this._transformGroup;
+        record.dirVec = new Point_default(Math.cos(-cfg.rotation), Math.sin(-cfg.rotation));
+      };
+      AxisBuilder2.prototype.build = function(axisPartNameMap, extraParams) {
+        var _this = this;
+        if (!axisPartNameMap) {
+          axisPartNameMap = {
+            axisLine: true,
+            axisTickLabelEstimate: false,
+            axisTickLabelDetermine: true,
+            axisName: true
+          };
+        }
+        each(AXIS_BUILDER_AXIS_PART_NAMES, function(partName) {
+          if (axisPartNameMap[partName]) {
+            builders[partName](_this._cfg, _this._local, _this._shared, _this._axisModel, _this.group, _this._transformGroup, _this._api, extraParams || {});
+          }
+        });
+        return this;
+      };
+      AxisBuilder2.innerTextLayout = function(axisRotation, textRotation, direction) {
+        var rotationDiff = remRadian(textRotation - axisRotation);
+        var textAlign;
+        var textVerticalAlign;
+        if (isRadianAroundZero(rotationDiff)) {
+          textVerticalAlign = direction > 0 ? "top" : "bottom";
+          textAlign = "center";
+        } else if (isRadianAroundZero(rotationDiff - PI6)) {
+          textVerticalAlign = direction > 0 ? "bottom" : "top";
+          textAlign = "center";
+        } else {
+          textVerticalAlign = "middle";
+          if (rotationDiff > 0 && rotationDiff < PI6) {
+            textAlign = direction > 0 ? "right" : "left";
+          } else {
+            textAlign = direction > 0 ? "left" : "right";
+          }
+        }
+        return {
+          rotation: rotationDiff,
+          textAlign,
+          textVerticalAlign
+        };
+      };
+      AxisBuilder2.makeAxisEventDataBase = function(axisModel) {
+        var eventData = {
+          componentType: axisModel.mainType,
+          componentIndex: axisModel.componentIndex
+        };
+        eventData[axisModel.mainType + "Index"] = axisModel.componentIndex;
+        return eventData;
+      };
+      AxisBuilder2.isLabelSilent = function(axisModel) {
+        var tooltipOpt = axisModel.get("tooltip");
+        return axisModel.get("silent") || !(axisModel.get("triggerEvent") || tooltipOpt && tooltipOpt.show);
+      };
+      return AxisBuilder2;
+    })()
+  );
+  var AXIS_BUILDER_AXIS_PART_NAMES = ["axisLine", "axisTickLabelEstimate", "axisTickLabelDetermine", "axisName"];
+  var builders = {
+    axisLine: function(cfg, local, shared, axisModel, group, transformGroup, api) {
+      if (true) {
+        var ready = shared.ensureRecord(axisModel).ready;
+        assert(!ready.axisLine);
+        ready.axisLine = true;
+      }
+      var shown = axisModel.get(["axisLine", "show"]);
+      if (shown === "auto") {
+        shown = true;
+        if (cfg.raw.axisLineAutoShow != null) {
+          shown = !!cfg.raw.axisLineAutoShow;
+        }
+      }
+      if (!shown) {
+        return;
+      }
+      var extent = axisModel.axis.getExtent();
+      var matrix = transformGroup.transform;
+      var pt12 = [extent[0], 0];
+      var pt22 = [extent[1], 0];
+      var inverse = pt12[0] > pt22[0];
+      if (matrix) {
+        applyTransform(pt12, pt12, matrix);
+        applyTransform(pt22, pt22, matrix);
+      }
+      var lineStyle = extend({
+        lineCap: "round"
+      }, axisModel.getModel(["axisLine", "lineStyle"]).getLineStyle());
+      var pathBaseProp = {
+        strokeContainThreshold: cfg.raw.strokeContainThreshold || 5,
+        silent: true,
+        z2: 1,
+        style: lineStyle
+      };
+      if (axisModel.get(["axisLine", "breakLine"]) && hasBreaks(axisModel.axis.scale)) {
+        getAxisBreakHelper().buildAxisBreakLine(axisModel, group, transformGroup, pathBaseProp);
+      } else {
+        var line = new Line_default(extend({
+          shape: {
+            x1: pt12[0],
+            y1: pt12[1],
+            x2: pt22[0],
+            y2: pt22[1]
+          }
+        }, pathBaseProp));
+        subPixelOptimizeLine2(line.shape, line.style.lineWidth);
+        line.anid = "line";
+        group.add(line);
+      }
+      var arrows = axisModel.get(["axisLine", "symbol"]);
+      if (arrows != null) {
+        var arrowSize = axisModel.get(["axisLine", "symbolSize"]);
+        if (isString(arrows)) {
+          arrows = [arrows, arrows];
+        }
+        if (isString(arrowSize) || isNumber(arrowSize)) {
+          arrowSize = [arrowSize, arrowSize];
+        }
+        var arrowOffset = normalizeSymbolOffset(axisModel.get(["axisLine", "symbolOffset"]) || 0, arrowSize);
+        var symbolWidth_1 = arrowSize[0];
+        var symbolHeight_1 = arrowSize[1];
+        each([{
+          rotate: cfg.rotation + Math.PI / 2,
+          offset: arrowOffset[0],
+          r: 0
+        }, {
+          rotate: cfg.rotation - Math.PI / 2,
+          offset: arrowOffset[1],
+          r: Math.sqrt((pt12[0] - pt22[0]) * (pt12[0] - pt22[0]) + (pt12[1] - pt22[1]) * (pt12[1] - pt22[1]))
+        }], function(point, index) {
+          if (arrows[index] !== "none" && arrows[index] != null) {
+            var symbol = createSymbol(arrows[index], -symbolWidth_1 / 2, -symbolHeight_1 / 2, symbolWidth_1, symbolHeight_1, lineStyle.stroke, true);
+            var r = point.r + point.offset;
+            var pt = inverse ? pt22 : pt12;
+            symbol.attr({
+              rotation: point.rotate,
+              x: pt[0] + r * Math.cos(cfg.rotation),
+              y: pt[1] - r * Math.sin(cfg.rotation),
+              silent: true,
+              z2: 11
+            });
+            group.add(symbol);
+          }
+        });
+      }
+    },
+    /**
+     * [CAUTION] This method can be called multiple times, following the change due to `resetCfg` called
+     *  in size measurement. Thus this method should be idempotent, and should be performant.
+     */
+    axisTickLabelEstimate: function(cfg, local, shared, axisModel, group, transformGroup, api, extraParams) {
+      if (true) {
+        var ready = shared.ensureRecord(axisModel).ready;
+        assert(!ready.axisTickLabelDetermine);
+        ready.axisTickLabelEstimate = true;
+      }
+      var needCallLayout = dealLastTickLabelResultReusable(local, group, extraParams);
+      if (needCallLayout) {
+        layOutAxisTickLabel(cfg, local, shared, axisModel, group, transformGroup, api, AxisTickLabelComputingKind.estimate);
+      }
+    },
+    /**
+     * Finish axis tick label build.
+     * Can be only called once.
+     */
+    axisTickLabelDetermine: function(cfg, local, shared, axisModel, group, transformGroup, api, extraParams) {
+      if (true) {
+        var ready = shared.ensureRecord(axisModel).ready;
+        ready.axisTickLabelDetermine = true;
+      }
+      var needCallLayout = dealLastTickLabelResultReusable(local, group, extraParams);
+      if (needCallLayout) {
+        layOutAxisTickLabel(cfg, local, shared, axisModel, group, transformGroup, api, AxisTickLabelComputingKind.determine);
+      }
+      var ticksEls = buildAxisMajorTicks(cfg, group, transformGroup, axisModel);
+      syncLabelIgnoreToMajorTicks(cfg, local.labelLayoutList, ticksEls);
+      buildAxisMinorTicks(cfg, group, transformGroup, axisModel, cfg.tickDirection);
+    },
+    /**
+     * [CAUTION] This method can be called multiple times, following the change due to `resetCfg` called
+     *  in size measurement. Thus this method should be idempotent, and should be performant.
+     */
+    axisName: function(cfg, local, shared, axisModel, group, transformGroup, api, extraParams) {
+      var sharedRecord = shared.ensureRecord(axisModel);
+      if (true) {
+        var ready = sharedRecord.ready;
+        assert(ready.axisTickLabelEstimate || ready.axisTickLabelDetermine);
+        ready.axisName = true;
+      }
+      if (local.nameEl) {
+        group.remove(local.nameEl);
+        local.nameEl = sharedRecord.nameLayout = sharedRecord.nameLocation = null;
+      }
+      var name = cfg.axisName;
+      if (!hasAxisName(name)) {
+        return;
+      }
+      var nameLocation = cfg.nameLocation;
+      var nameDirection = cfg.nameDirection;
+      var textStyleModel = axisModel.getModel("nameTextStyle");
+      var gap = axisModel.get("nameGap") || 0;
+      var extent = axisModel.axis.getExtent();
+      var gapStartEndSignal = axisModel.axis.inverse ? -1 : 1;
+      var pos = new Point_default(0, 0);
+      var nameMoveDirVec = new Point_default(0, 0);
+      if (nameLocation === "start") {
+        pos.x = extent[0] - gapStartEndSignal * gap;
+        nameMoveDirVec.x = -gapStartEndSignal;
+      } else if (nameLocation === "end") {
+        pos.x = extent[1] + gapStartEndSignal * gap;
+        nameMoveDirVec.x = gapStartEndSignal;
+      } else {
+        pos.x = (extent[0] + extent[1]) / 2;
+        pos.y = cfg.labelOffset + nameDirection * gap;
+        nameMoveDirVec.y = nameDirection;
+      }
+      var mt = create2();
+      nameMoveDirVec.transform(rotate(mt, mt, cfg.rotation));
+      var nameRotation = axisModel.get("nameRotate");
+      if (nameRotation != null) {
+        nameRotation = nameRotation * PI6 / 180;
+      }
+      var labelLayout;
+      var axisNameAvailableWidth;
+      if (isNameLocationCenter(nameLocation)) {
+        labelLayout = AxisBuilder.innerTextLayout(
+          cfg.rotation,
+          nameRotation != null ? nameRotation : cfg.rotation,
+          // Adapt to axis.
+          nameDirection
+        );
+      } else {
+        labelLayout = endTextLayout(cfg.rotation, nameLocation, nameRotation || 0, extent);
+        axisNameAvailableWidth = cfg.raw.axisNameAvailableWidth;
+        if (axisNameAvailableWidth != null) {
+          axisNameAvailableWidth = Math.abs(axisNameAvailableWidth / Math.sin(labelLayout.rotation));
+          !isFinite(axisNameAvailableWidth) && (axisNameAvailableWidth = null);
+        }
+      }
+      var textFont = textStyleModel.getFont();
+      var truncateOpt = axisModel.get("nameTruncate", true) || {};
+      var ellipsis = truncateOpt.ellipsis;
+      var maxWidth = retrieve(cfg.raw.nameTruncateMaxWidth, truncateOpt.maxWidth, axisNameAvailableWidth);
+      var nameMarginLevel = extraParams.nameMarginLevel || 0;
+      var textEl = new Text_default({
+        x: pos.x,
+        y: pos.y,
+        rotation: labelLayout.rotation,
+        silent: AxisBuilder.isLabelSilent(axisModel),
+        style: createTextStyle(textStyleModel, {
+          text: name,
+          font: textFont,
+          overflow: "truncate",
+          width: maxWidth,
+          ellipsis,
+          fill: textStyleModel.getTextColor() || axisModel.get(["axisLine", "lineStyle", "color"]),
+          align: textStyleModel.get("align") || labelLayout.textAlign,
+          verticalAlign: textStyleModel.get("verticalAlign") || labelLayout.textVerticalAlign
+        }),
+        z2: 1
+      });
+      setTooltipConfig({
+        el: textEl,
+        componentModel: axisModel,
+        itemName: name
+      });
+      textEl.__fullText = name;
+      textEl.anid = "name";
+      if (axisModel.get("triggerEvent")) {
+        var eventData = AxisBuilder.makeAxisEventDataBase(axisModel);
+        eventData.targetType = "axisName";
+        eventData.name = name;
+        getECData(textEl).eventData = eventData;
+      }
+      transformGroup.add(textEl);
+      textEl.updateTransform();
+      local.nameEl = textEl;
+      var nameLayout = sharedRecord.nameLayout = ensureLabelLayoutWithGeometry({
+        label: textEl,
+        priority: textEl.z2,
+        defaultAttr: {
+          ignore: textEl.ignore
+        },
+        marginDefault: isNameLocationCenter(nameLocation) ? DEFAULT_CENTER_NAME_MARGIN_LEVELS[nameMarginLevel] : DEFAULT_ENDS_NAME_MARGIN_LEVELS[nameMarginLevel]
+      });
+      sharedRecord.nameLocation = nameLocation;
+      group.add(textEl);
+      textEl.decomposeTransform();
+      if (cfg.shouldNameMoveOverlap && nameLayout) {
+        var record = shared.ensureRecord(axisModel);
+        if (true) {
+          assert(record.labelInfoList);
+        }
+        shared.resolveAxisNameOverlap(cfg, shared, axisModel, nameLayout, nameMoveDirVec, record);
+      }
+    }
+  };
+  function layOutAxisTickLabel(cfg, local, shared, axisModel, group, transformGroup, api, kind) {
+    if (!axisLabelBuildResultExists(local)) {
+      buildAxisLabel(cfg, local, group, kind, axisModel, api);
+    }
+    var labelLayoutList = local.labelLayoutList;
+    updateAxisLabelChangableProps(cfg, axisModel, labelLayoutList, transformGroup);
+    adjustBreakLabels(axisModel, cfg.rotation, labelLayoutList);
+    var optionHideOverlap = cfg.optionHideOverlap;
+    fixMinMaxLabelShow(axisModel, labelLayoutList, optionHideOverlap);
+    if (optionHideOverlap) {
+      hideOverlap(
+        // Filter the already ignored labels by the previous overlap resolving methods.
+        filter(labelLayoutList, function(layout2) {
+          return layout2 && !layout2.label.ignore;
+        })
+      );
+    }
+    resetOverlapRecordToShared(cfg, shared, axisModel, labelLayoutList);
+  }
+  function endTextLayout(rotation, textPosition, textRotate, extent) {
+    var rotationDiff = remRadian(textRotate - rotation);
+    var textAlign;
+    var textVerticalAlign;
+    var inverse = extent[0] > extent[1];
+    var onLeft = textPosition === "start" && !inverse || textPosition !== "start" && inverse;
+    if (isRadianAroundZero(rotationDiff - PI6 / 2)) {
+      textVerticalAlign = onLeft ? "bottom" : "top";
+      textAlign = "center";
+    } else if (isRadianAroundZero(rotationDiff - PI6 * 1.5)) {
+      textVerticalAlign = onLeft ? "top" : "bottom";
+      textAlign = "center";
+    } else {
+      textVerticalAlign = "middle";
+      if (rotationDiff < PI6 * 1.5 && rotationDiff > PI6 / 2) {
+        textAlign = onLeft ? "left" : "right";
+      } else {
+        textAlign = onLeft ? "right" : "left";
+      }
+    }
+    return {
+      rotation: rotationDiff,
+      textAlign,
+      textVerticalAlign
+    };
+  }
+  function fixMinMaxLabelShow(axisModel, labelLayoutList, optionHideOverlap) {
+    var axis = axisModel.axis;
+    var customValuesOption = axisModel.get(["axisLabel", "customValues"]);
+    if (shouldShowAllLabels(axis)) {
+      return;
+    }
+    function deal(showMinMaxLabelOption, outmostLabelIdx, innerLabelIdx) {
+      var outmostLabelLayout = ensureLabelLayoutWithGeometry(labelLayoutList[outmostLabelIdx]);
+      var innerLabelLayout = ensureLabelLayoutWithGeometry(labelLayoutList[innerLabelIdx]);
+      var scale3 = axis.scale;
+      if (!outmostLabelLayout || !innerLabelLayout) {
+        return;
+      }
+      if (showMinMaxLabelOption == null) {
+        if (!optionHideOverlap && customValuesOption) {
+          return;
+        }
+        var tick = getLabelInner(outmostLabelLayout.label).labelInfo.tick;
+        if (
+          // TimeScale does not expand extent to "nice", so eliminate labels that are not nice.
+          isTimeScale(scale3) && tick.notNice || isOrdinalScale(scale3) && tick.offInterval
+        ) {
+          ignoreEl(outmostLabelLayout.label);
+          return;
+        }
+      }
+      if (showMinMaxLabelOption === false || outmostLabelLayout.suggestIgnore) {
+        ignoreEl(outmostLabelLayout.label);
+        return;
+      }
+      if (innerLabelLayout.suggestIgnore) {
+        ignoreEl(innerLabelLayout.label);
+        return;
+      }
+      var touchThreshold = 0.1;
+      if (!optionHideOverlap) {
+        var marginForce = [0, 0, 0, 0];
+        outmostLabelLayout = newLabelLayoutWithGeometry({
+          marginForce
+        }, outmostLabelLayout);
+        innerLabelLayout = newLabelLayoutWithGeometry({
+          marginForce
+        }, innerLabelLayout);
+      }
+      if (labelIntersect(outmostLabelLayout, innerLabelLayout, null, {
+        touchThreshold
+      })) {
+        if (showMinMaxLabelOption) {
+          ignoreEl(innerLabelLayout.label);
+        } else {
+          ignoreEl(outmostLabelLayout.label);
+        }
+      }
+    }
+    var showMinLabelOption = axisModel.get(["axisLabel", "showMinLabel"]);
+    var showMaxLabelOption = axisModel.get(["axisLabel", "showMaxLabel"]);
+    var labelsLen = labelLayoutList.length;
+    deal(showMinLabelOption, 0, 1);
+    deal(showMaxLabelOption, labelsLen - 1, labelsLen - 2);
+  }
+  function syncLabelIgnoreToMajorTicks(cfg, labelLayoutList, tickEls) {
+    if (cfg.showMinorTicks) {
+      return;
+    }
+    each(labelLayoutList, function(labelLayout) {
+      if (labelLayout && labelLayout.label.ignore) {
+        for (var idx = 0; idx < tickEls.length; idx++) {
+          var tickEl = tickEls[idx];
+          var tickInner = getTickInner(tickEl);
+          var labelInner2 = getLabelInner(labelLayout.label);
+          if (tickInner.tickValue != null && !tickInner.onBand && tickInner.tickValue === labelInner2.labelInfo.tick.value) {
+            ignoreEl(tickEl);
+            return;
+          }
+        }
+      }
+    });
+  }
+  function ignoreEl(el2) {
+    el2 && (el2.ignore = true);
+  }
+  function createTicks(ticksCoords, tickTransform, tickEndCoord, tickLineStyle, anidPrefix) {
+    var tickEls = [];
+    var pt12 = [];
+    var pt22 = [];
+    for (var i = 0; i < ticksCoords.length; i++) {
+      var tickCoord = ticksCoords[i].coord;
+      pt12[0] = tickCoord;
+      pt12[1] = 0;
+      pt22[0] = tickCoord;
+      pt22[1] = tickEndCoord;
+      if (tickTransform) {
+        applyTransform(pt12, pt12, tickTransform);
+        applyTransform(pt22, pt22, tickTransform);
+      }
+      var tickEl = new Line_default({
+        shape: {
+          x1: pt12[0],
+          y1: pt12[1],
+          x2: pt22[0],
+          y2: pt22[1]
+        },
+        style: tickLineStyle,
+        z2: 2,
+        autoBatch: true,
+        silent: true
+      });
+      subPixelOptimizeLine2(tickEl.shape, tickEl.style.lineWidth);
+      tickEl.anid = anidPrefix + "_" + ticksCoords[i].tickValue;
+      tickEls.push(tickEl);
+      var inner10 = getTickInner(tickEl);
+      inner10.onBand = !!ticksCoords[i].onBand;
+      inner10.tickValue = ticksCoords[i].tickValue;
+    }
+    return tickEls;
+  }
+  function buildAxisMajorTicks(cfg, group, transformGroup, axisModel) {
+    var axis = axisModel.axis;
+    var tickModel = axisModel.getModel("axisTick");
+    var shown = tickModel.get("show");
+    if (shown === "auto") {
+      shown = true;
+      if (cfg.raw.axisTickAutoShow != null) {
+        shown = !!cfg.raw.axisTickAutoShow;
+      }
+    }
+    if (!shown || axis.scale.isBlank()) {
+      return [];
+    }
+    var lineStyleModel = tickModel.getModel("lineStyle");
+    var tickEndCoord = cfg.tickDirection * tickModel.get("length");
+    var ticksCoords = axis.getTicksCoords();
+    var ticksEls = createTicks(ticksCoords, transformGroup.transform, tickEndCoord, defaults(lineStyleModel.getLineStyle(), {
+      stroke: axisModel.get(["axisLine", "lineStyle", "color"])
+    }), "ticks");
+    for (var i = 0; i < ticksEls.length; i++) {
+      group.add(ticksEls[i]);
+    }
+    return ticksEls;
+  }
+  function buildAxisMinorTicks(cfg, group, transformGroup, axisModel, tickDirection) {
+    var axis = axisModel.axis;
+    var minorTickModel = axisModel.getModel("minorTick");
+    if (!cfg.showMinorTicks || axis.scale.isBlank()) {
+      return;
+    }
+    var minorTicksCoords = axis.getMinorTicksCoords();
+    if (!minorTicksCoords.length) {
+      return;
+    }
+    var lineStyleModel = minorTickModel.getModel("lineStyle");
+    var tickEndCoord = tickDirection * minorTickModel.get("length");
+    var minorTickLineStyle = defaults(lineStyleModel.getLineStyle(), defaults(axisModel.getModel("axisTick").getLineStyle(), {
+      stroke: axisModel.get(["axisLine", "lineStyle", "color"])
+    }));
+    for (var i = 0; i < minorTicksCoords.length; i++) {
+      var minorTicksEls = createTicks(minorTicksCoords[i], transformGroup.transform, tickEndCoord, minorTickLineStyle, "minorticks_" + i);
+      for (var k = 0; k < minorTicksEls.length; k++) {
+        group.add(minorTicksEls[k]);
+      }
+    }
+  }
+  function dealLastTickLabelResultReusable(local, group, extraParams) {
+    if (axisLabelBuildResultExists(local)) {
+      var axisLabelsCreationContext = local.axisLabelsCreationContext;
+      if (true) {
+        assert(local.labelGroup && axisLabelsCreationContext);
+      }
+      var noPxChangeTryDetermine = axisLabelsCreationContext.out.noPxChangeTryDetermine;
+      if (extraParams.noPxChange) {
+        var canDetermine = true;
+        for (var idx = 0; idx < noPxChangeTryDetermine.length; idx++) {
+          canDetermine = canDetermine && noPxChangeTryDetermine[idx]();
+        }
+        if (canDetermine) {
+          return false;
+        }
+      }
+      if (noPxChangeTryDetermine.length) {
+        group.remove(local.labelGroup);
+        axisLabelBuildResultSet(local, null, null, null);
+      }
+    }
+    return true;
+  }
+  function buildAxisLabel(cfg, local, group, kind, axisModel, api) {
+    var axis = axisModel.axis;
+    var show = retrieve(cfg.raw.axisLabelShow, axisModel.get(["axisLabel", "show"]));
+    var labelGroup = new Group_default();
+    group.add(labelGroup);
+    var axisLabelCreationCtx = createAxisLabelsComputingContext(kind);
+    if (!show || axis.scale.isBlank()) {
+      axisLabelBuildResultSet(local, [], labelGroup, axisLabelCreationCtx);
+      return;
+    }
+    var labelModel = axisModel.getModel("axisLabel");
+    var labels = axis.getViewLabels(axisLabelCreationCtx);
+    var labelRotation = (retrieve(cfg.raw.labelRotate, labelModel.get("rotate")) || 0) * PI6 / 180;
+    var labelLayout = AxisBuilder.innerTextLayout(cfg.rotation, labelRotation, cfg.labelDirection);
+    var rawCategoryData = axisModel.getCategories && axisModel.getCategories(true);
+    var labelEls = [];
+    var triggerEvent = axisModel.get("triggerEvent");
+    var z2Min = Infinity;
+    var z2Max = -Infinity;
+    each(labels, function(labelItem, index) {
+      var _a2;
+      var labelItemTick = labelItem.tick;
+      var formattedLabel = labelItem.formattedLabel;
+      var rawLabel = labelItem.rawLabel;
+      var itemLabelModel = labelModel;
+      var tickValue = getTickValueOutermost(axis.scale, labelItemTick);
+      if (rawCategoryData && rawCategoryData[tickValue]) {
+        var rawCategoryItem = rawCategoryData[tickValue];
+        if (isObject(rawCategoryItem) && rawCategoryItem.textStyle) {
+          itemLabelModel = new Model_default(rawCategoryItem.textStyle, labelModel, axisModel.ecModel);
+        }
+      }
+      var textColor = itemLabelModel.getTextColor() || axisModel.get(["axisLine", "lineStyle", "color"]);
+      var align = itemLabelModel.getShallow("align", true) || labelLayout.textAlign;
+      var alignMin = retrieve2(itemLabelModel.getShallow("alignMinLabel", true), align);
+      var alignMax = retrieve2(itemLabelModel.getShallow("alignMaxLabel", true), align);
+      var verticalAlign = itemLabelModel.getShallow("verticalAlign", true) || itemLabelModel.getShallow("baseline", true) || labelLayout.textVerticalAlign;
+      var verticalAlignMin = retrieve2(itemLabelModel.getShallow("verticalAlignMinLabel", true), verticalAlign);
+      var verticalAlignMax = retrieve2(itemLabelModel.getShallow("verticalAlignMaxLabel", true), verticalAlign);
+      var z2 = 10 + (((_a2 = labelItemTick.time) === null || _a2 === void 0 ? void 0 : _a2.level) || 0);
+      z2Min = Math.min(z2Min, z2);
+      z2Max = Math.max(z2Max, z2);
+      var textEl = new Text_default({
+        // --- transform props start ---
+        // All of the transform props MUST not be set here, but should be set in
+        // `updateAxisLabelChangableProps`, because they may change in estimation,
+        // and need to calculate based on global coord sys by `decomposeTransform`.
+        x: 0,
+        y: 0,
+        rotation: 0,
+        // --- transform props end ---
+        silent: AxisBuilder.isLabelSilent(axisModel),
+        z2,
+        style: createTextStyle(itemLabelModel, {
+          text: formattedLabel,
+          align: index === 0 ? alignMin : index === labels.length - 1 ? alignMax : align,
+          verticalAlign: index === 0 ? verticalAlignMin : index === labels.length - 1 ? verticalAlignMax : verticalAlign,
+          fill: isFunction(textColor) ? textColor(
+            // (1) In category axis with data zoom, tick is not the original
+            // index of axis.data. So tick should not be exposed to user
+            // in category axis.
+            // (2) Compatible with previous version, which always use formatted label as
+            // input. But in interval scale the formatted label is like '223,445', which
+            // maked user replace ','. So we modify it to return original val but remain
+            // it as 'string' to avoid error in replacing.
+            axis.type === "category" ? rawLabel : axis.type === "value" ? tickValue + "" : tickValue,
+            index
+          ) : textColor
+        })
+      });
+      textEl.anid = "label_" + tickValue;
+      var inner10 = getLabelInner(textEl);
+      inner10.labelInfo = labelItem;
+      inner10.layoutRotation = labelLayout.rotation;
+      setTooltipConfig({
+        el: textEl,
+        componentModel: axisModel,
+        itemName: formattedLabel,
+        formatterParamsExtra: {
+          isTruncated: function() {
+            return textEl.isTruncated;
+          },
+          value: rawLabel,
+          tickIndex: index
+        }
+      });
+      if (triggerEvent) {
+        var eventData = AxisBuilder.makeAxisEventDataBase(axisModel);
+        eventData.targetType = "axisLabel";
+        eventData.value = rawLabel;
+        eventData.tickIndex = index;
+        var labelItemTickBreak = labelItem.tick["break"];
+        if (labelItemTickBreak) {
+          var labelItemTickBreakParsedBreak = labelItemTickBreak.parsedBreak;
+          eventData["break"] = {
+            // type: labelItem.break.type,
+            start: labelItemTickBreakParsedBreak.vmin,
+            end: labelItemTickBreakParsedBreak.vmax
+          };
+        }
+        if (axis.type === "category") {
+          eventData.dataIndex = tickValue;
+        }
+        getECData(textEl).eventData = eventData;
+        if (labelItemTickBreak) {
+          addBreakEventHandler(axisModel, api, textEl, labelItemTickBreak);
+        }
+      }
+      labelEls.push(textEl);
+      labelGroup.add(textEl);
+    });
+    var labelLayoutList = map(labelEls, function(label) {
+      return {
+        label,
+        priority: getLabelInner(label).labelInfo.tick["break"] ? label.z2 + (z2Max - z2Min + 1) : label.z2,
+        defaultAttr: {
+          ignore: label.ignore
+        }
+      };
+    });
+    axisLabelBuildResultSet(local, labelLayoutList, labelGroup, axisLabelCreationCtx);
+  }
+  function axisLabelBuildResultExists(local) {
+    return !!local.labelLayoutList;
+  }
+  function axisLabelBuildResultSet(local, labelLayoutList, labelGroup, axisLabelsCreationContext) {
+    local.labelLayoutList = labelLayoutList;
+    local.labelGroup = labelGroup;
+    local.axisLabelsCreationContext = axisLabelsCreationContext;
+  }
+  function updateAxisLabelChangableProps(cfg, axisModel, labelLayoutList, transformGroup) {
+    var labelMargin = axisModel.get(["axisLabel", "margin"]);
+    each(labelLayoutList, function(layout2, idx) {
+      var geometry = ensureLabelLayoutWithGeometry(layout2);
+      if (!geometry) {
+        return;
+      }
+      var labelEl = geometry.label;
+      var inner10 = getLabelInner(labelEl);
+      geometry.suggestIgnore = labelEl.ignore;
+      labelEl.ignore = false;
+      copyTransform(_tmpLayoutEl, _tmpLayoutElReset);
+      var axis = axisModel.axis;
+      _tmpLayoutEl.x = axis.dataToCoord(getTickValueOutermost(axis.scale, inner10.labelInfo.tick));
+      _tmpLayoutEl.y = cfg.labelOffset + cfg.labelDirection * labelMargin;
+      _tmpLayoutEl.rotation = inner10.layoutRotation;
+      transformGroup.add(_tmpLayoutEl);
+      _tmpLayoutEl.updateTransform();
+      transformGroup.remove(_tmpLayoutEl);
+      _tmpLayoutEl.decomposeTransform();
+      copyTransform(labelEl, _tmpLayoutEl);
+      labelEl.markRedraw();
+      setLabelLayoutDirty(geometry, true);
+      ensureLabelLayoutWithGeometry(geometry);
+    });
+  }
+  var _tmpLayoutEl = new Rect_default();
+  var _tmpLayoutElReset = new Rect_default();
+  function hasAxisName(axisName) {
+    return !!axisName;
+  }
+  function addBreakEventHandler(axisModel, api, textEl, visualBreak) {
+    textEl.on("click", function(params) {
+      var payload = {
+        type: AXIS_BREAK_EXPAND_ACTION_TYPE,
+        breaks: [{
+          start: visualBreak.parsedBreak.breakOption.start,
+          end: visualBreak.parsedBreak.breakOption.end
+        }]
+      };
+      payload[axisModel.axis.dim + "AxisIndex"] = axisModel.componentIndex;
+      api.dispatchAction(payload);
+    });
+  }
+  function adjustBreakLabels(axisModel, axisRotation, labelLayoutList) {
+    var scaleBreakHelper = getScaleBreakHelper();
+    if (!scaleBreakHelper) {
+      return;
+    }
+    var breakLabelIndexPairs = scaleBreakHelper.retrieveAxisBreakPairs(labelLayoutList, function(layoutInfo) {
+      return layoutInfo && getLabelInner(layoutInfo.label).labelInfo.tick["break"];
+    }, true);
+    var moveOverlap = axisModel.get(["breakLabelLayout", "moveOverlap"], true);
+    if (moveOverlap === true || moveOverlap === "auto") {
+      each(breakLabelIndexPairs, function(idxPair) {
+        getAxisBreakHelper().adjustBreakLabelPair(axisModel.axis.inverse, axisRotation, [ensureLabelLayoutWithGeometry(labelLayoutList[idxPair[0]]), ensureLabelLayoutWithGeometry(labelLayoutList[idxPair[1]])]);
+      });
+    }
+  }
+  var AxisBuilder_default = AxisBuilder;
+
+  // node_modules/echarts/lib/coord/cartesian/cartesianAxisHelper.js
+  function layout(rect, axisModel, opt) {
+    opt = opt || {};
+    var axis = axisModel.axis;
+    var layout2 = {};
+    var otherAxisOnZeroOf = axis.getAxesOnZeroOf()[0];
+    var rawAxisPosition = axis.position;
+    var axisPosition = otherAxisOnZeroOf ? "onZero" : rawAxisPosition;
+    var axisDim = axis.dim;
+    var rectBound = [rect.x, rect.x + rect.width, rect.y, rect.y + rect.height];
+    var idx = {
+      left: 0,
+      right: 1,
+      top: 0,
+      bottom: 1,
+      onZero: 2
+    };
+    var axisOffset = axisModel.get("offset") || 0;
+    var posBound = axisDim === "x" ? [rectBound[2] - axisOffset, rectBound[3] + axisOffset] : [rectBound[0] - axisOffset, rectBound[1] + axisOffset];
+    if (otherAxisOnZeroOf) {
+      var onZeroCoord = otherAxisOnZeroOf.toGlobalCoord(otherAxisOnZeroOf.dataToCoord(0));
+      posBound[idx.onZero] = Math.max(Math.min(onZeroCoord, posBound[1]), posBound[0]);
+    }
+    layout2.position = [axisDim === "y" ? posBound[idx[axisPosition]] : rectBound[0], axisDim === "x" ? posBound[idx[axisPosition]] : rectBound[3]];
+    layout2.rotation = Math.PI / 2 * (axisDim === "x" ? 0 : 1);
+    var dirMap = {
+      top: -1,
+      bottom: 1,
+      left: -1,
+      right: 1
+    };
+    layout2.labelDirection = layout2.tickDirection = layout2.nameDirection = dirMap[rawAxisPosition];
+    layout2.labelOffset = otherAxisOnZeroOf ? posBound[idx[rawAxisPosition]] - posBound[idx.onZero] : 0;
+    if (axisModel.get(["axisTick", "inside"])) {
+      layout2.tickDirection = -layout2.tickDirection;
+    }
+    if (retrieve(opt.labelInside, axisModel.get(["axisLabel", "inside"]))) {
+      layout2.labelDirection = -layout2.labelDirection;
+    }
+    var labelRotate = axisModel.get(["axisLabel", "rotate"]);
+    layout2.labelRotate = axisPosition === "top" ? -labelRotate : labelRotate;
+    layout2.z2 = 1;
+    return layout2;
+  }
+  function isCartesian2DInjectedAsDataCoordSys(seriesModel) {
+    return seriesModel.coordinateSystem && seriesModel.coordinateSystem.type === "cartesian2d";
+  }
+  function findAxisModels(seriesModel) {
+    var axisModelMap = {
+      xAxisModel: null,
+      yAxisModel: null
+    };
+    each(axisModelMap, function(v, key2) {
+      var axisType = key2.replace(/Model$/, "");
+      var axisModel = seriesModel.getReferringComponents(axisType, SINGLE_REFERRING).models[0];
+      if (true) {
+        if (!axisModel) {
+          throw new Error(axisType + ' "' + retrieve3(seriesModel.get(axisType + "Index"), seriesModel.get(axisType + "Id"), 0) + '" not found');
+        }
+      }
+      axisModelMap[key2] = axisModel;
+    });
+    return axisModelMap;
+  }
+  function createCartesianAxisViewCommonPartBuilder(gridRect, cartesians, axisModel, api, ctx, defaultNameMoveOverlap) {
+    var layoutResult = layout(gridRect, axisModel);
+    var axisLineAutoShow = false;
+    var axisTickAutoShow = false;
+    for (var i = 0; i < cartesians.length; i++) {
+      if (isIntervalOrLogScale(cartesians[i].getOtherAxis(axisModel.axis).scale)) {
+        axisLineAutoShow = axisTickAutoShow = true;
+        if (axisModel.axis.type === "category" && axisModel.axis.onBand) {
+          axisTickAutoShow = false;
+        }
+      }
+    }
+    layoutResult.axisLineAutoShow = axisLineAutoShow;
+    layoutResult.axisTickAutoShow = axisTickAutoShow;
+    layoutResult.defaultNameMoveOverlap = defaultNameMoveOverlap;
+    return new AxisBuilder_default(axisModel, api, layoutResult, ctx);
+  }
+  function updateCartesianAxisViewCommonPartBuilder(axisBuilder, gridRect, axisModel) {
+    var newRaw = layout(gridRect, axisModel);
+    if (true) {
+      var oldRaw_1 = axisBuilder.__getRawCfg();
+      each(keys(newRaw), function(prop) {
+        if (prop !== "position" && prop !== "labelOffset") {
+          assert(newRaw[prop] === oldRaw_1[prop]);
+        }
+      });
+    }
+    axisBuilder.updateCfg(newRaw);
+  }
+
+  // node_modules/echarts/lib/coord/axisStatisticsMetricsImpl.js
+  function registerMetricImplLiPosMinGap() {
+    registerMetricImpl("liPosMinGap", metricLiPosMinGapImpl);
+  }
+  function metricLiPosMinGapImpl(ecModel, perKeyPerAxis, ecPreparePerKeyPerAxis) {
+    var newSerUids = createHashMap();
+    var ecPrepareSerUids = ecPreparePerKeyPerAxis.serUids;
+    var ecPrepareLiPosMinGap = ecPreparePerKeyPerAxis.liPosMinGap;
+    var ecPrepareCacheMiss;
+    var axis = perKeyPerAxis.axis;
+    var scale3 = axis.scale;
+    var needTransform = scale3.needTransform();
+    var filter2 = scale3.getFilter ? scale3.getFilter() : null;
+    var filterParsed = parseSanitizationFilter(filter2);
+    function eachSeries(cb) {
+      eachSeriesDealForAxisStat(ecModel, perKeyPerAxis.sers, function(seriesModel) {
+        var rawData = seriesModel.getRawData();
+        var dimStoreIdx = rawData.getDimensionIndex(rawData.mapDimension(axis.dim));
+        if (dimStoreIdx >= 0) {
+          cb(dimStoreIdx, seriesModel, rawData.getStore());
+        }
+      });
+    }
+    var bufferCapacity = 0;
+    eachSeries(function(dimStoreIdx, seriesModel, rawDataStore) {
+      newSerUids.set(seriesModel.uid, 1);
+      if (!ecPrepareSerUids || !ecPrepareSerUids.hasKey(seriesModel.uid)) {
+        ecPrepareCacheMiss = true;
+      }
+      bufferCapacity += rawDataStore.count();
+    });
+    if (!ecPrepareSerUids || ecPrepareSerUids.keys().length !== newSerUids.keys().length) {
+      ecPrepareCacheMiss = true;
+    }
+    if (!ecPrepareCacheMiss && ecPrepareLiPosMinGap != null) {
+      perKeyPerAxis.liPosMinGap = ecPrepareLiPosMinGap;
+      return;
+    }
+    tryEnsureTypedArray(tmpValueBuffer, bufferCapacity);
+    var writeIdx = 0;
+    eachSeries(function(dimStoreIdx, seriesModel, store) {
+      for (var i = 0, cnt = store.count(); i < cnt; ++i) {
+        var val = store.get(dimStoreIdx, i);
+        if (isFinite(val) && (!filter2 || passesSanitizationFilter(filterParsed, val))) {
+          if (needTransform) {
+            val = scale3.transformIn(val, null);
+          }
+          tmpValueBuffer.arr[writeIdx++] = val;
+        }
+      }
+    });
+    var tmpValueBufferView = tmpValueBuffer.typed ? tmpValueBuffer.arr.subarray(0, writeIdx) : (tmpValueBuffer.arr.length = writeIdx, tmpValueBuffer.arr);
+    if (tmpValueBuffer.typed) {
+      tmpValueBufferView.sort();
+    } else {
+      asc(tmpValueBufferView);
+    }
+    var min3 = Infinity;
+    for (var j = 1; j < writeIdx; ++j) {
+      var delta = tmpValueBufferView[j] - tmpValueBufferView[j - 1];
+      if (
+        // - Different series normally have the same values (e.g., barA, barB, barC),
+        //   which should be ignored.
+        // - A single series with multiple same values is often not meaningful to
+        //   create `bandWidth`, so it is also ignored.
+        delta > 0 && delta < min3
+      ) {
+        min3 = delta;
+      }
+    }
+    ecPreparePerKeyPerAxis.liPosMinGap = perKeyPerAxis.liPosMinGap = isNullableNumberFinite(min3) ? min3 : writeIdx > 0 ? LINEAR_POSITIVE_MIN_GAP_SINGLE_VALID_VALUE : LINEAR_POSITIVE_MIN_GAP_NO_VALID_VALUE;
+    ecPreparePerKeyPerAxis.serUids = newSerUids;
+  }
+  var tmpValueBuffer = tryEnsureTypedArray(
+    {
+      ctor: Float64ArrayCtor
+    },
+    50
+    // An arbitrary initial capability.
+  );
+
+  // node_modules/echarts/lib/chart/helper/axisSnippets.js
+  function createBandWidthBasedAxisContainShapeHandler(axisStatKey) {
+    return function(axis, ecModel) {
+      var bandWidthResult = calcBandWidth(axis, {
+        fromStat: {
+          key: axisStatKey
+        }
+      });
+      if (isNullableNumberFinite(bandWidthResult.w2)) {
+        return [-bandWidthResult.w2 / 2, bandWidthResult.w2 / 2];
+      }
+    };
+  }
+  function makeAxisStatKey2(seriesType2, coordSysType) {
+    return seriesType2 + AXIS_STAT_KEY_DELIMITER + coordSysType;
+  }
+  function createMetricsNonOrdinalLinearPositiveMinGap(axis) {
+    registerMetricImplLiPosMinGap();
+    return {
+      // non-category scale do not use `liPosMinGap` to calculate `bandWidth`.
+      liPosMinGap: !isOrdinalScale(axis.scale)
+    };
+  }
+
+  // node_modules/echarts/lib/layout/barCommon.js
+  var SERIES_TYPE_BAR = "bar";
+  function requireAxisStatisticsForBaseBar(registers, axisStatKey, seriesType2, coordSysType) {
+    requireAxisStatistics(registers, {
+      key: axisStatKey,
+      seriesType: seriesType2,
+      coordSysType,
+      getMetrics: createMetricsNonOrdinalLinearPositiveMinGap
+    });
+  }
+  function getStartValue(baseAxis) {
+    var val = baseAxis.scale.rawExtentInfo.makeRenderInfo().startValue;
+    if (true) {
+      assert(isNullableNumberFinite(val));
+    }
+    return val;
+  }
+
+  // node_modules/echarts/lib/coord/cartesian/GridModel.js
+  var OUTER_BOUNDS_DEFAULT = {
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0
+  };
+  var OUTER_BOUNDS_CLAMP_DEFAULT = ["25%", "25%"];
+  var COORD_SYS_TYPE_CARTESIAN_2D = "cartesian2d";
+  var GridModel = (
+    /** @class */
+    (function(_super) {
+      __extends(GridModel2, _super);
+      function GridModel2() {
+        return _super !== null && _super.apply(this, arguments) || this;
+      }
+      GridModel2.prototype.mergeDefaultAndTheme = function(option, ecModel) {
+        var outerBoundsCp = getLayoutParams(option.outerBounds);
+        _super.prototype.mergeDefaultAndTheme.apply(this, arguments);
+        if (outerBoundsCp && option.outerBounds) {
+          mergeLayoutParam(option.outerBounds, outerBoundsCp);
+        }
+      };
+      GridModel2.prototype.mergeOption = function(newOption, ecModel) {
+        _super.prototype.mergeOption.apply(this, arguments);
+        if (this.option.outerBounds && newOption.outerBounds) {
+          mergeLayoutParam(this.option.outerBounds, newOption.outerBounds);
+        }
+      };
+      GridModel2.type = "grid";
+      GridModel2.dependencies = ["xAxis", "yAxis"];
+      GridModel2.layoutMode = "box";
+      GridModel2.defaultOption = {
+        show: false,
+        // zlevel: 0,
+        z: 0,
+        left: "15%",
+        top: 65,
+        right: "10%",
+        bottom: 80,
+        // If grid size contain label
+        containLabel: false,
+        outerBoundsMode: "auto",
+        outerBounds: OUTER_BOUNDS_DEFAULT,
+        outerBoundsContain: "all",
+        outerBoundsClampWidth: OUTER_BOUNDS_CLAMP_DEFAULT[0],
+        outerBoundsClampHeight: OUTER_BOUNDS_CLAMP_DEFAULT[1],
+        // width: {totalWidth} - left - right,
+        // height: {totalHeight} - top - bottom,
+        backgroundColor: tokens_default.color.transparent,
+        borderWidth: 1,
+        borderColor: tokens_default.color.neutral30
+      };
+      return GridModel2;
+    })(Component_default)
+  );
+  var GridModel_default = GridModel;
+
+  // node_modules/echarts/lib/layout/barGrid.js
+  var callOnlyOnce2 = makeCallOnlyOnce();
+  var STACK_PREFIX = "__ec_stack_";
+  function getSeriesStackId(seriesModel) {
+    return seriesModel.get("stack") || STACK_PREFIX + seriesModel.seriesIndex;
+  }
+  function makeColumnLayoutOnAxisReal(baseAxis, seriesType2) {
+    var seriesInfoListOnAxis = createLayoutInfoListOnAxis(baseAxis, seriesType2);
+    seriesInfoListOnAxis.columnMap = calcBarWidthAndOffset(seriesInfoListOnAxis);
+    return seriesInfoListOnAxis;
+  }
+  function createLayoutInfoListOnAxis(baseAxis, seriesType2) {
+    var axisStatKey = makeAxisStatKey2(seriesType2, COORD_SYS_TYPE_CARTESIAN_2D);
+    var seriesInfoOnAxis = [];
+    var bandWidthResult = calcBandWidth(baseAxis, {
+      fromStat: {
+        key: axisStatKey
+      },
+      min: 1
+    });
+    eachSeriesOnAxisOnKey(baseAxis, axisStatKey, function(seriesModel) {
+      seriesInfoOnAxis.push({
+        barWidth: parsePercent2(seriesModel.get("barWidth"), bandWidthResult.w),
+        barMaxWidth: parsePercent2(seriesModel.get("barMaxWidth"), bandWidthResult.w),
+        barMinWidth: parsePercent2(
+          // barMinWidth by default is 0.5 / 1 in cartesian. Because in value axis,
+          // the auto-calculated bar width might be less than 0.5 / 1.
+          seriesModel.get("barMinWidth") || (isInLargeMode(seriesModel) ? 0.5 : 1),
+          bandWidthResult.w
+        ),
+        barGap: seriesModel.get("barGap"),
+        barCategoryGap: seriesModel.get("barCategoryGap"),
+        defaultBarGap: seriesModel.get("defaultBarGap"),
+        stackId: getSeriesStackId(seriesModel)
+      });
+    });
+    return {
+      bandWidthResult,
+      seriesInfo: seriesInfoOnAxis
+    };
+  }
+  function calcBarWidthAndOffset(seriesInfoOnAxis) {
+    var bandWidth = seriesInfoOnAxis.bandWidthResult.w;
+    var remainedWidth = bandWidth;
+    var autoWidthCount = 0;
+    var barCategoryGapOption;
+    var barGapOption;
+    var stackIdList = [];
+    var stackMap = {};
+    each(seriesInfoOnAxis.seriesInfo, function(seriesInfo, idx) {
+      if (!idx) {
+        barGapOption = seriesInfo.defaultBarGap || 0;
+      }
+      var stackId = seriesInfo.stackId;
+      if (!hasOwn(stackMap, stackId)) {
+        autoWidthCount++;
+      }
+      var stackItem = stackMap[stackId];
+      if (!stackItem) {
+        stackItem = stackMap[stackId] = {
+          width: 0,
+          maxWidth: 0
+        };
+        stackIdList.push(stackId);
+      }
+      var barWidth = seriesInfo.barWidth;
+      if (barWidth && !stackItem.width) {
+        stackItem.width = barWidth;
+        barWidth = mathMin2(remainedWidth, barWidth);
+        remainedWidth -= barWidth;
+      }
+      var barMaxWidth = seriesInfo.barMaxWidth;
+      barMaxWidth && (stackItem.maxWidth = barMaxWidth);
+      var barMinWidth = seriesInfo.barMinWidth;
+      barMinWidth && (stackItem.minWidth = barMinWidth);
+      var barGap = seriesInfo.barGap;
+      barGap != null && (barGapOption = barGap);
+      var barCategoryGap = seriesInfo.barCategoryGap;
+      barCategoryGap != null && (barCategoryGapOption = barCategoryGap);
+    });
+    if (barCategoryGapOption == null) {
+      barCategoryGapOption = mathMax2(35 - stackIdList.length * 4, 15) + "%";
+    }
+    var barCategoryGapNum = parsePercent2(barCategoryGapOption, bandWidth);
+    var barGapPercent = parsePercent2(barGapOption, 1);
+    var autoWidth = (remainedWidth - barCategoryGapNum) / (autoWidthCount + (autoWidthCount - 1) * barGapPercent);
+    autoWidth = mathMax2(autoWidth, 0);
+    each(stackIdList, function(stackId) {
+      var column = stackMap[stackId];
+      var maxWidth = column.maxWidth;
+      var minWidth = column.minWidth;
+      if (!column.width) {
+        var finalWidth = autoWidth;
+        if (maxWidth && maxWidth < finalWidth) {
+          finalWidth = mathMin2(maxWidth, remainedWidth);
+        }
+        if (minWidth && minWidth > finalWidth) {
+          finalWidth = minWidth;
+        }
+        if (finalWidth !== autoWidth) {
+          column.width = finalWidth;
+          remainedWidth -= finalWidth + barGapPercent * finalWidth;
+          autoWidthCount--;
+        }
+      } else {
+        var finalWidth = column.width;
+        if (maxWidth) {
+          finalWidth = mathMin2(finalWidth, maxWidth);
+        }
+        if (minWidth) {
+          finalWidth = mathMax2(finalWidth, minWidth);
+        }
+        column.width = finalWidth;
+        remainedWidth -= finalWidth + barGapPercent * finalWidth;
+        autoWidthCount--;
+      }
+    });
+    autoWidth = (remainedWidth - barCategoryGapNum) / (autoWidthCount + (autoWidthCount - 1) * barGapPercent);
+    autoWidth = mathMax2(autoWidth, 0);
+    var widthSum = 0;
+    var lastColumn;
+    each(stackIdList, function(stackId) {
+      var column = stackMap[stackId];
+      if (!column.width) {
+        column.width = autoWidth;
+      }
+      lastColumn = column;
+      widthSum += column.width * (1 + barGapPercent);
+    });
+    if (lastColumn) {
+      widthSum -= lastColumn.width * barGapPercent;
+    }
+    var result = {};
+    var offset = -widthSum / 2;
+    each(stackIdList, function(stackId) {
+      var column = stackMap[stackId];
+      result[stackId] = result[stackId] || {
+        bandWidth,
+        offset,
+        width: column.width
+      };
+      offset += column.width * (1 + barGapPercent);
+    });
+    return result;
+  }
+  function createCrossSeriesLayoutHandler(seriesType2) {
+    return {
+      seriesType: seriesType2,
+      overallReset: function(ecModel) {
+        var axisStatKey = makeAxisStatKey2(seriesType2, COORD_SYS_TYPE_CARTESIAN_2D);
+        eachAxisOnKey(ecModel, axisStatKey, function(axis) {
+          if (true) {
+            assert(axis instanceof Axis2D_default);
+          }
+          var columnLayout = makeColumnLayoutOnAxisReal(axis, seriesType2);
+          eachSeriesOnAxisOnKey(axis, axisStatKey, function(seriesModel) {
+            var columnLayoutInfo = columnLayout.columnMap[getSeriesStackId(seriesModel)];
+            seriesModel.getData().setLayout({
+              bandWidth: columnLayoutInfo.bandWidth,
+              offset: columnLayoutInfo.offset,
+              size: columnLayoutInfo.width
+            });
+          });
+        });
+      }
+    };
+  }
+  function createProgressiveLayout(seriesType2) {
+    return {
+      seriesType: seriesType2,
+      plan: createRenderPlanner(),
+      reset: function(seriesModel) {
+        if (!isCartesian2DInjectedAsDataCoordSys(seriesModel)) {
+          return;
+        }
+        var data = seriesModel.getData();
+        var cartesian = seriesModel.coordinateSystem;
+        var baseAxis = cartesian.getBaseAxis();
+        var valueAxis2 = cartesian.getOtherAxis(baseAxis);
+        var valueDimIdx = data.getDimensionIndex(data.mapDimension(valueAxis2.dim));
+        var baseDimIdx = data.getDimensionIndex(data.mapDimension(baseAxis.dim));
+        var drawBackground = seriesModel.get("showBackground", true);
+        var valueDim = data.mapDimension(valueAxis2.dim);
+        var stackResultDim = data.getCalculationInfo("stackResultDimension");
+        var stacked = isDimensionStacked(data, valueDim) && !!data.getCalculationInfo("stackedOnSeries");
+        var isValueAxisH = valueAxis2.isHorizontal();
+        var valueAxisStart = valueAxis2.toGlobalCoord(valueAxis2.dataToCoord(getStartValue(valueAxis2)));
+        var isLarge = isInLargeMode(seriesModel);
+        var barMinHeight = seriesModel.get("barMinHeight") || 0;
+        var stackedDimIdx = stackResultDim && data.getDimensionIndex(stackResultDim);
+        var columnWidth = data.getLayout("size");
+        var columnOffset = data.getLayout("offset");
+        return {
+          progress: function(params, data2) {
+            var count = params.count;
+            var largePoints = isLarge && createFloat32Array(count * 3);
+            var largeBackgroundPoints = isLarge && drawBackground && createFloat32Array(count * 3);
+            var largeDataIndices = isLarge && createFloat32Array(count);
+            var coordLayout = cartesian.master.getRect();
+            var bgSize = isValueAxisH ? coordLayout.width : coordLayout.height;
+            var dataIndex;
+            var store = data2.getStore();
+            var idxOffset = 0;
+            while ((dataIndex = params.next()) != null) {
+              var value = store.get(stacked ? stackedDimIdx : valueDimIdx, dataIndex);
+              var baseValue = store.get(baseDimIdx, dataIndex);
+              var baseCoord = valueAxisStart;
+              var stackStartValue = void 0;
+              if (stacked) {
+                stackStartValue = +value - store.get(valueDimIdx, dataIndex);
+              }
+              var x = void 0;
+              var y = void 0;
+              var width = void 0;
+              var height = void 0;
+              if (isValueAxisH) {
+                var coord = cartesian.dataToPoint([value, baseValue]);
+                if (stacked) {
+                  baseCoord = cartesian.dataToPoint([stackStartValue, baseValue])[0];
+                }
+                x = baseCoord;
+                y = coord[1] + columnOffset;
+                width = coord[0] - baseCoord;
+                height = columnWidth;
+                if (mathAbs2(width) < barMinHeight) {
+                  width = (width < 0 ? -1 : 1) * barMinHeight;
+                }
+              } else {
+                var coord = cartesian.dataToPoint([baseValue, value]);
+                if (stacked) {
+                  baseCoord = cartesian.dataToPoint([baseValue, stackStartValue])[1];
+                }
+                x = coord[0] + columnOffset;
+                y = baseCoord;
+                width = columnWidth;
+                height = coord[1] - baseCoord;
+                if (mathAbs2(height) < barMinHeight) {
+                  height = (height <= 0 ? -1 : 1) * barMinHeight;
+                }
+              }
+              if (!isLarge) {
+                data2.setItemLayout(dataIndex, {
+                  x,
+                  y,
+                  width,
+                  height
+                });
+              } else {
+                largePoints[idxOffset] = x;
+                largePoints[idxOffset + 1] = y;
+                largePoints[idxOffset + 2] = isValueAxisH ? width : height;
+                if (largeBackgroundPoints) {
+                  largeBackgroundPoints[idxOffset] = isValueAxisH ? coordLayout.x : x;
+                  largeBackgroundPoints[idxOffset + 1] = isValueAxisH ? y : coordLayout.y;
+                  largeBackgroundPoints[idxOffset + 2] = bgSize;
+                }
+                largeDataIndices[dataIndex] = dataIndex;
+              }
+              idxOffset += 3;
+            }
+            if (isLarge) {
+              data2.setLayout({
+                largePoints,
+                largeDataIndices,
+                largeBackgroundPoints,
+                valueAxisHorizontal: isValueAxisH
+              });
+            }
+          }
+        };
+      }
+    };
+  }
+  function isInLargeMode(seriesModel) {
+    return seriesModel.pipelineContext && seriesModel.pipelineContext.large;
+  }
+  function barGridCreateAxisContainShapeHandler(seriesType2) {
+    return createBandWidthBasedAxisContainShapeHandler(makeAxisStatKey2(seriesType2, COORD_SYS_TYPE_CARTESIAN_2D));
+  }
+  function registerBarGridAxisHandlers(registers) {
+    callOnlyOnce2(registers, function() {
+      function register2(seriesType2) {
+        var axisStatKey = makeAxisStatKey2(seriesType2, COORD_SYS_TYPE_CARTESIAN_2D);
+        requireAxisStatisticsForBaseBar(registers, axisStatKey, seriesType2, COORD_SYS_TYPE_CARTESIAN_2D);
+        registerAxisContainShapeHandler(axisStatKey, barGridCreateAxisContainShapeHandler(seriesType2));
+      }
+      register2("bar");
+      register2("pictorialBar");
+    });
+  }
+
   // node_modules/echarts/lib/chart/bar/BaseBarSeries.js
   var BaseBarSeriesModel = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(BaseBarSeriesModel2, _super);
       function BaseBarSeriesModel2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -31121,6 +34638,9 @@ var pptxPreview = (() => {
         }
         return [NaN, NaN];
       };
+      BaseBarSeriesModel2.prototype.__requireStartValue = function(axis) {
+        return this.getBaseAxis() !== axis;
+      };
       BaseBarSeriesModel2.type = "series.__base_bar__";
       BaseBarSeriesModel2.defaultOption = {
         // zlevel: 0,
@@ -31137,10 +34657,11 @@ var pptxPreview = (() => {
         large: false,
         largeThreshold: 400,
         progressive: 3e3,
-        progressiveChunkMode: "mod"
+        progressiveChunkMode: "mod",
+        defaultBarGap: "10%"
       };
       return BaseBarSeriesModel2;
-    }(Series_default)
+    })(Series_default)
   );
   Series_default.registerClass(BaseBarSeriesModel);
   var BaseBarSeries_default = BaseBarSeriesModel;
@@ -31148,7 +34669,7 @@ var pptxPreview = (() => {
   // node_modules/echarts/lib/chart/bar/BarSeries.js
   var BarSeriesModel = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(BarSeriesModel2, _super);
       function BarSeriesModel2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -31164,18 +34685,17 @@ var pptxPreview = (() => {
       BarSeriesModel2.prototype.getProgressive = function() {
         return this.get("large") ? this.get("progressive") : false;
       };
-      BarSeriesModel2.prototype.getProgressiveThreshold = function() {
-        var progressiveThreshold = this.get("progressiveThreshold");
-        var largeThreshold = this.get("largeThreshold");
-        if (largeThreshold > progressiveThreshold) {
-          progressiveThreshold = largeThreshold;
+      BarSeriesModel2.prototype.__preparePipelineContext = function(view, pipeline) {
+        var context = preparePipelineContext(this, view, pipeline);
+        if (context.progressiveRender) {
+          context.large = true;
         }
-        return progressiveThreshold;
+        return context;
       };
       BarSeriesModel2.prototype.brushSelector = function(dataIndex, data, selectors) {
         return selectors.rect(data.getItemLayout(dataIndex));
       };
-      BarSeriesModel2.type = "series.bar";
+      BarSeriesModel2.type = "series." + SERIES_TYPE_BAR;
       BarSeriesModel2.dependencies = ["grid", "polar"];
       BarSeriesModel2.defaultOption = inheritDefaultOption(BaseBarSeries_default.defaultOption, {
         // If clipped
@@ -31197,20 +34717,21 @@ var pptxPreview = (() => {
         },
         select: {
           itemStyle: {
-            borderColor: "#212121"
+            borderColor: tokens_default.color.primary,
+            borderWidth: 2
           }
         },
         realtimeSort: false
       });
       return BarSeriesModel2;
-    }(BaseBarSeries_default)
+    })(BaseBarSeries_default)
   );
   var BarSeries_default = BarSeriesModel;
 
   // node_modules/echarts/lib/util/shape/sausage.js
   var SausageShape = (
     /** @class */
-    /* @__PURE__ */ function() {
+    /* @__PURE__ */ (function() {
       function SausageShape2() {
         this.cx = 0;
         this.cy = 0;
@@ -31221,11 +34742,11 @@ var pptxPreview = (() => {
         this.clockwise = true;
       }
       return SausageShape2;
-    }()
+    })()
   );
   var SausagePath = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(SausagePath2, _super);
       function SausagePath2(opts) {
         var _this = _super.call(this, opts) || this;
@@ -31267,7 +34788,7 @@ var pptxPreview = (() => {
         }
       };
       return SausagePath2;
-    }(Path_default)
+    })(Path_default)
   );
   var sausage_default = SausagePath;
 
@@ -31439,32 +34960,15 @@ var pptxPreview = (() => {
   }
 
   // node_modules/echarts/lib/chart/bar/BarView.js
-  var mathMax7 = Math.max;
-  var mathMin7 = Math.min;
-  function getClipArea(coord, data) {
-    var coordSysClipArea = coord.getArea && coord.getArea();
-    if (isCoordinateSystemType(coord, "cartesian2d")) {
-      var baseAxis = coord.getBaseAxis();
-      if (baseAxis.type !== "category" || !baseAxis.onBand) {
-        var expandWidth = data.getLayout("bandWidth");
-        if (baseAxis.isHorizontal()) {
-          coordSysClipArea.x -= expandWidth;
-          coordSysClipArea.width += expandWidth * 2;
-        } else {
-          coordSysClipArea.y -= expandWidth;
-          coordSysClipArea.height += expandWidth * 2;
-        }
-      }
-    }
-    return coordSysClipArea;
-  }
+  var mathMax8 = Math.max;
+  var mathMin8 = Math.min;
   var BarView = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(BarView2, _super);
       function BarView2() {
         var _this = _super.call(this) || this;
-        _this.type = BarView2.type;
+        _this.type = SERIES_TYPE_BAR;
         _this._isFirstFrame = true;
         return _this;
       }
@@ -31517,7 +35021,7 @@ var pptxPreview = (() => {
           this._enableRealtimeSort(realtimeSortCfg, data, api);
         }
         var needsClip = seriesModel.get("clip", true) || realtimeSortCfg;
-        var coordSysClipArea = getClipArea(coord, data);
+        var coordSysClipArea = coord.getArea();
         group.removeClipPath();
         var roundCap = seriesModel.get("roundCap", true);
         var drawBackground = seriesModel.get("showBackground", true);
@@ -31529,6 +35033,9 @@ var pptxPreview = (() => {
         var isChangeOrder = payload && payload.type === "changeAxisOrder";
         function createBackground(dataIndex) {
           var bgLayout = getLayout[coord.type](data, dataIndex);
+          if (!bgLayout) {
+            return null;
+          }
           var bgEl = createBackgroundEl(coord, isHorizontalOrRadial, bgLayout);
           bgEl.useStyle(backgroundModel.getItemStyle());
           if (coord.type === "cartesian2d") {
@@ -31542,31 +35049,34 @@ var pptxPreview = (() => {
         ;
         data.diff(oldData).add(function(dataIndex) {
           var itemModel = data.getItemModel(dataIndex);
-          var layout3 = getLayout[coord.type](data, dataIndex, itemModel);
+          var layout2 = getLayout[coord.type](data, dataIndex, itemModel);
+          if (!layout2) {
+            return;
+          }
           if (drawBackground) {
             createBackground(dataIndex);
           }
-          if (!data.hasValue(dataIndex) || !isValidLayout[coord.type](layout3)) {
+          if (!data.hasValue(dataIndex) || !isValidLayout[coord.type](layout2)) {
             return;
           }
           var isClipped = false;
           if (needsClip) {
-            isClipped = clip[coord.type](coordSysClipArea, layout3);
+            isClipped = clip[coord.type](coordSysClipArea, layout2);
           }
-          var el2 = elementCreator[coord.type](seriesModel, data, dataIndex, layout3, isHorizontalOrRadial, animationModel, baseAxis.model, false, roundCap);
+          var el2 = elementCreator[coord.type](seriesModel, data, dataIndex, layout2, isHorizontalOrRadial, animationModel, baseAxis.model, false, roundCap);
           if (realtimeSortCfg) {
             el2.forceLabelAnimation = true;
           }
-          updateStyle(el2, data, dataIndex, itemModel, layout3, seriesModel, isHorizontalOrRadial, coord.type === "polar");
+          updateStyle(el2, data, dataIndex, itemModel, layout2, seriesModel, isHorizontalOrRadial, coord.type === "polar");
           if (isInitSort) {
             el2.attr({
-              shape: layout3
+              shape: layout2
             });
           } else if (realtimeSortCfg) {
-            updateRealtimeAnimation(realtimeSortCfg, animationModel, el2, layout3, dataIndex, isHorizontalOrRadial, false, false);
+            updateRealtimeAnimation(realtimeSortCfg, animationModel, el2, layout2, dataIndex, isHorizontalOrRadial, false, false);
           } else {
             initProps(el2, {
-              shape: layout3
+              shape: layout2
             }, seriesModel, dataIndex);
           }
           data.setItemGraphicEl(dataIndex, el2);
@@ -31574,7 +35084,10 @@ var pptxPreview = (() => {
           el2.ignore = isClipped;
         }).update(function(newIndex, oldIndex) {
           var itemModel = data.getItemModel(newIndex);
-          var layout3 = getLayout[coord.type](data, newIndex, itemModel);
+          var layout2 = getLayout[coord.type](data, newIndex, itemModel);
+          if (!layout2) {
+            return;
+          }
           if (drawBackground) {
             var bgEl = void 0;
             if (oldBgEls.length === 0) {
@@ -31596,19 +35109,24 @@ var pptxPreview = (() => {
             }, animationModel, newIndex);
           }
           var el2 = oldData.getItemGraphicEl(oldIndex);
-          if (!data.hasValue(newIndex) || !isValidLayout[coord.type](layout3)) {
+          if (!data.hasValue(newIndex) || !isValidLayout[coord.type](layout2)) {
             group.remove(el2);
             return;
           }
           var isClipped = false;
           if (needsClip) {
-            isClipped = clip[coord.type](coordSysClipArea, layout3);
+            isClipped = clip[coord.type](coordSysClipArea, layout2);
             if (isClipped) {
               group.remove(el2);
             }
           }
+          var roundCapChanged = el2 && (el2.type === "sector" && roundCap || el2.type === "sausage" && !roundCap);
+          if (roundCapChanged) {
+            el2 && removeElementWithFadeOut(el2, seriesModel, oldIndex);
+            el2 = null;
+          }
           if (!el2) {
-            el2 = elementCreator[coord.type](seriesModel, data, newIndex, layout3, isHorizontalOrRadial, animationModel, baseAxis.model, !!el2, roundCap);
+            el2 = elementCreator[coord.type](seriesModel, data, newIndex, layout2, isHorizontalOrRadial, animationModel, baseAxis.model, true, roundCap);
           } else {
             saveOldStyle(el2);
           }
@@ -31624,17 +35142,17 @@ var pptxPreview = (() => {
               }
             }
           } else {
-            updateStyle(el2, data, newIndex, itemModel, layout3, seriesModel, isHorizontalOrRadial, coord.type === "polar");
+            updateStyle(el2, data, newIndex, itemModel, layout2, seriesModel, isHorizontalOrRadial, coord.type === "polar");
           }
           if (isInitSort) {
             el2.attr({
-              shape: layout3
+              shape: layout2
             });
           } else if (realtimeSortCfg) {
-            updateRealtimeAnimation(realtimeSortCfg, animationModel, el2, layout3, newIndex, isHorizontalOrRadial, true, isChangeOrder);
+            updateRealtimeAnimation(realtimeSortCfg, animationModel, el2, layout2, newIndex, isHorizontalOrRadial, true, isChangeOrder);
           } else {
             updateProps(el2, {
-              shape: layout3
+              shape: layout2
             }, seriesModel, newIndex, null);
           }
           data.setItemGraphicEl(newIndex, el2);
@@ -31715,11 +35233,11 @@ var pptxPreview = (() => {
         };
       };
       BarView2.prototype._isOrderChangedWithinSameData = function(data, orderMapping, baseAxis) {
-        var scale4 = baseAxis.scale;
+        var scale3 = baseAxis.scale;
         var ordinalDataDim = data.mapDimension(baseAxis.dim);
         var lastValue = Number.MAX_VALUE;
-        for (var tickNum = 0, len2 = scale4.getOrdinalMeta().categories.length; tickNum < len2; ++tickNum) {
-          var rawIdx = data.rawIndexOf(ordinalDataDim, scale4.getRawOrdinalNumber(tickNum));
+        for (var tickNum = 0, len2 = scale3.getOrdinalMeta().categories.length; tickNum < len2; ++tickNum) {
+          var rawIdx = data.rawIndexOf(ordinalDataDim, scale3.getRawOrdinalNumber(tickNum));
           var value = rawIdx < 0 ? Number.MIN_VALUE : orderMapping(data.indexOfRawIndex(rawIdx));
           if (value > lastValue) {
             return true;
@@ -31729,12 +35247,12 @@ var pptxPreview = (() => {
         return false;
       };
       BarView2.prototype._isOrderDifferentInView = function(orderInfo, baseAxis) {
-        var scale4 = baseAxis.scale;
-        var extent3 = scale4.getExtent();
-        var tickNum = Math.max(0, extent3[0]);
-        var tickMax = Math.min(extent3[1], scale4.getOrdinalMeta().categories.length - 1);
+        var scale3 = baseAxis.scale;
+        var extent = scale3.getExtent();
+        var tickNum = Math.max(0, extent[0]);
+        var tickMax = Math.min(extent[1], scale3.getOrdinalMeta().categories.length - 1);
         for (; tickNum <= tickMax; ++tickNum) {
-          if (orderInfo.ordinalNumbers[tickNum] !== scale4.getRawOrdinalNumber(tickNum)) {
+          if (orderInfo.ordinalNumbers[tickNum] !== scale3.getRawOrdinalNumber(tickNum)) {
             return true;
           }
         }
@@ -31799,68 +35317,68 @@ var pptxPreview = (() => {
         this.group.remove(this._backgroundGroup);
         this._backgroundGroup = null;
       };
-      BarView2.type = "bar";
+      BarView2.type = SERIES_TYPE_BAR;
       return BarView2;
-    }(Chart_default)
+    })(Chart_default)
   );
   var clip = {
-    cartesian2d: function(coordSysBoundingRect, layout3) {
-      var signWidth = layout3.width < 0 ? -1 : 1;
-      var signHeight = layout3.height < 0 ? -1 : 1;
+    cartesian2d: function(coordSysClipArea, layout2) {
+      var signWidth = layout2.width < 0 ? -1 : 1;
+      var signHeight = layout2.height < 0 ? -1 : 1;
       if (signWidth < 0) {
-        layout3.x += layout3.width;
-        layout3.width = -layout3.width;
+        layout2.x += layout2.width;
+        layout2.width = -layout2.width;
       }
       if (signHeight < 0) {
-        layout3.y += layout3.height;
-        layout3.height = -layout3.height;
+        layout2.y += layout2.height;
+        layout2.height = -layout2.height;
       }
-      var coordSysX2 = coordSysBoundingRect.x + coordSysBoundingRect.width;
-      var coordSysY2 = coordSysBoundingRect.y + coordSysBoundingRect.height;
-      var x = mathMax7(layout3.x, coordSysBoundingRect.x);
-      var x2 = mathMin7(layout3.x + layout3.width, coordSysX2);
-      var y = mathMax7(layout3.y, coordSysBoundingRect.y);
-      var y2 = mathMin7(layout3.y + layout3.height, coordSysY2);
+      var coordSysX2 = coordSysClipArea.x + coordSysClipArea.width;
+      var coordSysY2 = coordSysClipArea.y + coordSysClipArea.height;
+      var x = mathMax8(layout2.x, coordSysClipArea.x);
+      var x2 = mathMin8(layout2.x + layout2.width, coordSysX2);
+      var y = mathMax8(layout2.y, coordSysClipArea.y);
+      var y2 = mathMin8(layout2.y + layout2.height, coordSysY2);
       var xClipped = x2 < x;
       var yClipped = y2 < y;
-      layout3.x = xClipped && x > coordSysX2 ? x2 : x;
-      layout3.y = yClipped && y > coordSysY2 ? y2 : y;
-      layout3.width = xClipped ? 0 : x2 - x;
-      layout3.height = yClipped ? 0 : y2 - y;
+      layout2.x = xClipped && x > coordSysX2 ? x2 : x;
+      layout2.y = yClipped && y > coordSysY2 ? y2 : y;
+      layout2.width = xClipped ? 0 : x2 - x;
+      layout2.height = yClipped ? 0 : y2 - y;
       if (signWidth < 0) {
-        layout3.x += layout3.width;
-        layout3.width = -layout3.width;
+        layout2.x += layout2.width;
+        layout2.width = -layout2.width;
       }
       if (signHeight < 0) {
-        layout3.y += layout3.height;
-        layout3.height = -layout3.height;
+        layout2.y += layout2.height;
+        layout2.height = -layout2.height;
       }
       return xClipped || yClipped;
     },
-    polar: function(coordSysClipArea, layout3) {
-      var signR = layout3.r0 <= layout3.r ? 1 : -1;
+    polar: function(coordSysClipArea, layout2) {
+      var signR = layout2.r0 <= layout2.r ? 1 : -1;
       if (signR < 0) {
-        var tmp = layout3.r;
-        layout3.r = layout3.r0;
-        layout3.r0 = tmp;
+        var tmp = layout2.r;
+        layout2.r = layout2.r0;
+        layout2.r0 = tmp;
       }
-      var r = mathMin7(layout3.r, coordSysClipArea.r);
-      var r0 = mathMax7(layout3.r0, coordSysClipArea.r0);
-      layout3.r = r;
-      layout3.r0 = r0;
+      var r = mathMin8(layout2.r, coordSysClipArea.r);
+      var r0 = mathMax8(layout2.r0, coordSysClipArea.r0);
+      layout2.r = r;
+      layout2.r0 = r0;
       var clipped = r - r0 < 0;
       if (signR < 0) {
-        var tmp = layout3.r;
-        layout3.r = layout3.r0;
-        layout3.r0 = tmp;
+        var tmp = layout2.r;
+        layout2.r = layout2.r0;
+        layout2.r0 = tmp;
       }
       return clipped;
     }
   };
   var elementCreator = {
-    cartesian2d: function(seriesModel, data, newIndex, layout3, isHorizontal, animationModel, axisModel, isUpdate, roundCap) {
+    cartesian2d: function(seriesModel, data, newIndex, layout2, isHorizontal, animationModel, axisModel, isUpdate, roundCap) {
       var rect = new Rect_default({
-        shape: extend({}, layout3),
+        shape: extend({}, layout2),
         z2: 1
       });
       rect.__dataIndex = newIndex;
@@ -31872,10 +35390,10 @@ var pptxPreview = (() => {
       }
       return rect;
     },
-    polar: function(seriesModel, data, newIndex, layout3, isRadial, animationModel, axisModel, isUpdate, roundCap) {
+    polar: function(seriesModel, data, newIndex, layout2, isRadial, animationModel, axisModel, isUpdate, roundCap) {
       var ShapeClass = !isRadial && roundCap ? sausage_default : Sector_default;
       var sector = new ShapeClass({
-        shape: layout3,
+        shape: layout2,
         z2: 1
       });
       sector.name = "item";
@@ -31887,8 +35405,8 @@ var pptxPreview = (() => {
         var sectorShape = sector.shape;
         var animateProperty = isRadial ? "r" : "endAngle";
         var animateTarget = {};
-        sectorShape[animateProperty] = isRadial ? layout3.r0 : layout3.startAngle;
-        animateTarget[animateProperty] = layout3[animateProperty];
+        sectorShape[animateProperty] = isRadial ? layout2.r0 : layout2.startAngle;
+        animateTarget[animateProperty] = layout2[animateProperty];
         (isUpdate ? updateProps : initProps)(sector, {
           shape: animateTarget
           // __value: typeof dataValue === 'string' ? parseInt(dataValue, 10) : dataValue
@@ -31917,26 +35435,26 @@ var pptxPreview = (() => {
       };
     }
   }
-  function updateRealtimeAnimation(realtimeSortCfg, seriesAnimationModel, el2, layout3, newIndex, isHorizontal, isUpdate, isChangeOrder) {
+  function updateRealtimeAnimation(realtimeSortCfg, seriesAnimationModel, el2, layout2, newIndex, isHorizontal, isUpdate, isChangeOrder) {
     var seriesTarget;
     var axisTarget;
     if (isHorizontal) {
       axisTarget = {
-        x: layout3.x,
-        width: layout3.width
+        x: layout2.x,
+        width: layout2.width
       };
       seriesTarget = {
-        y: layout3.y,
-        height: layout3.height
+        y: layout2.y,
+        height: layout2.height
       };
     } else {
       axisTarget = {
-        y: layout3.y,
-        height: layout3.height
+        y: layout2.y,
+        height: layout2.height
       };
       seriesTarget = {
-        x: layout3.x,
-        width: layout3.width
+        x: layout2.x,
+        width: layout2.width
       };
     }
     if (!isChangeOrder) {
@@ -31960,46 +35478,49 @@ var pptxPreview = (() => {
   var rectPropties = ["x", "y", "width", "height"];
   var polarPropties = ["cx", "cy", "r", "startAngle", "endAngle"];
   var isValidLayout = {
-    cartesian2d: function(layout3) {
-      return !checkPropertiesNotValid(layout3, rectPropties);
+    cartesian2d: function(layout2) {
+      return !checkPropertiesNotValid(layout2, rectPropties);
     },
-    polar: function(layout3) {
-      return !checkPropertiesNotValid(layout3, polarPropties);
+    polar: function(layout2) {
+      return !checkPropertiesNotValid(layout2, polarPropties);
     }
   };
   var getLayout = {
     // itemModel is only used to get borderWidth, which is not needed
     // when calculating bar background layout.
     cartesian2d: function(data, dataIndex, itemModel) {
-      var layout3 = data.getItemLayout(dataIndex);
-      var fixedLineWidth = itemModel ? getLineWidth(itemModel, layout3) : 0;
-      var signX = layout3.width > 0 ? 1 : -1;
-      var signY = layout3.height > 0 ? 1 : -1;
+      var layout2 = data.getItemLayout(dataIndex);
+      if (!layout2) {
+        return null;
+      }
+      var fixedLineWidth = itemModel ? getLineWidth(itemModel, layout2) : 0;
+      var signX = layout2.width > 0 ? 1 : -1;
+      var signY = layout2.height > 0 ? 1 : -1;
       return {
-        x: layout3.x + signX * fixedLineWidth / 2,
-        y: layout3.y + signY * fixedLineWidth / 2,
-        width: layout3.width - signX * fixedLineWidth,
-        height: layout3.height - signY * fixedLineWidth
+        x: layout2.x + signX * fixedLineWidth / 2,
+        y: layout2.y + signY * fixedLineWidth / 2,
+        width: layout2.width - signX * fixedLineWidth,
+        height: layout2.height - signY * fixedLineWidth
       };
     },
     polar: function(data, dataIndex, itemModel) {
-      var layout3 = data.getItemLayout(dataIndex);
+      var layout2 = data.getItemLayout(dataIndex);
       return {
-        cx: layout3.cx,
-        cy: layout3.cy,
-        r0: layout3.r0,
-        r: layout3.r,
-        startAngle: layout3.startAngle,
-        endAngle: layout3.endAngle,
-        clockwise: layout3.clockwise
+        cx: layout2.cx,
+        cy: layout2.cy,
+        r0: layout2.r0,
+        r: layout2.r,
+        startAngle: layout2.startAngle,
+        endAngle: layout2.endAngle,
+        clockwise: layout2.clockwise
       };
     }
   };
-  function isZeroOnPolar(layout3) {
-    return layout3.startAngle != null && layout3.endAngle != null && layout3.startAngle === layout3.endAngle;
+  function isZeroOnPolar(layout2) {
+    return layout2.startAngle != null && layout2.endAngle != null && layout2.startAngle === layout2.endAngle;
   }
   function createPolarPositionMapping(isRadial) {
-    return /* @__PURE__ */ function(isRadial2) {
+    return /* @__PURE__ */ (function(isRadial2) {
       var arcOrAngle = isRadial2 ? "Arc" : "Angle";
       return function(position) {
         switch (position) {
@@ -32012,9 +35533,9 @@ var pptxPreview = (() => {
             return position;
         }
       };
-    }(isRadial);
+    })(isRadial);
   }
-  function updateStyle(el2, data, dataIndex, itemModel, layout3, seriesModel, isHorizontalOrRadial, isPolar) {
+  function updateStyle(el2, data, dataIndex, itemModel, layout2, seriesModel, isHorizontalOrRadial, isPolar) {
     var style = data.getItemVisual(dataIndex, "style");
     if (!isPolar) {
       var borderRadius = itemModel.get(["itemStyle", "borderRadius"]) || 0;
@@ -32028,7 +35549,7 @@ var pptxPreview = (() => {
     el2.useStyle(style);
     var cursorStyle = itemModel.getShallow("cursor");
     cursorStyle && el2.attr("cursor", cursorStyle);
-    var labelPositionOutside = isPolar ? isHorizontalOrRadial ? layout3.r >= layout3.r0 ? "endArc" : "startArc" : layout3.endAngle >= layout3.startAngle ? "endAngle" : "startAngle" : isHorizontalOrRadial ? layout3.height >= 0 ? "bottom" : "top" : layout3.width >= 0 ? "right" : "left";
+    var labelPositionOutside = isPolar ? isHorizontalOrRadial ? layout2.r >= layout2.r0 ? "endArc" : "startArc" : layout2.endAngle >= layout2.startAngle ? "endAngle" : "startAngle" : isHorizontalOrRadial ? getLabelPositionForHorizontal(layout2, seriesModel.coordinateSystem) : getLabelPositionForVertical(layout2, seriesModel.coordinateSystem);
     var labelStatesModels = getLabelStatesModels(itemModel);
     setLabelStyle(el2, labelStatesModels, {
       labelFetcher: seriesModel,
@@ -32050,7 +35571,7 @@ var pptxPreview = (() => {
     var emphasisModel = itemModel.getModel(["emphasis"]);
     toggleHoverEmphasis(el2, emphasisModel.get("focus"), emphasisModel.get("blurScope"), emphasisModel.get("disabled"));
     setStatesStylesFromModel(el2, itemModel);
-    if (isZeroOnPolar(layout3)) {
+    if (isZeroOnPolar(layout2)) {
       el2.style.fill = "none";
       el2.style.stroke = "none";
       each(el2.states, function(state) {
@@ -32072,15 +35593,15 @@ var pptxPreview = (() => {
   }
   var LagePathShape = (
     /** @class */
-    /* @__PURE__ */ function() {
+    /* @__PURE__ */ (function() {
       function LagePathShape2() {
       }
       return LagePathShape2;
-    }()
+    })()
   );
   var LargePath = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(LargePath2, _super);
       function LargePath2(opts) {
         var _this = _super.call(this, opts) || this;
@@ -32106,7 +35627,7 @@ var pptxPreview = (() => {
         }
       };
       return LargePath2;
-    }(Path_default)
+    })(Path_default)
   );
   function createLarge(seriesModel, group, progressiveEls, incremental) {
     var data = seriesModel.getData();
@@ -32115,12 +35636,13 @@ var pptxPreview = (() => {
     var barWidth = data.getLayout("size");
     var backgroundModel = seriesModel.getModel("backgroundStyle");
     var bgPoints = data.getLayout("largeBackgroundPoints");
+    var incrementalId = incremental ? getIncrementalId(seriesModel) : 0;
     if (bgPoints) {
       var bgEl = new LargePath({
         shape: {
           points: bgPoints
         },
-        incremental: !!incremental,
+        incremental: incrementalId,
         silent: true,
         z2: 0
       });
@@ -32135,7 +35657,7 @@ var pptxPreview = (() => {
       shape: {
         points: data.getLayout("largePoints")
       },
-      incremental: !!incremental,
+      incremental: incrementalId,
       ignoreCoarsePointer: true,
       z2: 1
     });
@@ -32181,9 +35703,9 @@ var pptxPreview = (() => {
     }
     return -1;
   }
-  function createBackgroundShape(isHorizontalOrRadial, layout3, coord) {
+  function createBackgroundShape(isHorizontalOrRadial, layout2, coord) {
     if (isCoordinateSystemType(coord, "cartesian2d")) {
-      var rectShape = layout3;
+      var rectShape = layout2;
       var coordLayout = coord.getArea();
       return {
         x: isHorizontalOrRadial ? rectShape.x : coordLayout.x,
@@ -32193,7 +35715,7 @@ var pptxPreview = (() => {
       };
     } else {
       var coordLayout = coord.getArea();
-      var sectorShape = layout3;
+      var sectorShape = layout2;
       return {
         cx: coordLayout.cx,
         cy: coordLayout.cy,
@@ -32204,13 +35726,27 @@ var pptxPreview = (() => {
       };
     }
   }
-  function createBackgroundEl(coord, isHorizontalOrRadial, layout3) {
+  function createBackgroundEl(coord, isHorizontalOrRadial, layout2) {
     var ElementClz = coord.type === "polar" ? Sector_default : Rect_default;
     return new ElementClz({
-      shape: createBackgroundShape(isHorizontalOrRadial, layout3, coord),
+      shape: createBackgroundShape(isHorizontalOrRadial, layout2, coord),
       silent: true,
       z2: 0
     });
+  }
+  function getLabelPositionForHorizontal(layout2, coordSys) {
+    if (layout2.height === 0) {
+      var valueAxis2 = coordSys.getOtherAxis(coordSys.getBaseAxis());
+      return valueAxis2.inverse ? "bottom" : "top";
+    }
+    return layout2.height > 0 ? "bottom" : "top";
+  }
+  function getLabelPositionForVertical(layout2, coordSys) {
+    if (layout2.width === 0) {
+      var valueAxis2 = coordSys.getOtherAxis(coordSys.getBaseAxis());
+      return valueAxis2.inverse ? "left" : "right";
+    }
+    return layout2.width >= 0 ? "right" : "left";
   }
   var BarView_default = BarView;
 
@@ -32218,9 +35754,9 @@ var pptxPreview = (() => {
   function install2(registers) {
     registers.registerChartView(BarView_default);
     registers.registerSeriesModel(BarSeries_default);
-    registers.registerLayout(registers.PRIORITY.VISUAL.LAYOUT, curry(layout, "bar"));
-    registers.registerLayout(registers.PRIORITY.VISUAL.PROGRESSIVE_LAYOUT, createProgressiveLayout("bar"));
-    registers.registerProcessor(registers.PRIORITY.PROCESSOR.STATISTIC, dataSample("bar"));
+    registers.registerLayout(registers.PRIORITY.VISUAL.LAYOUT, createCrossSeriesLayoutHandler(SERIES_TYPE_BAR));
+    registers.registerLayout(registers.PRIORITY.VISUAL.PROGRESSIVE_LAYOUT, createProgressiveLayout(SERIES_TYPE_BAR));
+    registers.registerProcessor(registers.PRIORITY.PROCESSOR.STATISTIC, dataSample(SERIES_TYPE_BAR));
     registers.registerAction({
       type: "changeAxisOrder",
       event: "changeAxisOrder",
@@ -32236,184 +35772,8 @@ var pptxPreview = (() => {
         }
       });
     });
+    registerBarGridAxisHandlers(registers);
   }
-
-  // node_modules/echarts/lib/chart/pie/pieLayout.js
-  var PI28 = Math.PI * 2;
-  var RADIAN = Math.PI / 180;
-  function getViewRect(seriesModel, api) {
-    return getLayoutRect(seriesModel.getBoxLayoutParams(), {
-      width: api.getWidth(),
-      height: api.getHeight()
-    });
-  }
-  function getBasicPieLayout(seriesModel, api) {
-    var viewRect2 = getViewRect(seriesModel, api);
-    var center2 = seriesModel.get("center");
-    var radius = seriesModel.get("radius");
-    if (!isArray(radius)) {
-      radius = [0, radius];
-    }
-    var width = parsePercent2(viewRect2.width, api.getWidth());
-    var height = parsePercent2(viewRect2.height, api.getHeight());
-    var size = Math.min(width, height);
-    var r0 = parsePercent2(radius[0], size / 2);
-    var r = parsePercent2(radius[1], size / 2);
-    var cx;
-    var cy;
-    var coordSys = seriesModel.coordinateSystem;
-    if (coordSys) {
-      var point = coordSys.dataToPoint(center2);
-      cx = point[0] || 0;
-      cy = point[1] || 0;
-    } else {
-      if (!isArray(center2)) {
-        center2 = [center2, center2];
-      }
-      cx = parsePercent2(center2[0], width) + viewRect2.x;
-      cy = parsePercent2(center2[1], height) + viewRect2.y;
-    }
-    return {
-      cx,
-      cy,
-      r0,
-      r
-    };
-  }
-  function pieLayout(seriesType2, ecModel, api) {
-    ecModel.eachSeriesByType(seriesType2, function(seriesModel) {
-      var data = seriesModel.getData();
-      var valueDim = data.mapDimension("value");
-      var viewRect2 = getViewRect(seriesModel, api);
-      var _a2 = getBasicPieLayout(seriesModel, api), cx = _a2.cx, cy = _a2.cy, r = _a2.r, r0 = _a2.r0;
-      var startAngle = -seriesModel.get("startAngle") * RADIAN;
-      var endAngle = seriesModel.get("endAngle");
-      var padAngle = seriesModel.get("padAngle") * RADIAN;
-      endAngle = endAngle === "auto" ? startAngle - PI28 : -endAngle * RADIAN;
-      var minAngle = seriesModel.get("minAngle") * RADIAN;
-      var minAndPadAngle = minAngle + padAngle;
-      var validDataCount = 0;
-      data.each(valueDim, function(value) {
-        !isNaN(value) && validDataCount++;
-      });
-      var sum = data.getSum(valueDim);
-      var unitRadian = Math.PI / (sum || validDataCount) * 2;
-      var clockwise = seriesModel.get("clockwise");
-      var roseType = seriesModel.get("roseType");
-      var stillShowZeroSum = seriesModel.get("stillShowZeroSum");
-      var extent3 = data.getDataExtent(valueDim);
-      extent3[0] = 0;
-      var dir3 = clockwise ? 1 : -1;
-      var angles = [startAngle, endAngle];
-      var halfPadAngle = dir3 * padAngle / 2;
-      normalizeArcAngles(angles, !clockwise);
-      startAngle = angles[0], endAngle = angles[1];
-      var layoutData = getSeriesLayoutData(seriesModel);
-      layoutData.startAngle = startAngle;
-      layoutData.endAngle = endAngle;
-      layoutData.clockwise = clockwise;
-      var angleRange = Math.abs(endAngle - startAngle);
-      var restAngle = angleRange;
-      var valueSumLargerThanMinAngle = 0;
-      var currentAngle = startAngle;
-      data.setLayout({
-        viewRect: viewRect2,
-        r
-      });
-      data.each(valueDim, function(value, idx) {
-        var angle;
-        if (isNaN(value)) {
-          data.setItemLayout(idx, {
-            angle: NaN,
-            startAngle: NaN,
-            endAngle: NaN,
-            clockwise,
-            cx,
-            cy,
-            r0,
-            r: roseType ? NaN : r
-          });
-          return;
-        }
-        if (roseType !== "area") {
-          angle = sum === 0 && stillShowZeroSum ? unitRadian : value * unitRadian;
-        } else {
-          angle = angleRange / validDataCount;
-        }
-        if (angle < minAndPadAngle) {
-          angle = minAndPadAngle;
-          restAngle -= minAndPadAngle;
-        } else {
-          valueSumLargerThanMinAngle += value;
-        }
-        var endAngle2 = currentAngle + dir3 * angle;
-        var actualStartAngle = 0;
-        var actualEndAngle = 0;
-        if (padAngle > angle) {
-          actualStartAngle = currentAngle + dir3 * angle / 2;
-          actualEndAngle = actualStartAngle;
-        } else {
-          actualStartAngle = currentAngle + halfPadAngle;
-          actualEndAngle = endAngle2 - halfPadAngle;
-        }
-        data.setItemLayout(idx, {
-          angle,
-          startAngle: actualStartAngle,
-          endAngle: actualEndAngle,
-          clockwise,
-          cx,
-          cy,
-          r0,
-          r: roseType ? linearMap(value, extent3, [r0, r]) : r
-        });
-        currentAngle = endAngle2;
-      });
-      if (restAngle < PI28 && validDataCount) {
-        if (restAngle <= 1e-3) {
-          var angle_1 = angleRange / validDataCount;
-          data.each(valueDim, function(value, idx) {
-            if (!isNaN(value)) {
-              var layout_1 = data.getItemLayout(idx);
-              layout_1.angle = angle_1;
-              var actualStartAngle = 0;
-              var actualEndAngle = 0;
-              if (angle_1 < padAngle) {
-                actualStartAngle = startAngle + dir3 * (idx + 1 / 2) * angle_1;
-                actualEndAngle = actualStartAngle;
-              } else {
-                actualStartAngle = startAngle + dir3 * idx * angle_1 + halfPadAngle;
-                actualEndAngle = startAngle + dir3 * (idx + 1) * angle_1 - halfPadAngle;
-              }
-              layout_1.startAngle = actualStartAngle;
-              layout_1.endAngle = actualEndAngle;
-            }
-          });
-        } else {
-          unitRadian = restAngle / valueSumLargerThanMinAngle;
-          currentAngle = startAngle;
-          data.each(valueDim, function(value, idx) {
-            if (!isNaN(value)) {
-              var layout_2 = data.getItemLayout(idx);
-              var angle = layout_2.angle === minAndPadAngle ? minAndPadAngle : value * unitRadian;
-              var actualStartAngle = 0;
-              var actualEndAngle = 0;
-              if (angle < padAngle) {
-                actualStartAngle = currentAngle + dir3 * angle / 2;
-                actualEndAngle = actualStartAngle;
-              } else {
-                actualStartAngle = currentAngle + halfPadAngle;
-                actualEndAngle = currentAngle + dir3 * angle - halfPadAngle;
-              }
-              layout_2.startAngle = actualStartAngle;
-              layout_2.endAngle = actualEndAngle;
-              currentAngle += dir3 * angle;
-            }
-          });
-        }
-      }
-    });
-  }
-  var getSeriesLayoutData = makeInner();
 
   // node_modules/echarts/lib/processor/dataFilter.js
   function dataFilter(seriesType2) {
@@ -32440,8 +35800,213 @@ var pptxPreview = (() => {
     };
   }
 
+  // node_modules/echarts/lib/chart/helper/createSeriesDataSimply.js
+  function createSeriesDataSimply(seriesModel, opt, nameList) {
+    opt = isArray(opt) && {
+      coordDimensions: opt
+    } || extend({
+      encodeDefine: seriesModel.getEncode()
+    }, opt);
+    var source = seriesModel.getSource();
+    var dimensions = prepareSeriesDataSchema(source, opt).dimensions;
+    var list = new SeriesData_default(dimensions, seriesModel);
+    list.initData(source, nameList);
+    return list;
+  }
+
+  // node_modules/echarts/lib/visual/LegendVisualProvider.js
+  var LegendVisualProvider = (
+    /** @class */
+    (function() {
+      function LegendVisualProvider2(getDataWithEncodedVisual, getRawData2) {
+        this._getDataWithEncodedVisual = getDataWithEncodedVisual;
+        this._getRawData = getRawData2;
+      }
+      LegendVisualProvider2.prototype.getAllNames = function() {
+        var rawData = this._getRawData();
+        return rawData.mapArray(rawData.getName);
+      };
+      LegendVisualProvider2.prototype.containName = function(name) {
+        var rawData = this._getRawData();
+        return rawData.indexOfName(name) >= 0;
+      };
+      LegendVisualProvider2.prototype.indexOfName = function(name) {
+        var dataWithEncodedVisual = this._getDataWithEncodedVisual();
+        return dataWithEncodedVisual.indexOfName(name);
+      };
+      LegendVisualProvider2.prototype.getItemVisual = function(dataIndex, key2) {
+        var dataWithEncodedVisual = this._getDataWithEncodedVisual();
+        return dataWithEncodedVisual.getItemVisual(dataIndex, key2);
+      };
+      return LegendVisualProvider2;
+    })()
+  );
+  var LegendVisualProvider_default = LegendVisualProvider;
+
+  // node_modules/echarts/lib/chart/pie/PieSeries.js
+  var SERIES_TYPE_PIE = "pie";
+  var innerData = makeInner();
+  var PieSeriesModel = (
+    /** @class */
+    (function(_super) {
+      __extends(PieSeriesModel2, _super);
+      function PieSeriesModel2() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.type = PieSeriesModel2.type;
+        return _this;
+      }
+      PieSeriesModel2.prototype.init = function(option) {
+        _super.prototype.init.apply(this, arguments);
+        this.legendVisualProvider = new LegendVisualProvider_default(bind(this.getData, this), bind(this.getRawData, this));
+        this._defaultLabelLine(option);
+      };
+      PieSeriesModel2.prototype.mergeOption = function() {
+        _super.prototype.mergeOption.apply(this, arguments);
+      };
+      PieSeriesModel2.prototype.getInitialData = function() {
+        return createSeriesDataSimply(this, {
+          coordDimensions: ["value"],
+          encodeDefaulter: curry(makeSeriesEncodeForNameBased, this)
+        });
+      };
+      PieSeriesModel2.prototype.getDataParams = function(dataIndex) {
+        var data = this.getData();
+        var dataInner = innerData(data);
+        var seats = dataInner.seats;
+        if (!seats) {
+          var valueList_1 = [];
+          data.each(data.mapDimension("value"), function(value) {
+            valueList_1.push(value);
+          });
+          seats = dataInner.seats = getPercentSeats(valueList_1, data.hostModel.get("percentPrecision"));
+        }
+        var params = _super.prototype.getDataParams.call(this, dataIndex);
+        params.percent = seats[dataIndex] || 0;
+        params.$vars.push("percent");
+        return params;
+      };
+      PieSeriesModel2.prototype._defaultLabelLine = function(option) {
+        defaultEmphasis(option, "labelLine", ["show"]);
+        var labelLineNormalOpt = option.labelLine;
+        var labelLineEmphasisOpt = option.emphasis.labelLine;
+        labelLineNormalOpt.show = labelLineNormalOpt.show && option.label.show;
+        labelLineEmphasisOpt.show = labelLineEmphasisOpt.show && option.emphasis.label.show;
+      };
+      PieSeriesModel2.type = "series." + SERIES_TYPE_PIE;
+      PieSeriesModel2.defaultOption = {
+        // zlevel: 0,
+        z: 2,
+        legendHoverLink: true,
+        colorBy: "data",
+        // 默认全局居中
+        center: ["50%", "50%"],
+        radius: [0, "50%"],
+        // 默认顺时针
+        clockwise: true,
+        startAngle: 90,
+        endAngle: "auto",
+        padAngle: 0,
+        // 最小角度改为0
+        minAngle: 0,
+        // If the angle of a sector less than `minShowLabelAngle`,
+        // the label will not be displayed.
+        minShowLabelAngle: 0,
+        // 选中时扇区偏移量
+        selectedOffset: 10,
+        // 选择模式，默认关闭，可选single，multiple
+        // selectedMode: false,
+        // 南丁格尔玫瑰图模式，'radius'（半径） | 'area'（面积）
+        // roseType: null,
+        percentPrecision: 2,
+        // If still show when all data zero.
+        stillShowZeroSum: true,
+        // cursor: null,
+        coordinateSystemUsage: "box",
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: null,
+        height: null,
+        label: {
+          // color: 'inherit',
+          // If rotate around circle
+          rotate: 0,
+          show: true,
+          overflow: "truncate",
+          // 'outer', 'inside', 'center'
+          position: "outer",
+          // 'none', 'labelLine', 'edge'. Works only when position is 'outer'
+          alignTo: "none",
+          // Closest distance between label and chart edge.
+          // Works only position is 'outer' and alignTo is 'edge'.
+          edgeDistance: "25%",
+          // Works only position is 'outer' and alignTo is not 'edge'.
+          // The default `bleedMargin` is auto determined according to view rect size.
+          // bleedMargin: 10,
+          // Distance between text and label line.
+          distanceToLabelLine: 5
+          // formatter: 标签文本格式器，同 tooltip.formatter，不支持异步回调
+          // 默认使用全局文本样式，详见 textStyle
+          // distance: 当position为inner时有效，为label位置到圆心的距离与圆半径(环状图为内外半径和)的比例系数
+        },
+        // Enabled when label.normal.position is 'outer'
+        labelLine: {
+          show: true,
+          // 引导线两段中的第一段长度
+          length: 15,
+          // 引导线两段中的第二段长度
+          length2: 30,
+          smooth: false,
+          minTurnAngle: 90,
+          maxSurfaceAngle: 90,
+          lineStyle: {
+            // color: 各异,
+            width: 1,
+            type: "solid"
+          }
+        },
+        itemStyle: {
+          borderWidth: 1,
+          borderJoin: "round"
+        },
+        showEmptyCircle: true,
+        emptyCircleStyle: {
+          color: "lightgray",
+          opacity: 1
+        },
+        labelLayout: {
+          // Hide the overlapped label.
+          hideOverlap: true
+        },
+        emphasis: {
+          scale: true,
+          scaleSize: 5
+        },
+        // If use strategy to avoid label overlapping
+        avoidLabelOverlap: true,
+        // Animation type. Valid values: expansion, scale
+        animationType: "expansion",
+        animationDuration: 1e3,
+        // Animation type when update. Valid values: transition, expansion
+        animationTypeUpdate: "transition",
+        animationEasingUpdate: "cubicInOut",
+        animationDurationUpdate: 500,
+        animationEasing: "cubicInOut"
+      };
+      return PieSeriesModel2;
+    })(Series_default)
+  );
+  registerLayOutOnCoordSysUsage({
+    fullType: PieSeriesModel.type,
+    getCoord2: function(model) {
+      return model.getShallow("center");
+    }
+  });
+  var PieSeries_default = PieSeriesModel;
+
   // node_modules/echarts/lib/chart/pie/labelLayout.js
-  var RADIAN2 = Math.PI / 180;
+  var RADIAN = Math.PI / 180;
   function adjustSingleSide(list, cx, cy, r, dir3, viewWidth, viewHeight, viewLeft, viewTop, farthestX) {
     if (list.length < 2) {
       return;
@@ -32499,7 +36064,7 @@ var pptxPreview = (() => {
         list[i].label.x = farthestX;
       }
     }
-    if (shiftLayoutOnY(list, viewTop, viewTop + viewHeight)) {
+    if (shiftLayoutOnXY(list, 1, viewTop, viewTop + viewHeight)) {
       recalculateX(list);
     }
   }
@@ -32522,61 +36087,61 @@ var pptxPreview = (() => {
       }
     }
     for (var i = 0; i < labelLayoutList.length; i++) {
-      var layout3 = labelLayoutList[i];
-      if (!isPositionCenter(layout3) && layout3.linePoints) {
-        if (layout3.labelStyleWidth != null) {
+      var layout2 = labelLayoutList[i];
+      if (!isPositionCenter(layout2) && layout2.linePoints) {
+        if (layout2.labelStyleWidth != null) {
           continue;
         }
-        var label = layout3.label;
-        var linePoints = layout3.linePoints;
+        var label = layout2.label;
+        var linePoints = layout2.linePoints;
         var targetTextWidth = void 0;
-        if (layout3.labelAlignTo === "edge") {
+        if (layout2.labelAlignTo === "edge") {
           if (label.x < cx) {
-            targetTextWidth = linePoints[2][0] - layout3.labelDistance - viewLeft - layout3.edgeDistance;
+            targetTextWidth = linePoints[2][0] - layout2.labelDistance - viewLeft - layout2.edgeDistance;
           } else {
-            targetTextWidth = viewLeft + viewWidth - layout3.edgeDistance - linePoints[2][0] - layout3.labelDistance;
+            targetTextWidth = viewLeft + viewWidth - layout2.edgeDistance - linePoints[2][0] - layout2.labelDistance;
           }
-        } else if (layout3.labelAlignTo === "labelLine") {
+        } else if (layout2.labelAlignTo === "labelLine") {
           if (label.x < cx) {
-            targetTextWidth = leftmostX - viewLeft - layout3.bleedMargin;
+            targetTextWidth = leftmostX - viewLeft - layout2.bleedMargin;
           } else {
-            targetTextWidth = viewLeft + viewWidth - rightmostX - layout3.bleedMargin;
+            targetTextWidth = viewLeft + viewWidth - rightmostX - layout2.bleedMargin;
           }
         } else {
           if (label.x < cx) {
-            targetTextWidth = label.x - viewLeft - layout3.bleedMargin;
+            targetTextWidth = label.x - viewLeft - layout2.bleedMargin;
           } else {
-            targetTextWidth = viewLeft + viewWidth - label.x - layout3.bleedMargin;
+            targetTextWidth = viewLeft + viewWidth - label.x - layout2.bleedMargin;
           }
         }
-        layout3.targetTextWidth = targetTextWidth;
-        constrainTextWidth(layout3, targetTextWidth);
+        layout2.targetTextWidth = targetTextWidth;
+        constrainTextWidth(layout2, targetTextWidth, false);
       }
     }
     adjustSingleSide(rightList, cx, cy, r, 1, viewWidth, viewHeight, viewLeft, viewTop, rightmostX);
     adjustSingleSide(leftList, cx, cy, r, -1, viewWidth, viewHeight, viewLeft, viewTop, leftmostX);
     for (var i = 0; i < labelLayoutList.length; i++) {
-      var layout3 = labelLayoutList[i];
-      if (!isPositionCenter(layout3) && layout3.linePoints) {
-        var label = layout3.label;
-        var linePoints = layout3.linePoints;
-        var isAlignToEdge = layout3.labelAlignTo === "edge";
+      var layout2 = labelLayoutList[i];
+      if (!isPositionCenter(layout2) && layout2.linePoints) {
+        var label = layout2.label;
+        var linePoints = layout2.linePoints;
+        var isAlignToEdge = layout2.labelAlignTo === "edge";
         var padding = label.style.padding;
         var paddingH = padding ? padding[1] + padding[3] : 0;
         var extraPaddingH = label.style.backgroundColor ? 0 : paddingH;
-        var realTextWidth = layout3.rect.width + extraPaddingH;
+        var realTextWidth = layout2.rect.width + extraPaddingH;
         var dist3 = linePoints[1][0] - linePoints[2][0];
         if (isAlignToEdge) {
           if (label.x < cx) {
-            linePoints[2][0] = viewLeft + layout3.edgeDistance + realTextWidth + layout3.labelDistance;
+            linePoints[2][0] = viewLeft + layout2.edgeDistance + realTextWidth + layout2.labelDistance;
           } else {
-            linePoints[2][0] = viewLeft + viewWidth - layout3.edgeDistance - realTextWidth - layout3.labelDistance;
+            linePoints[2][0] = viewLeft + viewWidth - layout2.edgeDistance - realTextWidth - layout2.labelDistance;
           }
         } else {
           if (label.x < cx) {
-            linePoints[2][0] = label.x + layout3.labelDistance;
+            linePoints[2][0] = label.x + layout2.labelDistance;
           } else {
-            linePoints[2][0] = label.x - layout3.labelDistance;
+            linePoints[2][0] = label.x - layout2.labelDistance;
           }
           linePoints[1][0] = linePoints[2][0] + dist3;
         }
@@ -32584,23 +36149,19 @@ var pptxPreview = (() => {
       }
     }
   }
-  function constrainTextWidth(layout3, availableWidth, forceRecalculate) {
-    if (forceRecalculate === void 0) {
-      forceRecalculate = false;
-    }
-    if (layout3.labelStyleWidth != null) {
+  function constrainTextWidth(layout2, availableWidth, forceRecalculate) {
+    if (layout2.labelStyleWidth != null) {
       return;
     }
-    var label = layout3.label;
+    var label = layout2.label;
     var style = label.style;
-    var textRect = layout3.rect;
+    var textRect = layout2.rect;
     var bgColor = style.backgroundColor;
     var padding = style.padding;
     var paddingH = padding ? padding[1] + padding[3] : 0;
     var overflow = style.overflow;
     var oldOuterWidth = textRect.width + (bgColor ? 0 : paddingH);
     if (availableWidth < oldOuterWidth || forceRecalculate) {
-      var oldHeight = textRect.height;
       if (overflow && overflow.match("break")) {
         label.setStyle("backgroundColor", null);
         label.setStyle("width", availableWidth - paddingH);
@@ -32612,17 +36173,22 @@ var pptxPreview = (() => {
         var newWidth = availableWidth < oldOuterWidth ? availableInnerWidth : (
           // Current available width is enough, but the text may have
           // already been wrapped with a smaller available width.
-          forceRecalculate ? availableInnerWidth > layout3.unconstrainedWidth ? null : availableInnerWidth : null
+          forceRecalculate ? availableInnerWidth > layout2.unconstrainedWidth ? null : availableInnerWidth : null
         );
         label.setStyle("width", newWidth);
       }
-      var newRect = label.getBoundingRect();
-      textRect.width = newRect.width;
-      var margin = (label.style.margin || 0) + 2.1;
-      textRect.height = newRect.height + margin;
-      textRect.y -= (textRect.height - oldHeight) / 2;
+      computeLabelGlobalRect(textRect, label);
     }
   }
+  function computeLabelGlobalRect(out2, label) {
+    _tmpLabelGeometry.rect = out2;
+    computeLabelGeometry(_tmpLabelGeometry, label, _computeLabelGeometryOpt);
+  }
+  var _computeLabelGeometryOpt = {
+    minMarginForce: [null, 0, null, 0],
+    marginDefault: [1, 0, 1, 0]
+  };
+  var _tmpLabelGeometry = {};
   function isPositionCenter(sectorShape) {
     return sectorShape.position === "center";
   }
@@ -32632,7 +36198,7 @@ var pptxPreview = (() => {
     var cx;
     var cy;
     var hasLabelRotate = false;
-    var minShowLabelRadian = (seriesModel.get("minShowLabelAngle") || 0) * RADIAN2;
+    var minShowLabelRadian = (seriesModel.get("minShowLabelAngle") || 0) * RADIAN;
     var viewRect2 = data.getLayout("viewRect");
     var r = data.getLayout("r");
     var viewWidth = viewRect2.width;
@@ -32646,8 +36212,8 @@ var pptxPreview = (() => {
       if (!label2.ignore) {
         return true;
       }
-      for (var key in label2.states) {
-        if (label2.states[key].ignore === false) {
+      for (var key2 in label2.states) {
+        if (label2.states[key2].ignore === false) {
           return true;
         }
       }
@@ -32665,6 +36231,9 @@ var pptxPreview = (() => {
       var labelAlignTo = labelModel.get("alignTo");
       var edgeDistance = parsePercent2(labelModel.get("edgeDistance"), viewWidth);
       var bleedMargin = labelModel.get("bleedMargin");
+      if (bleedMargin == null) {
+        bleedMargin = Math.min(viewWidth, viewHeight) > 200 ? 10 : 2;
+      }
       var labelLineModel = itemModel.getModel("labelLine");
       var labelLineLen = labelLineModel.get("length");
       labelLineLen = parsePercent2(labelLineLen, viewWidth);
@@ -32726,13 +36295,13 @@ var pptxPreview = (() => {
       } else if (rotate2 === "radial" || rotate2 === true) {
         var radialAngle = nx < 0 ? -midAngle + PI8 : -midAngle;
         labelRotate = radialAngle;
-      } else if (rotate2 === "tangential" && labelPosition !== "outside" && labelPosition !== "outer") {
+      } else if (rotate2 === "tangential" || rotate2 === "tangential-noflip" && labelPosition !== "outside" && labelPosition !== "outer") {
         var rad = Math.atan2(nx, ny);
         if (rad < 0) {
           rad = PI8 * 2 + rad;
         }
         var isDown = ny > 0;
-        if (isDown) {
+        if (isDown && rotate2 !== "tangential-noflip") {
           rad = PI8 + rad;
         }
         labelRotate = rad - PI8;
@@ -32745,11 +36314,8 @@ var pptxPreview = (() => {
         verticalAlign: "middle"
       });
       if (!isLabelInside) {
-        var textRect = label2.getBoundingRect().clone();
-        textRect.applyTransform(label2.getComputedTransform());
-        var margin = (label2.style.margin || 0) + 2.1;
-        textRect.y -= margin / 2;
-        textRect.height += margin;
+        var textRect = new BoundingRect_default(0, 0, 0, 0);
+        computeLabelGlobalRect(textRect, label2);
         labelLayoutList.push({
           label: label2,
           labelLine: labelLine2,
@@ -32787,13 +36353,13 @@ var pptxPreview = (() => {
       avoidOverlap(labelLayoutList, cx, cy, r, viewWidth, viewHeight, viewLeft, viewTop);
     }
     for (var i = 0; i < labelLayoutList.length; i++) {
-      var layout3 = labelLayoutList[i];
-      var label = layout3.label;
-      var labelLine = layout3.labelLine;
+      var layout2 = labelLayoutList[i];
+      var label = layout2.label;
+      var labelLine = layout2.labelLine;
       var notShowLabel = isNaN(label.x) || isNaN(label.y);
       if (label) {
         label.setStyle({
-          align: layout3.textAlign
+          align: layout2.textAlign
         });
         if (notShowLabel) {
           each(label.states, setNotShow);
@@ -32806,13 +36372,13 @@ var pptxPreview = (() => {
         }
       }
       if (labelLine) {
-        var linePoints = layout3.linePoints;
+        var linePoints = layout2.linePoints;
         if (notShowLabel || !linePoints) {
           each(labelLine.states, setNotShow);
           labelLine.ignore = true;
         } else {
-          limitTurnAngle(linePoints, layout3.minTurnAngle);
-          limitSurfaceAngle(linePoints, layout3.surfaceNormal, layout3.maxSurfaceAngle);
+          limitTurnAngle(linePoints, layout2.minTurnAngle);
+          limitSurfaceAngle(linePoints, layout2.surfaceNormal, layout2.maxSurfaceAngle);
           labelLine.setShape({
             points: linePoints
           });
@@ -32824,10 +36390,152 @@ var pptxPreview = (() => {
     }
   }
 
+  // node_modules/echarts/lib/chart/pie/pieLayout.js
+  var PI28 = Math.PI * 2;
+  var RADIAN2 = Math.PI / 180;
+  var pieLayoutStageHandler = createSimpleOverallStageHandler(SERIES_TYPE_PIE, pieLayout);
+  function pieLayout(ecModel, api) {
+    ecModel.eachSeriesByType(SERIES_TYPE_PIE, function(seriesModel) {
+      var data = seriesModel.getData();
+      var valueDim = data.mapDimension("value");
+      var _a2 = getCircleLayout(seriesModel, api), cx = _a2.cx, cy = _a2.cy, r = _a2.r, r0 = _a2.r0, viewRect2 = _a2.viewRect;
+      var startAngle = -seriesModel.get("startAngle") * RADIAN2;
+      var endAngle = seriesModel.get("endAngle");
+      var padAngle = seriesModel.get("padAngle") * RADIAN2;
+      endAngle = endAngle === "auto" ? startAngle - PI28 : -endAngle * RADIAN2;
+      var minAngle = seriesModel.get("minAngle") * RADIAN2;
+      var minAndPadAngle = minAngle + padAngle;
+      var validDataCount = 0;
+      data.each(valueDim, function(value) {
+        !isNaN(value) && validDataCount++;
+      });
+      var sum = data.getSum(valueDim);
+      var unitRadian = Math.PI / (sum || validDataCount) * 2;
+      var clockwise = seriesModel.get("clockwise");
+      var roseType = seriesModel.get("roseType");
+      var stillShowZeroSum = seriesModel.get("stillShowZeroSum");
+      var extent = data.getDataExtent(valueDim);
+      extent[0] = 0;
+      var dir3 = clockwise ? 1 : -1;
+      var angles = [startAngle, endAngle];
+      var halfPadAngle = dir3 * padAngle / 2;
+      normalizeArcAngles(angles, !clockwise);
+      startAngle = angles[0], endAngle = angles[1];
+      var layoutData = getSeriesLayoutData(seriesModel);
+      layoutData.startAngle = startAngle;
+      layoutData.endAngle = endAngle;
+      layoutData.clockwise = clockwise;
+      layoutData.cx = cx;
+      layoutData.cy = cy;
+      layoutData.r = r;
+      layoutData.r0 = r0;
+      var angleRange = Math.abs(endAngle - startAngle);
+      var restAngle = angleRange;
+      var valueSumLargerThanMinAngle = 0;
+      var currentAngle = startAngle;
+      data.setLayout({
+        viewRect: viewRect2,
+        r
+      });
+      data.each(valueDim, function(value, idx) {
+        var angle;
+        if (isNaN(value)) {
+          data.setItemLayout(idx, {
+            angle: NaN,
+            startAngle: NaN,
+            endAngle: NaN,
+            clockwise,
+            cx,
+            cy,
+            r0,
+            r: roseType ? NaN : r
+          });
+          return;
+        }
+        if (roseType !== "area") {
+          angle = sum === 0 && stillShowZeroSum ? unitRadian : value * unitRadian;
+        } else {
+          angle = angleRange / validDataCount;
+        }
+        if (angle < minAndPadAngle) {
+          angle = minAndPadAngle;
+          restAngle -= minAndPadAngle;
+        } else {
+          valueSumLargerThanMinAngle += value;
+        }
+        var endAngle2 = currentAngle + dir3 * angle;
+        var actualStartAngle = 0;
+        var actualEndAngle = 0;
+        if (padAngle > angle) {
+          actualStartAngle = currentAngle + dir3 * angle / 2;
+          actualEndAngle = actualStartAngle;
+        } else {
+          actualStartAngle = currentAngle + halfPadAngle;
+          actualEndAngle = endAngle2 - halfPadAngle;
+        }
+        data.setItemLayout(idx, {
+          angle,
+          startAngle: actualStartAngle,
+          endAngle: actualEndAngle,
+          clockwise,
+          cx,
+          cy,
+          r0,
+          r: roseType ? linearMap(value, extent, [r0, r]) : r
+        });
+        currentAngle = endAngle2;
+      });
+      if (restAngle < PI28 && validDataCount) {
+        if (restAngle <= 1e-3) {
+          var angle_1 = angleRange / validDataCount;
+          data.each(valueDim, function(value, idx) {
+            if (!isNaN(value)) {
+              var layout2 = data.getItemLayout(idx);
+              layout2.angle = angle_1;
+              var actualStartAngle = 0;
+              var actualEndAngle = 0;
+              if (angle_1 < padAngle) {
+                actualStartAngle = startAngle + dir3 * (idx + 1 / 2) * angle_1;
+                actualEndAngle = actualStartAngle;
+              } else {
+                actualStartAngle = startAngle + dir3 * idx * angle_1 + halfPadAngle;
+                actualEndAngle = startAngle + dir3 * (idx + 1) * angle_1 - halfPadAngle;
+              }
+              layout2.startAngle = actualStartAngle;
+              layout2.endAngle = actualEndAngle;
+            }
+          });
+        } else {
+          unitRadian = restAngle / valueSumLargerThanMinAngle;
+          currentAngle = startAngle;
+          data.each(valueDim, function(value, idx) {
+            if (!isNaN(value)) {
+              var layout2 = data.getItemLayout(idx);
+              var angle = layout2.angle === minAndPadAngle ? minAndPadAngle : value * unitRadian;
+              var actualStartAngle = 0;
+              var actualEndAngle = 0;
+              if (angle < padAngle) {
+                actualStartAngle = currentAngle + dir3 * angle / 2;
+                actualEndAngle = actualStartAngle;
+              } else {
+                actualStartAngle = currentAngle + halfPadAngle;
+                actualEndAngle = currentAngle + dir3 * angle - halfPadAngle;
+              }
+              layout2.startAngle = actualStartAngle;
+              layout2.endAngle = actualEndAngle;
+              currentAngle += dir3 * angle;
+            }
+          });
+        }
+      }
+    });
+  }
+  var getSeriesLayoutData = makeInner();
+
   // node_modules/echarts/lib/chart/pie/PieView.js
   var PiePiece = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(PiePiece2, _super);
       function PiePiece2(data, idx, startAngle) {
         var _this = _super.call(this) || this;
@@ -32842,8 +36550,8 @@ var pptxPreview = (() => {
         var seriesModel = data.hostModel;
         var itemModel = data.getItemModel(idx);
         var emphasisModel = itemModel.getModel("emphasis");
-        var layout3 = data.getItemLayout(idx);
-        var sectorShape = extend(getSectorCornerRadius(itemModel.getModel("itemStyle"), layout3, true), layout3);
+        var layout2 = data.getItemLayout(idx);
+        var sectorShape = extend(getSectorCornerRadius(itemModel.getModel("itemStyle"), layout2, true), layout2);
         if (isNaN(sectorShape.startAngle)) {
           sector.setShape(sectorShape);
           return;
@@ -32862,10 +36570,10 @@ var pptxPreview = (() => {
             sector.originX = sectorShape.cx;
             sector.originY = sectorShape.cy;
           } else if (animationType === "scale") {
-            sector.shape.r = layout3.r0;
+            sector.shape.r = layout2.r0;
             initProps(sector, {
               shape: {
-                r: layout3.r
+                r: layout2.r
               }
             }, seriesModel, idx);
           } else {
@@ -32876,15 +36584,15 @@ var pptxPreview = (() => {
               });
               initProps(sector, {
                 shape: {
-                  startAngle: layout3.startAngle,
-                  endAngle: layout3.endAngle
+                  startAngle: layout2.startAngle,
+                  endAngle: layout2.endAngle
                 }
               }, seriesModel, idx);
             } else {
-              sector.shape.endAngle = layout3.startAngle;
+              sector.shape.endAngle = layout2.startAngle;
               updateProps(sector, {
                 shape: {
-                  endAngle: layout3.endAngle
+                  endAngle: layout2.endAngle
                 }
               }, seriesModel, idx);
             }
@@ -32897,7 +36605,7 @@ var pptxPreview = (() => {
         }
         sector.useStyle(data.getItemVisual(idx, "style"));
         setStatesStylesFromModel(sector, itemModel);
-        var midAngle = (layout3.startAngle + layout3.endAngle) / 2;
+        var midAngle = (layout2.startAngle + layout2.endAngle) / 2;
         var offset = seriesModel.get("selectedOffset");
         var dx = Math.cos(midAngle) * offset;
         var dy = Math.sin(midAngle) * offset;
@@ -32905,15 +36613,15 @@ var pptxPreview = (() => {
         cursorStyle && sector.attr("cursor", cursorStyle);
         this._updateLabel(seriesModel, data, idx);
         sector.ensureState("emphasis").shape = extend({
-          r: layout3.r + (emphasisModel.get("scale") ? emphasisModel.get("scaleSize") || 0 : 0)
-        }, getSectorCornerRadius(emphasisModel.getModel("itemStyle"), layout3));
+          r: layout2.r + (emphasisModel.get("scale") ? emphasisModel.get("scaleSize") || 0 : 0)
+        }, getSectorCornerRadius(emphasisModel.getModel("itemStyle"), layout2));
         extend(sector.ensureState("select"), {
           x: dx,
           y: dy,
-          shape: getSectorCornerRadius(itemModel.getModel(["select", "itemStyle"]), layout3)
+          shape: getSectorCornerRadius(itemModel.getModel(["select", "itemStyle"]), layout2)
         });
         extend(sector.ensureState("blur"), {
-          shape: getSectorCornerRadius(itemModel.getModel(["blur", "itemStyle"]), layout3)
+          shape: getSectorCornerRadius(itemModel.getModel(["blur", "itemStyle"]), layout2)
         });
         var labelLine = sector.getTextGuideLine();
         var labelText = sector.getTextContent();
@@ -32950,7 +36658,7 @@ var pptxPreview = (() => {
         labelText.attr({
           z2: 10
         });
-        var labelPosition = seriesModel.get(["label", "position"]);
+        var labelPosition = itemModel.get(["label", "position"]);
         if (labelPosition !== "outside" && labelPosition !== "outer") {
           sector.removeTextGuideLine();
         } else {
@@ -32966,14 +36674,15 @@ var pptxPreview = (() => {
         }
       };
       return PiePiece2;
-    }(Sector_default)
+    })(Sector_default)
   );
   var PieView = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(PieView2, _super);
       function PieView2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.type = SERIES_TYPE_PIE;
         _this.ignoreLabelLineUpdate = true;
         return _this;
       }
@@ -32997,7 +36706,7 @@ var pptxPreview = (() => {
         if (data.count() === 0 && seriesModel.get("showEmptyCircle")) {
           var layoutData = getSeriesLayoutData(seriesModel);
           var sector = new Sector_default({
-            shape: extend(getBasicPieLayout(seriesModel, api), layoutData)
+            shape: clone(layoutData)
           });
           sector.useStyle(seriesModel.getModel("emptyCircleStyle").getItemStyle());
           this._emptyCircleSector = sector;
@@ -33034,205 +36743,11 @@ var pptxPreview = (() => {
           return radius <= itemLayout.r && radius >= itemLayout.r0;
         }
       };
-      PieView2.type = "pie";
+      PieView2.type = SERIES_TYPE_PIE;
       return PieView2;
-    }(Chart_default)
+    })(Chart_default)
   );
   var PieView_default = PieView;
-
-  // node_modules/echarts/lib/chart/helper/createSeriesDataSimply.js
-  function createSeriesDataSimply(seriesModel, opt, nameList) {
-    opt = isArray(opt) && {
-      coordDimensions: opt
-    } || extend({
-      encodeDefine: seriesModel.getEncode()
-    }, opt);
-    var source = seriesModel.getSource();
-    var dimensions = prepareSeriesDataSchema(source, opt).dimensions;
-    var list = new SeriesData_default(dimensions, seriesModel);
-    list.initData(source, nameList);
-    return list;
-  }
-
-  // node_modules/echarts/lib/visual/LegendVisualProvider.js
-  var LegendVisualProvider = (
-    /** @class */
-    function() {
-      function LegendVisualProvider2(getDataWithEncodedVisual, getRawData2) {
-        this._getDataWithEncodedVisual = getDataWithEncodedVisual;
-        this._getRawData = getRawData2;
-      }
-      LegendVisualProvider2.prototype.getAllNames = function() {
-        var rawData = this._getRawData();
-        return rawData.mapArray(rawData.getName);
-      };
-      LegendVisualProvider2.prototype.containName = function(name) {
-        var rawData = this._getRawData();
-        return rawData.indexOfName(name) >= 0;
-      };
-      LegendVisualProvider2.prototype.indexOfName = function(name) {
-        var dataWithEncodedVisual = this._getDataWithEncodedVisual();
-        return dataWithEncodedVisual.indexOfName(name);
-      };
-      LegendVisualProvider2.prototype.getItemVisual = function(dataIndex, key) {
-        var dataWithEncodedVisual = this._getDataWithEncodedVisual();
-        return dataWithEncodedVisual.getItemVisual(dataIndex, key);
-      };
-      return LegendVisualProvider2;
-    }()
-  );
-  var LegendVisualProvider_default = LegendVisualProvider;
-
-  // node_modules/echarts/lib/chart/pie/PieSeries.js
-  var innerData = makeInner();
-  var PieSeriesModel = (
-    /** @class */
-    function(_super) {
-      __extends(PieSeriesModel2, _super);
-      function PieSeriesModel2() {
-        return _super !== null && _super.apply(this, arguments) || this;
-      }
-      PieSeriesModel2.prototype.init = function(option) {
-        _super.prototype.init.apply(this, arguments);
-        this.legendVisualProvider = new LegendVisualProvider_default(bind(this.getData, this), bind(this.getRawData, this));
-        this._defaultLabelLine(option);
-      };
-      PieSeriesModel2.prototype.mergeOption = function() {
-        _super.prototype.mergeOption.apply(this, arguments);
-      };
-      PieSeriesModel2.prototype.getInitialData = function() {
-        return createSeriesDataSimply(this, {
-          coordDimensions: ["value"],
-          encodeDefaulter: curry(makeSeriesEncodeForNameBased, this)
-        });
-      };
-      PieSeriesModel2.prototype.getDataParams = function(dataIndex) {
-        var data = this.getData();
-        var dataInner = innerData(data);
-        var seats = dataInner.seats;
-        if (!seats) {
-          var valueList_1 = [];
-          data.each(data.mapDimension("value"), function(value) {
-            valueList_1.push(value);
-          });
-          seats = dataInner.seats = getPercentSeats(valueList_1, data.hostModel.get("percentPrecision"));
-        }
-        var params = _super.prototype.getDataParams.call(this, dataIndex);
-        params.percent = seats[dataIndex] || 0;
-        params.$vars.push("percent");
-        return params;
-      };
-      PieSeriesModel2.prototype._defaultLabelLine = function(option) {
-        defaultEmphasis(option, "labelLine", ["show"]);
-        var labelLineNormalOpt = option.labelLine;
-        var labelLineEmphasisOpt = option.emphasis.labelLine;
-        labelLineNormalOpt.show = labelLineNormalOpt.show && option.label.show;
-        labelLineEmphasisOpt.show = labelLineEmphasisOpt.show && option.emphasis.label.show;
-      };
-      PieSeriesModel2.type = "series.pie";
-      PieSeriesModel2.defaultOption = {
-        // zlevel: 0,
-        z: 2,
-        legendHoverLink: true,
-        colorBy: "data",
-        // 默认全局居中
-        center: ["50%", "50%"],
-        radius: [0, "75%"],
-        // 默认顺时针
-        clockwise: true,
-        startAngle: 90,
-        endAngle: "auto",
-        padAngle: 0,
-        // 最小角度改为0
-        minAngle: 0,
-        // If the angle of a sector less than `minShowLabelAngle`,
-        // the label will not be displayed.
-        minShowLabelAngle: 0,
-        // 选中时扇区偏移量
-        selectedOffset: 10,
-        // 选择模式，默认关闭，可选single，multiple
-        // selectedMode: false,
-        // 南丁格尔玫瑰图模式，'radius'（半径） | 'area'（面积）
-        // roseType: null,
-        percentPrecision: 2,
-        // If still show when all data zero.
-        stillShowZeroSum: true,
-        // cursor: null,
-        left: 0,
-        top: 0,
-        right: 0,
-        bottom: 0,
-        width: null,
-        height: null,
-        label: {
-          // color: 'inherit',
-          // If rotate around circle
-          rotate: 0,
-          show: true,
-          overflow: "truncate",
-          // 'outer', 'inside', 'center'
-          position: "outer",
-          // 'none', 'labelLine', 'edge'. Works only when position is 'outer'
-          alignTo: "none",
-          // Closest distance between label and chart edge.
-          // Works only position is 'outer' and alignTo is 'edge'.
-          edgeDistance: "25%",
-          // Works only position is 'outer' and alignTo is not 'edge'.
-          bleedMargin: 10,
-          // Distance between text and label line.
-          distanceToLabelLine: 5
-          // formatter: 标签文本格式器，同 tooltip.formatter，不支持异步回调
-          // 默认使用全局文本样式，详见 textStyle
-          // distance: 当position为inner时有效，为label位置到圆心的距离与圆半径(环状图为内外半径和)的比例系数
-        },
-        // Enabled when label.normal.position is 'outer'
-        labelLine: {
-          show: true,
-          // 引导线两段中的第一段长度
-          length: 15,
-          // 引导线两段中的第二段长度
-          length2: 15,
-          smooth: false,
-          minTurnAngle: 90,
-          maxSurfaceAngle: 90,
-          lineStyle: {
-            // color: 各异,
-            width: 1,
-            type: "solid"
-          }
-        },
-        itemStyle: {
-          borderWidth: 1,
-          borderJoin: "round"
-        },
-        showEmptyCircle: true,
-        emptyCircleStyle: {
-          color: "lightgray",
-          opacity: 1
-        },
-        labelLayout: {
-          // Hide the overlapped label.
-          hideOverlap: true
-        },
-        emphasis: {
-          scale: true,
-          scaleSize: 5
-        },
-        // If use strategy to avoid label overlapping
-        avoidLabelOverlap: true,
-        // Animation type. Valid values: expansion, scale
-        animationType: "expansion",
-        animationDuration: 1e3,
-        // Animation type when update. Valid values: transition, expansion
-        animationTypeUpdate: "transition",
-        animationEasingUpdate: "cubicInOut",
-        animationDurationUpdate: 500,
-        animationEasing: "cubicInOut"
-      };
-      return PieSeriesModel2;
-    }(Series_default)
-  );
-  var PieSeries_default = PieSeriesModel;
 
   // node_modules/echarts/lib/processor/negativeDataFilter.js
   function negativeDataFilter(seriesType2) {
@@ -33256,48 +36771,16 @@ var pptxPreview = (() => {
   function install3(registers) {
     registers.registerChartView(PieView_default);
     registers.registerSeriesModel(PieSeries_default);
-    createLegacyDataSelectAction("pie", registers.registerAction);
-    registers.registerLayout(curry(pieLayout, "pie"));
-    registers.registerProcessor(dataFilter("pie"));
-    registers.registerProcessor(negativeDataFilter("pie"));
+    createLegacyDataSelectAction(SERIES_TYPE_PIE, registers.registerAction);
+    registers.registerLayout(pieLayoutStageHandler);
+    registers.registerProcessor(dataFilter(SERIES_TYPE_PIE));
+    registers.registerProcessor(negativeDataFilter(SERIES_TYPE_PIE));
   }
-
-  // node_modules/echarts/lib/coord/cartesian/GridModel.js
-  var GridModel = (
-    /** @class */
-    function(_super) {
-      __extends(GridModel2, _super);
-      function GridModel2() {
-        return _super !== null && _super.apply(this, arguments) || this;
-      }
-      GridModel2.type = "grid";
-      GridModel2.dependencies = ["xAxis", "yAxis"];
-      GridModel2.layoutMode = "box";
-      GridModel2.defaultOption = {
-        show: false,
-        // zlevel: 0,
-        z: 0,
-        left: "10%",
-        top: 60,
-        right: "10%",
-        bottom: 70,
-        // If grid size contain label
-        containLabel: false,
-        // width: {totalWidth} - left - right,
-        // height: {totalHeight} - top - bottom,
-        backgroundColor: "rgba(0,0,0,0)",
-        borderWidth: 1,
-        borderColor: "#ccc"
-      };
-      return GridModel2;
-    }(Component_default)
-  );
-  var GridModel_default = GridModel;
 
   // node_modules/echarts/lib/coord/cartesian/AxisModel.js
   var CartesianAxisModel = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(CartesianAxisModel2, _super);
       function CartesianAxisModel2() {
         return _super !== null && _super.apply(this, arguments) || this;
@@ -33307,7 +36790,7 @@ var pptxPreview = (() => {
       };
       CartesianAxisModel2.type = "cartesian2dAxis";
       return CartesianAxisModel2;
-    }(Component_default)
+    })(Component_default)
   );
   mixin(CartesianAxisModel, AxisModelCommonMixin);
 
@@ -33330,7 +36813,9 @@ var pptxPreview = (() => {
       placeholder: "."
     },
     // Use global text style by default.
-    nameTextStyle: {},
+    nameTextStyle: {
+      // textMargin: never, // The default value will be specified based on `nameLocation`.
+    },
     // The gap between axisName and axisLine.
     nameGap: 15,
     // Default `false` to support tooltip.
@@ -33343,16 +36828,17 @@ var pptxPreview = (() => {
     axisPointer: {},
     axisLine: {
       show: true,
-      onZero: true,
+      onZero: "auto",
       onZeroAxisIndex: null,
       lineStyle: {
-        color: "#6E7079",
+        color: tokens_default.color.axisLine,
         width: 1,
         type: "solid"
       },
       // The arrow at both ends the the axis.
       symbol: ["none", "none"],
-      symbolSize: [10, 15]
+      symbolSize: [10, 15],
+      breakLine: true
     },
     axisTick: {
       show: true,
@@ -33375,14 +36861,21 @@ var pptxPreview = (() => {
       showMaxLabel: null,
       margin: 8,
       // formatter: null,
-      fontSize: 12
+      fontSize: 12,
+      color: tokens_default.color.axisLabel,
+      // In scenarios like axis labels, when labels text's progression direction matches the label
+      // layout direction (e.g., when all letters are in a single line), extra start/end margin is
+      // needed to prevent the text from appearing visually joined. In the other case, when lables
+      // are stacked (e.g., having rotation or horizontal labels on yAxis), the layout needs to be
+      // compact, so NO extra top/bottom margin should be applied.
+      textMargin: [0, 3]
     },
     splitLine: {
       show: true,
       showMinLine: true,
       showMaxLine: true,
       lineStyle: {
-        color: ["#E0E6F1"],
+        color: tokens_default.color.axisSplitLine,
         width: 1,
         type: "solid"
       }
@@ -33390,8 +36883,28 @@ var pptxPreview = (() => {
     splitArea: {
       show: false,
       areaStyle: {
-        color: ["rgba(250,250,250,0.2)", "rgba(210,219,238,0.2)"]
+        color: [tokens_default.color.backgroundTint, tokens_default.color.backgroundTransparent]
       }
+    },
+    breakArea: {
+      show: true,
+      itemStyle: {
+        color: tokens_default.color.neutral00,
+        // Break border color should be darker than the splitLine
+        // because it has opacity and should be more prominent
+        borderColor: tokens_default.color.border,
+        borderWidth: 1,
+        borderType: [3, 3],
+        opacity: 0.6
+      },
+      zigzagAmplitude: 4,
+      zigzagMinSpan: 4,
+      zigzagMaxSpan: 20,
+      zigzagZ: 100,
+      expandOnClick: true
+    },
+    breakLabelLayout: {
+      moveOverlap: "auto"
     }
   };
   var categoryAxis = merge({
@@ -33399,6 +36912,9 @@ var pptxPreview = (() => {
     boundaryGap: true,
     // Set false to faster category collection.
     deduplication: null,
+    jitter: 0,
+    jitterOverlap: true,
+    jitterMargin: 2,
     // splitArea: {
     // show: false
     // },
@@ -33408,7 +36924,8 @@ var pptxPreview = (() => {
     axisTick: {
       // If tick is align with label when boundaryGap is true
       alignWithLabel: false,
-      interval: "auto"
+      interval: "auto",
+      show: "auto"
     },
     axisLabel: {
       interval: "auto"
@@ -33442,7 +36959,7 @@ var pptxPreview = (() => {
     minorSplitLine: {
       show: false,
       lineStyle: {
-        color: "#F4F7FD",
+        color: tokens_default.color.axisMinorSplitLine,
         width: 1
       }
     }
@@ -33450,9 +36967,9 @@ var pptxPreview = (() => {
   var timeAxis = merge({
     splitNumber: 6,
     axisLabel: {
-      // To eliminate labels that are not nice
-      showMinLabel: false,
-      showMaxLabel: false,
+      // The default value of TimeScale is determined in `AxisBuilder`
+      // showMinLabel: false,
+      // showMaxLabel: false,
       rich: {
         primary: {
           fontWeight: "bold"
@@ -33473,21 +36990,13 @@ var pptxPreview = (() => {
     log: logAxis
   };
 
-  // node_modules/echarts/lib/coord/axisCommonTypes.js
-  var AXIS_TYPES = {
-    value: 1,
-    category: 1,
-    time: 1,
-    log: 1
-  };
-
   // node_modules/echarts/lib/coord/axisModelCreator.js
   function axisModelCreator(registers, axisName, BaseAxisModelClass, extraDefaultOption) {
     each(AXIS_TYPES, function(v, axisType) {
       var defaultOption2 = merge(merge({}, axisDefault_default[axisType], true), extraDefaultOption, true);
       var AxisModel = (
         /** @class */
-        function(_super) {
+        (function(_super) {
           __extends(AxisModel2, _super);
           function AxisModel2() {
             var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -33523,10 +37032,16 @@ var pptxPreview = (() => {
           AxisModel2.prototype.getOrdinalMeta = function() {
             return this.__ordinalMeta;
           };
+          AxisModel2.prototype.updateAxisBreaks = function(payload) {
+            var axisBreakHelper = getAxisBreakHelper();
+            return axisBreakHelper ? axisBreakHelper.updateModelAxisBreak(this, payload) : {
+              breaks: []
+            };
+          };
           AxisModel2.type = axisName + "Axis." + axisType;
           AxisModel2.defaultOption = defaultOption2;
           return AxisModel2;
-        }(BaseAxisModelClass)
+        })(BaseAxisModelClass)
       );
       registers.registerComponentModel(AxisModel);
     });
@@ -33539,7 +37054,7 @@ var pptxPreview = (() => {
   // node_modules/echarts/lib/coord/cartesian/Cartesian.js
   var Cartesian = (
     /** @class */
-    function() {
+    (function() {
       function Cartesian2(name) {
         this.type = "cartesian";
         this._dimList = [];
@@ -33566,22 +37081,22 @@ var pptxPreview = (() => {
         this._dimList.push(dim);
       };
       return Cartesian2;
-    }()
+    })()
   );
   var Cartesian_default = Cartesian;
 
   // node_modules/echarts/lib/coord/cartesian/Cartesian2D.js
   var cartesian2DDimensions = ["x", "y"];
-  function canCalculateAffineTransform(scale4) {
-    return scale4.type === "interval" || scale4.type === "time";
+  function canCalculateAffineTransform(scale3) {
+    return (scale3.type === "interval" || scale3.type === "time") && !hasBreaks(scale3);
   }
   var Cartesian2D = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(Cartesian2D2, _super);
       function Cartesian2D2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.type = "cartesian2d";
+        _this.type = COORD_SYS_TYPE_CARTESIAN_2D;
         _this.dimensions = cartesian2DDimensions;
         return _this;
       }
@@ -33592,8 +37107,8 @@ var pptxPreview = (() => {
         if (!canCalculateAffineTransform(xAxisScale) || !canCalculateAffineTransform(yAxisScale)) {
           return;
         }
-        var xScaleExtent = xAxisScale.getExtent();
-        var yScaleExtent = yAxisScale.getExtent();
+        var xScaleExtent = getScaleExtentForMappingUnsafe(xAxisScale, null);
+        var yScaleExtent = getScaleExtentForMappingUnsafe(yAxisScale, null);
         var start2 = this.dataToPoint([xScaleExtent[0], yScaleExtent[0]]);
         var end2 = this.dataToPoint([xScaleExtent[1], yScaleExtent[1]]);
         var xScaleSpan = xScaleExtent[1] - xScaleExtent[0];
@@ -33626,7 +37141,7 @@ var pptxPreview = (() => {
         var zone = new BoundingRect_default(zoneDiag1[0], zoneDiag1[1], zoneDiag2[0] - zoneDiag1[0], zoneDiag2[1] - zoneDiag1[1]);
         return area.intersect(zone);
       };
-      Cartesian2D2.prototype.dataToPoint = function(data, clamp2, out2) {
+      Cartesian2D2.prototype.dataToPoint = function(data, clamp, out2) {
         out2 = out2 || [];
         var xVal = data[0];
         var yVal = data[1];
@@ -33635,8 +37150,8 @@ var pptxPreview = (() => {
         }
         var xAxis = this.getAxis("x");
         var yAxis = this.getAxis("y");
-        out2[0] = xAxis.toGlobalCoord(xAxis.dataToCoord(xVal, clamp2));
-        out2[1] = yAxis.toGlobalCoord(yAxis.dataToCoord(yVal, clamp2));
+        out2[0] = xAxis.toGlobalCoord(xAxis.dataToCoord(xVal, clamp));
+        out2[1] = yAxis.toGlobalCoord(yAxis.dataToCoord(yVal, clamp));
         return out2;
       };
       Cartesian2D2.prototype.clampData = function(data, out2) {
@@ -33651,15 +37166,15 @@ var pptxPreview = (() => {
         out2[1] = Math.min(Math.max(Math.min(yAxisExtent[0], yAxisExtent[1]), y), Math.max(yAxisExtent[0], yAxisExtent[1]));
         return out2;
       };
-      Cartesian2D2.prototype.pointToData = function(point, clamp2) {
-        var out2 = [];
+      Cartesian2D2.prototype.pointToData = function(point, clamp, out2) {
+        out2 = out2 || [];
         if (this._invTransform) {
           return applyTransform(out2, point, this._invTransform);
         }
         var xAxis = this.getAxis("x");
         var yAxis = this.getAxis("y");
-        out2[0] = xAxis.coordToData(xAxis.toLocalCoord(point[0]), clamp2);
-        out2[1] = yAxis.coordToData(yAxis.toLocalCoord(point[1]), clamp2);
+        out2[0] = xAxis.coordToData(xAxis.toLocalCoord(point[0]), clamp);
+        out2[1] = yAxis.coordToData(yAxis.toLocalCoord(point[1]), clamp);
         return out2;
       };
       Cartesian2D2.prototype.getOtherAxis = function(axis) {
@@ -33676,199 +37191,196 @@ var pptxPreview = (() => {
         return new BoundingRect_default(x, y, width, height);
       };
       return Cartesian2D2;
-    }(Cartesian_default)
+    })(Cartesian_default)
   );
   var Cartesian2D_default = Cartesian2D;
 
-  // node_modules/echarts/lib/coord/cartesian/Axis2D.js
-  var Axis2D = (
-    /** @class */
-    function(_super) {
-      __extends(Axis2D2, _super);
-      function Axis2D2(dim, scale4, coordExtent, axisType, position) {
-        var _this = _super.call(this, dim, scale4, coordExtent) || this;
-        _this.index = 0;
-        _this.type = axisType || "value";
-        _this.position = position || "bottom";
-        return _this;
-      }
-      Axis2D2.prototype.isHorizontal = function() {
-        var position = this.position;
-        return position === "top" || position === "bottom";
-      };
-      Axis2D2.prototype.getGlobalExtent = function(asc) {
-        var ret = this.getExtent();
-        ret[0] = this.toGlobalCoord(ret[0]);
-        ret[1] = this.toGlobalCoord(ret[1]);
-        asc && ret[0] > ret[1] && ret.reverse();
-        return ret;
-      };
-      Axis2D2.prototype.pointToData = function(point, clamp2) {
-        return this.coordToData(this.toLocalCoord(point[this.dim === "x" ? 0 : 1]), clamp2);
-      };
-      Axis2D2.prototype.setCategorySortInfo = function(info) {
-        if (this.type !== "category") {
-          return false;
-        }
-        this.model.option.categorySortInfo = info;
-        this.scale.setSortInfo(info);
-      };
-      return Axis2D2;
-    }(Axis_default)
-  );
-  var Axis2D_default = Axis2D;
-
-  // node_modules/echarts/lib/coord/cartesian/cartesianAxisHelper.js
-  function layout2(gridModel, axisModel, opt) {
-    opt = opt || {};
-    var grid = gridModel.coordinateSystem;
-    var axis = axisModel.axis;
-    var layout3 = {};
-    var otherAxisOnZeroOf = axis.getAxesOnZeroOf()[0];
-    var rawAxisPosition = axis.position;
-    var axisPosition = otherAxisOnZeroOf ? "onZero" : rawAxisPosition;
-    var axisDim = axis.dim;
-    var rect = grid.getRect();
-    var rectBound = [rect.x, rect.x + rect.width, rect.y, rect.y + rect.height];
-    var idx = {
-      left: 0,
-      right: 1,
-      top: 0,
-      bottom: 1,
-      onZero: 2
-    };
-    var axisOffset = axisModel.get("offset") || 0;
-    var posBound = axisDim === "x" ? [rectBound[2] - axisOffset, rectBound[3] + axisOffset] : [rectBound[0] - axisOffset, rectBound[1] + axisOffset];
-    if (otherAxisOnZeroOf) {
-      var onZeroCoord = otherAxisOnZeroOf.toGlobalCoord(otherAxisOnZeroOf.dataToCoord(0));
-      posBound[idx.onZero] = Math.max(Math.min(onZeroCoord, posBound[1]), posBound[0]);
-    }
-    layout3.position = [axisDim === "y" ? posBound[idx[axisPosition]] : rectBound[0], axisDim === "x" ? posBound[idx[axisPosition]] : rectBound[3]];
-    layout3.rotation = Math.PI / 2 * (axisDim === "x" ? 0 : 1);
-    var dirMap = {
-      top: -1,
-      bottom: 1,
-      left: -1,
-      right: 1
-    };
-    layout3.labelDirection = layout3.tickDirection = layout3.nameDirection = dirMap[rawAxisPosition];
-    layout3.labelOffset = otherAxisOnZeroOf ? posBound[idx[rawAxisPosition]] - posBound[idx.onZero] : 0;
-    if (axisModel.get(["axisTick", "inside"])) {
-      layout3.tickDirection = -layout3.tickDirection;
-    }
-    if (retrieve(opt.labelInside, axisModel.get(["axisLabel", "inside"]))) {
-      layout3.labelDirection = -layout3.labelDirection;
-    }
-    var labelRotate = axisModel.get(["axisLabel", "rotate"]);
-    layout3.labelRotate = axisPosition === "top" ? -labelRotate : labelRotate;
-    layout3.z2 = 1;
-    return layout3;
-  }
-  function isCartesian2DSeries(seriesModel) {
-    return seriesModel.get("coordinateSystem") === "cartesian2d";
-  }
-  function findAxisModels(seriesModel) {
-    var axisModelMap = {
-      xAxisModel: null,
-      yAxisModel: null
-    };
-    each(axisModelMap, function(v, key) {
-      var axisType = key.replace(/Model$/, "");
-      var axisModel = seriesModel.getReferringComponents(axisType, SINGLE_REFERRING).models[0];
-      if (true) {
-        if (!axisModel) {
-          throw new Error(axisType + ' "' + retrieve3(seriesModel.get(axisType + "Index"), seriesModel.get(axisType + "Id"), 0) + '" not found');
-        }
-      }
-      axisModelMap[key] = axisModel;
-    });
-    return axisModelMap;
-  }
-
   // node_modules/echarts/lib/coord/axisAlignTicks.js
-  var mathLog2 = Math.log;
-  function alignScaleTicks(scale4, axisModel, alignToScale) {
-    var intervalScaleProto2 = Interval_default.prototype;
-    var alignToTicks = intervalScaleProto2.getTicks.call(alignToScale);
-    var alignToNicedTicks = intervalScaleProto2.getTicks.call(alignToScale, true);
-    var alignToSplitNumber = alignToTicks.length - 1;
-    var alignToInterval = intervalScaleProto2.getInterval.call(alignToScale);
-    var scaleExtent = getScaleExtent(scale4, axisModel);
-    var rawExtent = scaleExtent.extent;
-    var isMinFixed = scaleExtent.fixMin;
-    var isMaxFixed = scaleExtent.fixMax;
-    if (scale4.type === "log") {
-      var logBase = mathLog2(scale4.base);
-      rawExtent = [mathLog2(rawExtent[0]) / logBase, mathLog2(rawExtent[1]) / logBase];
+  function scaleCalcAlign(targetAxis, alignToScale) {
+    var targetScale = targetAxis.scale;
+    var targetAxisModel = targetAxis.model;
+    if (true) {
+      assert(targetScale && targetAxisModel && (targetScale instanceof Interval_default || targetScale instanceof Log_default) && (alignToScale instanceof Interval_default || alignToScale instanceof Log_default));
     }
-    scale4.setExtent(rawExtent[0], rawExtent[1]);
-    scale4.calcNiceExtent({
-      splitNumber: alignToSplitNumber,
-      fixMin: isMinFixed,
-      fixMax: isMaxFixed
+    var targetExtentInfo = adoptScaleRawExtentInfoAndPrepare(targetScale, targetAxisModel, targetAxisModel.ecModel, targetAxis, null);
+    var isTargetLogScale = isLogScale(targetScale);
+    var alignToScaleLinear = isLogScale(alignToScale) ? alignToScale.intervalStub : alignToScale;
+    var targetIntervalStub = isTargetLogScale ? targetScale.intervalStub : targetScale;
+    var targetLogScaleBase = targetScale.base;
+    var alignToTicks = alignToScaleLinear.getTicks();
+    var alignToExpNiceTicks = alignToScaleLinear.getTicks({
+      expandToNicedExtent: true
     });
-    var extent3 = intervalScaleProto2.getExtent.call(scale4);
-    if (isMinFixed) {
-      rawExtent[0] = extent3[0];
-    }
-    if (isMaxFixed) {
-      rawExtent[1] = extent3[1];
-    }
-    var interval = intervalScaleProto2.getInterval.call(scale4);
-    var min3 = rawExtent[0];
-    var max3 = rawExtent[1];
-    if (isMinFixed && isMaxFixed) {
-      interval = (max3 - min3) / alignToSplitNumber;
-    } else if (isMinFixed) {
-      max3 = rawExtent[0] + interval * alignToSplitNumber;
-      while (max3 < rawExtent[1] && isFinite(max3) && isFinite(rawExtent[1])) {
-        interval = increaseInterval(interval);
-        max3 = rawExtent[0] + interval * alignToSplitNumber;
+    var alignToSegCount = alignToTicks.length - 1;
+    if (true) {
+      assert(!hasBreaks(alignToScale) && !hasBreaks(targetScale));
+      assert(alignToSegCount > 0);
+      assert(alignToExpNiceTicks.length === alignToTicks.length);
+      assert(alignToTicks[0].value <= alignToTicks[alignToSegCount].value);
+      assert(alignToExpNiceTicks[0].value <= alignToTicks[0].value && alignToTicks[alignToSegCount].value <= alignToExpNiceTicks[alignToSegCount].value);
+      if (alignToSegCount >= 2) {
+        assert(alignToExpNiceTicks[1].value === alignToTicks[1].value);
+        assert(alignToExpNiceTicks[alignToSegCount - 1].value === alignToTicks[alignToSegCount - 1].value);
       }
-    } else if (isMaxFixed) {
-      min3 = rawExtent[1] - interval * alignToSplitNumber;
-      while (min3 > rawExtent[0] && isFinite(min3) && isFinite(rawExtent[0])) {
-        interval = increaseInterval(interval);
-        min3 = rawExtent[1] - interval * alignToSplitNumber;
+    }
+    var t0;
+    var t1;
+    var alignToNiceSegCount;
+    if (alignToSegCount === 1) {
+      t0 = t1 = 0;
+      alignToNiceSegCount = 1;
+    } else if (alignToSegCount === 2) {
+      var interval0 = mathAbs2(alignToTicks[0].value - alignToTicks[1].value);
+      var interval1 = mathAbs2(alignToTicks[1].value - alignToTicks[2].value);
+      t0 = t1 = 0;
+      if (interval0 === interval1) {
+        alignToNiceSegCount = 2;
+      } else {
+        alignToNiceSegCount = 1;
+        if (interval0 < interval1) {
+          t0 = interval0 / interval1;
+        } else {
+          t1 = interval1 / interval0;
+        }
       }
     } else {
-      var nicedSplitNumber = scale4.getTicks().length - 1;
-      if (nicedSplitNumber > alignToSplitNumber) {
-        interval = increaseInterval(interval);
-      }
-      var range = interval * alignToSplitNumber;
-      max3 = Math.ceil(rawExtent[1] / interval) * interval;
-      min3 = round(max3 - range);
-      if (min3 < 0 && rawExtent[0] >= 0) {
-        min3 = 0;
-        max3 = round(range);
-      } else if (max3 > 0 && rawExtent[1] <= 0) {
-        max3 = 0;
-        min3 = -round(range);
-      }
-    }
-    var t0 = (alignToTicks[0].value - alignToNicedTicks[0].value) / alignToInterval;
-    var t1 = (alignToTicks[alignToSplitNumber].value - alignToNicedTicks[alignToSplitNumber].value) / alignToInterval;
-    intervalScaleProto2.setExtent.call(scale4, min3 + interval * t0, max3 + interval * t1);
-    intervalScaleProto2.setInterval.call(scale4, interval);
-    if (t0 || t1) {
-      intervalScaleProto2.setNiceExtent.call(scale4, min3 + interval, max3 - interval);
+      var alignToInterval = alignToScaleLinear.getConfig().interval;
+      t0 = (1 - (alignToTicks[0].value - alignToExpNiceTicks[0].value) / alignToInterval) % 1;
+      t1 = (1 - (alignToExpNiceTicks[alignToSegCount].value - alignToTicks[alignToSegCount].value) / alignToInterval) % 1;
+      alignToNiceSegCount = alignToSegCount - (t0 ? 1 : 0) - (t1 ? 1 : 0);
     }
     if (true) {
-      var ticks = intervalScaleProto2.getTicks.call(scale4);
-      if (ticks[1] && (!isValueNice(interval) || getPrecisionSafe(ticks[1].value) > getPrecisionSafe(interval))) {
-        warn(
-          // eslint-disable-next-line
-          "The ticks may be not readable when set min: " + axisModel.get("min") + ", max: " + axisModel.get("max") + " and alignTicks: true"
-        );
+      assert(alignToNiceSegCount >= 1);
+    }
+    var dataZoomFixMinMax = targetExtentInfo.zoomFixMM;
+    var hasDataZoomFixMinMax = dataZoomFixMinMax[0] || dataZoomFixMinMax[1];
+    var targetMinMaxFixed = [targetExtentInfo.fixMM[0] || hasDataZoomFixMinMax, targetExtentInfo.fixMM[1] || hasDataZoomFixMinMax];
+    var targetOldOutermostExtent = targetScale.getExtent();
+    var targetOldIntervalExtent = targetIntervalStub.getExtent();
+    var targetExtent = intervalScaleEnsureValidExtent(targetOldIntervalExtent, targetMinMaxFixed);
+    var min3;
+    var max3;
+    var interval;
+    var intervalPrecision;
+    var maxNice;
+    var minNice;
+    function loopIncreaseInterval(cb) {
+      var LOOP_MAX = 50;
+      var loopGuard = 0;
+      for (; loopGuard < LOOP_MAX; loopGuard++) {
+        if (cb()) {
+          break;
+        }
+        interval = isTargetLogScale ? interval * mathMax2(targetLogScaleBase, 2) : increaseInterval(interval);
+        intervalPrecision = getIntervalPrecision(interval);
       }
+      if (true) {
+        if (loopGuard >= LOOP_MAX) {
+          warn("incorrect impl in `scaleCalcAlign`.");
+        }
+      }
+    }
+    function updateMinFromMinNice() {
+      min3 = round(minNice - interval * t0, intervalPrecision);
+    }
+    function updateMaxFromMaxNice() {
+      max3 = round(maxNice + interval * t1, intervalPrecision);
+    }
+    function updateMinNiceFromMinT0Interval() {
+      minNice = t0 ? round(min3 + interval * t0, intervalPrecision) : min3;
+    }
+    function updateMaxNiceFromMaxT1Interval() {
+      maxNice = t1 ? round(max3 - interval * t1, intervalPrecision) : max3;
+    }
+    if (targetMinMaxFixed[0] && targetMinMaxFixed[1]) {
+      min3 = targetExtent[0];
+      max3 = targetExtent[1];
+      interval = (max3 - min3) / (alignToNiceSegCount + t0 + t1);
+      var axisPxExtent = targetAxis.getExtent();
+      var pxSpan = mathAbs2(axisPxExtent[1] - axisPxExtent[0]);
+      intervalPrecision = getAcceptableTickPrecision([max3, min3], pxSpan, 0.5 / alignToNiceSegCount);
+      updateMinNiceFromMinT0Interval();
+      updateMaxNiceFromMaxT1Interval();
+      if (isNullableNumberFinite(intervalPrecision)) {
+        interval = round(interval, intervalPrecision);
+      }
+    } else {
+      var targetSpan = targetExtent[1] - targetExtent[0];
+      interval = isTargetLogScale ? mathMax2(quantity(targetSpan), 1) : nice(targetSpan / alignToNiceSegCount, NICE_MODE_MIN);
+      intervalPrecision = getIntervalPrecision(interval);
+      if (targetMinMaxFixed[0]) {
+        min3 = targetExtent[0];
+        loopIncreaseInterval(function() {
+          updateMinNiceFromMinT0Interval();
+          maxNice = round(minNice + interval * alignToNiceSegCount, intervalPrecision);
+          updateMaxFromMaxNice();
+          if (max3 >= targetExtent[1]) {
+            return true;
+          }
+        });
+      } else if (targetMinMaxFixed[1]) {
+        max3 = targetExtent[1];
+        loopIncreaseInterval(function() {
+          updateMaxNiceFromMaxT1Interval();
+          minNice = round(maxNice - interval * alignToNiceSegCount, intervalPrecision);
+          updateMinFromMinNice();
+          if (min3 <= targetExtent[0]) {
+            return true;
+          }
+        });
+      } else {
+        loopIncreaseInterval(function() {
+          minNice = round(mathCeil(targetExtent[0] / interval) * interval, intervalPrecision);
+          maxNice = round(mathFloor(targetExtent[1] / interval) * interval, intervalPrecision);
+          var currIntervalCount = mathRound2((maxNice - minNice) / interval);
+          if (currIntervalCount <= alignToNiceSegCount) {
+            var moreCount = alignToNiceSegCount - currIntervalCount;
+            var moreCountPair = void 0;
+            var mayEnhanceZero = targetExtentInfo.incl0 || isTargetLogScale;
+            if (mayEnhanceZero && targetExtent[0] === 0) {
+              moreCountPair = [0, moreCount];
+            } else if (mayEnhanceZero && targetExtent[1] === 0) {
+              moreCountPair = [moreCount, 0];
+            } else {
+              var lessHalfCount = mathFloor(moreCount / 2);
+              moreCountPair = moreCount % 2 === 0 ? [lessHalfCount, lessHalfCount] : min3 + max3 < targetExtent[0] + targetExtent[1] ? [lessHalfCount, lessHalfCount + 1] : [lessHalfCount + 1, lessHalfCount];
+            }
+            minNice = round(minNice - interval * moreCountPair[0], intervalPrecision);
+            maxNice = round(maxNice + interval * moreCountPair[1], intervalPrecision);
+            updateMinFromMinNice();
+            updateMaxFromMaxNice();
+            if (min3 <= targetExtent[0] && max3 >= targetExtent[1]) {
+              return true;
+            }
+          }
+        });
+      }
+    }
+    updateIntervalOrLogScaleForNiceOrAligned(targetScale, targetMinMaxFixed, targetOldIntervalExtent, [min3, max3], targetOldOutermostExtent, {
+      // NOTE: Even in LogScale, `interval` should not be in log space.
+      interval,
+      // Force ticks count, otherwise cumulative error may cause more unexpected ticks to be generated.
+      // Though the overlapping tick labels may be auto-ignored, but probably unexpected, e.g., the min
+      // tick label is ignored but the secondary min tick label is shown, which is unexpected when
+      // `axis.min` is user-specified or dataZoom-specified.
+      intervalCount: alignToNiceSegCount,
+      intervalPrecision,
+      niceExtent: [minNice, maxNice]
+    });
+    if (true) {
+      targetScale.freeze();
     }
   }
 
   // node_modules/echarts/lib/coord/cartesian/Grid.js
+  var XY_TO_MARGIN_IDX = [
+    [3, 1],
+    [0, 2]
+    // xyIdx 1 => 'y'
+  ];
   var Grid = (
     /** @class */
-    function() {
+    (function() {
       function Grid2(gridModel, ecModel, api) {
         this.type = "grid";
         this._coordsMap = {};
@@ -33885,42 +37397,32 @@ var pptxPreview = (() => {
       };
       Grid2.prototype.update = function(ecModel, api) {
         var axesMap = this._axesMap;
-        this._updateScale(ecModel, this.model);
-        function updateAxisTicks(axes) {
-          var alignTo;
-          var axesIndices = keys(axes);
-          var len2 = axesIndices.length;
-          if (!len2) {
-            return;
+        each(this._axesList, function(axis) {
+          scaleRawExtentInfoCreate(axis, AXIS_EXTENT_INFO_BUILD_FROM_COORD_SYS_UPDATE);
+          var scale3 = axis.scale;
+          if (isOrdinalScale(scale3)) {
+            scale3.setSortInfo(axis.model.get("categorySortInfo"));
           }
+        });
+        function updateAxisTicks(axes) {
+          var axesIndices = keys(axes);
           var axisNeedsAlign = [];
-          for (var i = len2 - 1; i >= 0; i--) {
-            var idx = +axesIndices[i];
-            var axis = axes[idx];
-            var model = axis.model;
-            var scale4 = axis.scale;
-            if (
-              // Only value and log axis without interval support alignTicks.
-              isIntervalOrLogScale(scale4) && model.get("alignTicks") && model.get("interval") == null
-            ) {
+          for (var i = axesIndices.length - 1; i >= 0; i--) {
+            var axis = axes[+axesIndices[i]];
+            if (axis.__alignTo) {
               axisNeedsAlign.push(axis);
             } else {
-              niceScaleExtent(scale4, model);
-              if (isIntervalOrLogScale(scale4)) {
-                alignTo = axis;
-              }
+              scaleCalcNice(axis);
             }
           }
           ;
-          if (axisNeedsAlign.length) {
-            if (!alignTo) {
-              alignTo = axisNeedsAlign.pop();
-              niceScaleExtent(alignTo.scale, alignTo.model);
+          each(axisNeedsAlign, function(axis2) {
+            if (incapableOfAlignNeedFallback(axis2, axis2.__alignTo)) {
+              scaleCalcNice(axis2);
+            } else {
+              scaleCalcAlign(axis2, axis2.__alignTo.scale);
             }
-            each(axisNeedsAlign, function(axis2) {
-              alignScaleTicks(axis2.scale, axis2.model, alignTo.scale);
-            });
-          }
+          });
         }
         updateAxisTicks(axesMap.x);
         updateAxisTicks(axesMap.y);
@@ -33933,44 +37435,35 @@ var pptxPreview = (() => {
         });
         this.resize(this.model, api);
       };
-      Grid2.prototype.resize = function(gridModel, api, ignoreContainLabel) {
-        var boxLayoutParams = gridModel.getBoxLayoutParams();
-        var isContainLabel = !ignoreContainLabel && gridModel.get("containLabel");
-        var gridRect = getLayoutRect(boxLayoutParams, {
-          width: api.getWidth(),
-          height: api.getHeight()
-        });
-        this._rect = gridRect;
-        var axesList = this._axesList;
-        adjustAxes();
-        if (isContainLabel) {
-          each(axesList, function(axis) {
-            if (!axis.model.get(["axisLabel", "inside"])) {
-              var labelUnionRect = estimateLabelUnionRect(axis);
-              if (labelUnionRect) {
-                var dim = axis.isHorizontal() ? "height" : "width";
-                var margin = axis.model.get(["axisLabel", "margin"]);
-                gridRect[dim] -= labelUnionRect[dim] + margin;
-                if (axis.position === "top") {
-                  gridRect.y += labelUnionRect.height + margin;
-                } else if (axis.position === "left") {
-                  gridRect.x += labelUnionRect.width + margin;
-                }
+      Grid2.prototype.resize = function(gridModel, api, beforeDataProcessing) {
+        var layoutRef = createBoxLayoutReference(gridModel, api);
+        var gridRect = this._rect = getLayoutRect(gridModel.getBoxLayoutParams(), layoutRef.refContainer);
+        var axesMap = this._axesMap;
+        var coordsList = this._coordsList;
+        var optionContainLabel = gridModel.get("containLabel");
+        updateAllAxisExtentTransByGridRect(axesMap, gridRect);
+        if (!beforeDataProcessing) {
+          var axisBuilderSharedCtx = createAxisBiulders(gridRect, coordsList, axesMap, optionContainLabel, api);
+          var noPxChange = void 0;
+          if (optionContainLabel) {
+            if (legacyLayOutGridByContainLabel) {
+              legacyLayOutGridByContainLabel(this._axesList, gridRect);
+              updateAllAxisExtentTransByGridRect(axesMap, gridRect);
+            } else {
+              if (true) {
+                log("Specified `grid.containLabel` but no `use(LegacyGridContainLabel)`;use `grid.outerBounds` instead.", true);
               }
+              noPxChange = layOutGridByOuterBounds(gridRect.clone(), "axisLabel", null, gridRect, axesMap, axisBuilderSharedCtx, layoutRef);
             }
-          });
-          adjustAxes();
-        }
-        each(this._coordsList, function(coord) {
-          coord.calcAffineTransform();
-        });
-        function adjustAxes() {
-          each(axesList, function(axis) {
-            var isHorizontal = axis.isHorizontal();
-            var extent3 = isHorizontal ? [0, gridRect.width] : [0, gridRect.height];
-            var idx = axis.inverse ? 1 : 0;
-            axis.setExtent(extent3[idx], extent3[1 - idx]);
-            updateAxisTransform(axis, isHorizontal ? gridRect.x : gridRect.y);
+          } else {
+            var _a2 = prepareOuterBounds(gridModel, gridRect, layoutRef), outerBoundsRect = _a2.outerBoundsRect, parsedOuterBoundsContain = _a2.parsedOuterBoundsContain, outerBoundsClamp = _a2.outerBoundsClamp;
+            if (outerBoundsRect) {
+              noPxChange = layOutGridByOuterBounds(outerBoundsRect, parsedOuterBoundsContain, outerBoundsClamp, gridRect, axesMap, axisBuilderSharedCtx, layoutRef);
+            }
+          }
+          createOrUpdateAxesView(gridRect, axesMap, AxisTickLabelComputingKind.determine, null, noPxChange, layoutRef);
+          each(this._coordsList, function(coord) {
+            coord.calcAffineTransform();
           });
         }
       };
@@ -33985,8 +37478,8 @@ var pptxPreview = (() => {
       };
       Grid2.prototype.getCartesian = function(xAxisIndex, yAxisIndex) {
         if (xAxisIndex != null && yAxisIndex != null) {
-          var key = "x" + xAxisIndex + "y" + yAxisIndex;
-          return this._coordsMap[key];
+          var key2 = "x" + xAxisIndex + "y" + yAxisIndex;
+          return this._coordsMap[key2];
         }
         if (isObject(xAxisIndex)) {
           yAxisIndex = xAxisIndex.yAxisIndex;
@@ -34070,16 +37563,18 @@ var pptxPreview = (() => {
         this._axesMap = axesMap;
         each(axesMap.x, function(xAxis, xAxisIndex) {
           each(axesMap.y, function(yAxis, yAxisIndex) {
-            var key = "x" + xAxisIndex + "y" + yAxisIndex;
-            var cartesian = new Cartesian2D_default(key);
+            var key2 = "x" + xAxisIndex + "y" + yAxisIndex;
+            var cartesian = new Cartesian2D_default(key2);
             cartesian.master = _this;
             cartesian.model = gridModel;
-            _this._coordsMap[key] = cartesian;
+            _this._coordsMap[key2] = cartesian;
             _this._coordsList.push(cartesian);
             cartesian.addAxis(xAxis);
             cartesian.addAxis(yAxis);
           });
         });
+        prepareAlignToInCoordSysCreate(axesMap.x);
+        prepareAlignToInCoordSysCreate(axesMap.y);
         function createAxisCreator(dimName) {
           return function(axisModel, idx) {
             if (!isAxisUsedInTheGrid(axisModel, gridModel)) {
@@ -34096,9 +37591,9 @@ var pptxPreview = (() => {
               }
             }
             axisPositionUsed[axisPosition] = true;
-            var axis = new Axis2D_default(dimName, createScaleByModel(axisModel), [0, 0], axisModel.get("type"), axisPosition);
-            var isCategory2 = axis.type === "category";
-            axis.onBand = isCategory2 && axisModel.get("boundaryGap");
+            var axisType = determineAxisType(axisModel);
+            var axis = new Axis2D_default(dimName, createScaleByModel(axisModel, axisType, true), [0, 0], axisType, axisPosition);
+            axis.onBand = isAxisOnBand(axis.scale, axisModel);
             axis.inverse = axisModel.get("inverse");
             axisModel.axis = axis;
             axis.model = axisModel;
@@ -34108,36 +37603,6 @@ var pptxPreview = (() => {
             axesMap[dimName][idx] = axis;
             axesCount[dimName]++;
           };
-        }
-      };
-      Grid2.prototype._updateScale = function(ecModel, gridModel) {
-        each(this._axesList, function(axis) {
-          axis.scale.setExtent(Infinity, -Infinity);
-          if (axis.type === "category") {
-            var categorySortInfo = axis.model.get("categorySortInfo");
-            axis.scale.setSortInfo(categorySortInfo);
-          }
-        });
-        ecModel.eachSeries(function(seriesModel) {
-          if (isCartesian2DSeries(seriesModel)) {
-            var axesModelMap = findAxisModels(seriesModel);
-            var xAxisModel = axesModelMap.xAxisModel;
-            var yAxisModel = axesModelMap.yAxisModel;
-            if (!isAxisUsedInTheGrid(xAxisModel, gridModel) || !isAxisUsedInTheGrid(yAxisModel, gridModel)) {
-              return;
-            }
-            var cartesian = this.getCartesian(xAxisModel.componentIndex, yAxisModel.componentIndex);
-            var data = seriesModel.getData();
-            var xAxis = cartesian.getAxis("x");
-            var yAxis = cartesian.getAxis("y");
-            unionExtent(data, xAxis);
-            unionExtent(data, yAxis);
-          }
-        }, this);
-        function unionExtent(data, axis) {
-          each(getDataDimensionsOnAxis(data, axis.dim), function(dim) {
-            axis.scale.unionExtentFromData(data, dim);
-          });
         }
       };
       Grid2.prototype.getTooltipAxes = function(dim) {
@@ -34162,31 +37627,47 @@ var pptxPreview = (() => {
           grid.resize(gridModel, api, true);
           gridModel.coordinateSystem = grid;
           grids.push(grid);
+          each(grid._axesList, function(axis) {
+            scaleRawExtentInfoEnableBoxCoordSysUsage(axis, Grid2.dimIdxMap);
+          });
         });
         ecModel.eachSeries(function(seriesModel) {
-          if (!isCartesian2DSeries(seriesModel)) {
-            return;
-          }
-          var axesModelMap = findAxisModels(seriesModel);
-          var xAxisModel = axesModelMap.xAxisModel;
-          var yAxisModel = axesModelMap.yAxisModel;
-          var gridModel = xAxisModel.getCoordSysModel();
-          if (true) {
-            if (!gridModel) {
-              throw new Error('Grid "' + retrieve3(xAxisModel.get("gridIndex"), xAxisModel.get("gridId"), 0) + '" not found');
+          var xAxis;
+          var yAxis;
+          injectCoordSysByOption({
+            targetModel: seriesModel,
+            coordSysType: COORD_SYS_TYPE_CARTESIAN_2D,
+            coordSysProvider
+          });
+          function coordSysProvider() {
+            var axesModelMap = findAxisModels(seriesModel);
+            var xAxisModel = axesModelMap.xAxisModel;
+            var yAxisModel = axesModelMap.yAxisModel;
+            xAxis = xAxisModel.axis;
+            yAxis = yAxisModel.axis;
+            var gridModel = xAxisModel.getCoordSysModel();
+            if (true) {
+              if (!gridModel) {
+                throw new Error('Grid "' + retrieve3(xAxisModel.get("gridIndex"), xAxisModel.get("gridId"), 0) + '" not found');
+              }
+              if (xAxisModel.getCoordSysModel() !== yAxisModel.getCoordSysModel()) {
+                throw new Error("xAxis and yAxis must use the same grid");
+              }
             }
-            if (xAxisModel.getCoordSysModel() !== yAxisModel.getCoordSysModel()) {
-              throw new Error("xAxis and yAxis must use the same grid");
-            }
+            var grid = gridModel.coordinateSystem;
+            return grid.getCartesian(xAxisModel.componentIndex, yAxisModel.componentIndex);
           }
-          var grid = gridModel.coordinateSystem;
-          seriesModel.coordinateSystem = grid.getCartesian(xAxisModel.componentIndex, yAxisModel.componentIndex);
-        });
+          if (xAxis && yAxis) {
+            associateSeriesWithAxis(xAxis, seriesModel, COORD_SYS_TYPE_CARTESIAN_2D);
+            associateSeriesWithAxis(yAxis, seriesModel, COORD_SYS_TYPE_CARTESIAN_2D);
+          }
+        }, this);
         return grids;
       };
       Grid2.dimensions = cartesian2DDimensions;
+      Grid2.dimIdxMap = createDimNameMap(cartesian2DDimensions);
       return Grid2;
-    }()
+    })()
   );
   function isAxisUsedInTheGrid(axisModel, gridModel) {
     return axisModel.getCoordSysModel() === gridModel;
@@ -34204,12 +37685,12 @@ var pptxPreview = (() => {
       return;
     }
     if (onZeroAxisIndex != null) {
-      if (canOnZeroToAxis(otherAxes[onZeroAxisIndex])) {
+      if (canOnZeroToAxis(onZero, otherAxes[onZeroAxisIndex])) {
         otherAxisOnZeroOf = otherAxes[onZeroAxisIndex];
       }
     } else {
       for (var idx in otherAxes) {
-        if (otherAxes.hasOwnProperty(idx) && canOnZeroToAxis(otherAxes[idx]) && !onZeroRecords[getOnZeroRecordKey(otherAxes[idx])]) {
+        if (hasOwn(otherAxes, idx) && canOnZeroToAxis(onZero, otherAxes[idx]) && !onZeroRecords[getOnZeroRecordKey(otherAxes[idx])]) {
           otherAxisOnZeroOf = otherAxes[idx];
           break;
         }
@@ -34222,8 +37703,44 @@ var pptxPreview = (() => {
       return axis2.dim + "_" + axis2.index;
     }
   }
-  function canOnZeroToAxis(axis) {
-    return axis && axis.type !== "category" && axis.type !== "time" && ifAxisCrossZero(axis);
+  function canOnZeroToAxis(onZeroOption, axis) {
+    if (!axis) {
+      return false;
+    }
+    var scale3 = axis.scale;
+    var kindEffective = getScaleValuePositionKind(scale3, 0, false);
+    var can = axis && axis.type !== "category" && axis.type !== "time" && kindEffective !== SCALE_VALUE_POSITION_KIND_OUTSIDE;
+    if (can && onZeroOption === "auto" && isOnAxisZeroDiscouraged(axis)) {
+      can = false;
+    }
+    return can;
+  }
+  function prepareAlignToInCoordSysCreate(axes) {
+    var axesIndices = keys(axes);
+    var alignTo;
+    var axisNeedsAlign = [];
+    for (var i = axesIndices.length - 1; i >= 0; i--) {
+      var axis = axes[+axesIndices[i]];
+      if (isIntervalOrLogScale(axis.scale) && retrieveAxisBreaksOption(axis.model, axis.type, true) == null) {
+        if (axis.model.get("alignTicks") && axis.model.get("interval") == null) {
+          axisNeedsAlign.push(axis);
+        } else {
+          alignTo = axis;
+        }
+      }
+    }
+    ;
+    if (!alignTo) {
+      alignTo = axisNeedsAlign.pop();
+    }
+    if (alignTo) {
+      each(axisNeedsAlign, function(axis2) {
+        axis2.__alignTo = alignTo;
+      });
+    }
+  }
+  function incapableOfAlignNeedFallback(targetAxis, alignTo) {
+    return hasBreaks(targetAxis.scale) || hasBreaks(alignTo.scale) || alignTo.scale.getTicks().length < 2;
   }
   function updateAxisTransform(axis, coordBase) {
     var axisExtent = axis.getExtent();
@@ -34239,500 +37756,177 @@ var pptxPreview = (() => {
       return axisExtentSum - coord + coordBase;
     };
   }
-  var Grid_default = Grid;
-
-  // node_modules/echarts/lib/component/axis/AxisBuilder.js
-  var PI6 = Math.PI;
-  var AxisBuilder = (
-    /** @class */
-    function() {
-      function AxisBuilder2(axisModel, opt) {
-        this.group = new Group_default();
-        this.opt = opt;
-        this.axisModel = axisModel;
-        defaults(opt, {
-          labelOffset: 0,
-          nameDirection: 1,
-          tickDirection: 1,
-          labelDirection: 1,
-          silent: true,
-          handleAutoShown: function() {
-            return true;
-          }
-        });
-        var transformGroup = new Group_default({
-          x: opt.position[0],
-          y: opt.position[1],
-          rotation: opt.rotation
-        });
-        transformGroup.updateTransform();
-        this._transformGroup = transformGroup;
-      }
-      AxisBuilder2.prototype.hasBuilder = function(name) {
-        return !!builders[name];
-      };
-      AxisBuilder2.prototype.add = function(name) {
-        builders[name](this.opt, this.axisModel, this.group, this._transformGroup);
-      };
-      AxisBuilder2.prototype.getGroup = function() {
-        return this.group;
-      };
-      AxisBuilder2.innerTextLayout = function(axisRotation, textRotation, direction) {
-        var rotationDiff = remRadian(textRotation - axisRotation);
-        var textAlign;
-        var textVerticalAlign;
-        if (isRadianAroundZero(rotationDiff)) {
-          textVerticalAlign = direction > 0 ? "top" : "bottom";
-          textAlign = "center";
-        } else if (isRadianAroundZero(rotationDiff - PI6)) {
-          textVerticalAlign = direction > 0 ? "bottom" : "top";
-          textAlign = "center";
-        } else {
-          textVerticalAlign = "middle";
-          if (rotationDiff > 0 && rotationDiff < PI6) {
-            textAlign = direction > 0 ? "right" : "left";
-          } else {
-            textAlign = direction > 0 ? "left" : "right";
+  function updateAllAxisExtentTransByGridRect(axesMap, gridRect) {
+    each(axesMap.x, function(axis) {
+      return updateAxisExtentTransByGridRect(axis, gridRect.x, gridRect.width);
+    });
+    each(axesMap.y, function(axis) {
+      return updateAxisExtentTransByGridRect(axis, gridRect.y, gridRect.height);
+    });
+  }
+  function updateAxisExtentTransByGridRect(axis, gridXY, gridWH) {
+    var extent = [0, gridWH];
+    var idx = axis.inverse ? 1 : 0;
+    axis.setExtent(extent[idx], extent[1 - idx]);
+    updateAxisTransform(axis, gridXY);
+  }
+  var legacyLayOutGridByContainLabel;
+  function layOutGridByOuterBounds(outerBoundsRect, outerBoundsContain, outerBoundsClamp, gridRect, axesMap, axisBuilderSharedCtx, layoutRef) {
+    if (true) {
+      assert(outerBoundsContain === "all" || outerBoundsContain === "axisLabel");
+    }
+    createOrUpdateAxesView(gridRect, axesMap, AxisTickLabelComputingKind.estimate, outerBoundsContain, false, layoutRef);
+    var margin = [0, 0, 0, 0];
+    fillLabelNameOverflowOnOneDimension(0);
+    fillLabelNameOverflowOnOneDimension(1);
+    fillMarginOnOneDimension(gridRect, 0, NaN);
+    fillMarginOnOneDimension(gridRect, 1, NaN);
+    var noPxChange = find(margin, function(item) {
+      return item > 0;
+    }) == null;
+    expandOrShrinkRect(gridRect, margin, true, true, outerBoundsClamp);
+    updateAllAxisExtentTransByGridRect(axesMap, gridRect);
+    return noPxChange;
+    function fillLabelNameOverflowOnOneDimension(xyIdx) {
+      each(axesMap[XY2[xyIdx]], function(axis) {
+        if (!shouldAxisShow(axis.model)) {
+          return;
+        }
+        var sharedRecord = axisBuilderSharedCtx.ensureRecord(axis.model);
+        var labelInfoList = sharedRecord.labelInfoList;
+        if (labelInfoList) {
+          for (var idx = 0; idx < labelInfoList.length; idx++) {
+            var labelInfo = labelInfoList[idx];
+            var proportion = axis.scale.normalize(getTickValueOutermost(axis.scale, getLabelInner(labelInfo.label).labelInfo.tick));
+            proportion = xyIdx === 1 ? 1 - proportion : proportion;
+            fillMarginOnOneDimension(labelInfo.rect, xyIdx, proportion);
+            fillMarginOnOneDimension(labelInfo.rect, 1 - xyIdx, NaN);
           }
         }
-        return {
-          rotation: rotationDiff,
-          textAlign,
-          textVerticalAlign
-        };
-      };
-      AxisBuilder2.makeAxisEventDataBase = function(axisModel) {
-        var eventData = {
-          componentType: axisModel.mainType,
-          componentIndex: axisModel.componentIndex
-        };
-        eventData[axisModel.mainType + "Index"] = axisModel.componentIndex;
-        return eventData;
-      };
-      AxisBuilder2.isLabelSilent = function(axisModel) {
-        var tooltipOpt = axisModel.get("tooltip");
-        return axisModel.get("silent") || !(axisModel.get("triggerEvent") || tooltipOpt && tooltipOpt.show);
-      };
-      return AxisBuilder2;
-    }()
-  );
-  var builders = {
-    axisLine: function(opt, axisModel, group, transformGroup) {
-      var shown = axisModel.get(["axisLine", "show"]);
-      if (shown === "auto" && opt.handleAutoShown) {
-        shown = opt.handleAutoShown("axisLine");
-      }
-      if (!shown) {
-        return;
-      }
-      var extent3 = axisModel.axis.getExtent();
-      var matrix = transformGroup.transform;
-      var pt12 = [extent3[0], 0];
-      var pt22 = [extent3[1], 0];
-      var inverse = pt12[0] > pt22[0];
-      if (matrix) {
-        applyTransform(pt12, pt12, matrix);
-        applyTransform(pt22, pt22, matrix);
-      }
-      var lineStyle = extend({
-        lineCap: "round"
-      }, axisModel.getModel(["axisLine", "lineStyle"]).getLineStyle());
-      var line = new Line_default({
-        shape: {
-          x1: pt12[0],
-          y1: pt12[1],
-          x2: pt22[0],
-          y2: pt22[1]
-        },
-        style: lineStyle,
-        strokeContainThreshold: opt.strokeContainThreshold || 5,
-        silent: true,
-        z2: 1
+        var nameLayout = sharedRecord.nameLayout;
+        if (nameLayout) {
+          var proportion = isNameLocationCenter(sharedRecord.nameLocation) ? 0.5 : NaN;
+          fillMarginOnOneDimension(nameLayout.rect, xyIdx, proportion);
+          fillMarginOnOneDimension(nameLayout.rect, 1 - xyIdx, NaN);
+        }
       });
-      subPixelOptimizeLine2(line.shape, line.style.lineWidth);
-      line.anid = "line";
-      group.add(line);
-      var arrows = axisModel.get(["axisLine", "symbol"]);
-      if (arrows != null) {
-        var arrowSize = axisModel.get(["axisLine", "symbolSize"]);
-        if (isString(arrows)) {
-          arrows = [arrows, arrows];
+    }
+    function fillMarginOnOneDimension(itemRect, xyIdx, proportion) {
+      var overflow1 = outerBoundsRect[XY2[xyIdx]] - itemRect[XY2[xyIdx]];
+      var overflow2 = itemRect[WH2[xyIdx]] + itemRect[XY2[xyIdx]] - (outerBoundsRect[WH2[xyIdx]] + outerBoundsRect[XY2[xyIdx]]);
+      overflow1 = applyProportion(overflow1, 1 - proportion);
+      overflow2 = applyProportion(overflow2, proportion);
+      var minIdx = XY_TO_MARGIN_IDX[xyIdx][0];
+      var maxIdx = XY_TO_MARGIN_IDX[xyIdx][1];
+      margin[minIdx] = mathMax2(margin[minIdx], overflow1);
+      margin[maxIdx] = mathMax2(margin[maxIdx], overflow2);
+    }
+    function applyProportion(overflow, proportion) {
+      if (overflow > 0 && !eqNaN(proportion) && proportion > 1e-4) {
+        overflow /= proportion;
+      }
+      return overflow;
+    }
+  }
+  function createAxisBiulders(gridRect, cartesians, axesMap, optionContainLabel, api) {
+    var axisBuilderSharedCtx = new AxisBuilderSharedContext(resolveAxisNameOverlapForGrid);
+    each(axesMap, function(axisList) {
+      return each(axisList, function(axis) {
+        if (shouldAxisShow(axis.model)) {
+          var defaultNameMoveOverlap = !optionContainLabel;
+          axis.axisBuilder = createCartesianAxisViewCommonPartBuilder(gridRect, cartesians, axis.model, api, axisBuilderSharedCtx, defaultNameMoveOverlap);
         }
-        if (isString(arrowSize) || isNumber(arrowSize)) {
-          arrowSize = [arrowSize, arrowSize];
+      });
+    });
+    return axisBuilderSharedCtx;
+  }
+  function createOrUpdateAxesView(gridRect, axesMap, kind, outerBoundsContain, noPxChange, layoutRef) {
+    var isDetermine = kind === AxisTickLabelComputingKind.determine;
+    each(axesMap, function(axisList) {
+      return each(axisList, function(axis) {
+        if (shouldAxisShow(axis.model)) {
+          updateCartesianAxisViewCommonPartBuilder(axis.axisBuilder, gridRect, axis.model);
+          axis.axisBuilder.build(isDetermine ? {
+            axisTickLabelDetermine: true
+          } : {
+            axisTickLabelEstimate: true
+          }, {
+            noPxChange
+          });
         }
-        var arrowOffset = normalizeSymbolOffset(axisModel.get(["axisLine", "symbolOffset"]) || 0, arrowSize);
-        var symbolWidth_1 = arrowSize[0];
-        var symbolHeight_1 = arrowSize[1];
-        each([{
-          rotate: opt.rotation + Math.PI / 2,
-          offset: arrowOffset[0],
-          r: 0
-        }, {
-          rotate: opt.rotation - Math.PI / 2,
-          offset: arrowOffset[1],
-          r: Math.sqrt((pt12[0] - pt22[0]) * (pt12[0] - pt22[0]) + (pt12[1] - pt22[1]) * (pt12[1] - pt22[1]))
-        }], function(point, index) {
-          if (arrows[index] !== "none" && arrows[index] != null) {
-            var symbol = createSymbol(arrows[index], -symbolWidth_1 / 2, -symbolHeight_1 / 2, symbolWidth_1, symbolHeight_1, lineStyle.stroke, true);
-            var r = point.r + point.offset;
-            var pt = inverse ? pt22 : pt12;
-            symbol.attr({
-              rotation: point.rotate,
-              x: pt[0] + r * Math.cos(opt.rotation),
-              y: pt[1] - r * Math.sin(opt.rotation),
-              silent: true,
-              z2: 11
+      });
+    });
+    var nameMarginLevelMap = {
+      x: 0,
+      y: 0
+    };
+    calcNameMarginLevel(0);
+    calcNameMarginLevel(1);
+    function calcNameMarginLevel(xyIdx) {
+      nameMarginLevelMap[XY2[1 - xyIdx]] = gridRect[WH2[xyIdx]] <= layoutRef.refContainer[WH2[xyIdx]] * 0.5 ? 0 : 1 - xyIdx === 1 ? 2 : 1;
+    }
+    each(axesMap, function(axisList, xy) {
+      return each(axisList, function(axis) {
+        if (shouldAxisShow(axis.model)) {
+          if (outerBoundsContain === "all" || isDetermine) {
+            axis.axisBuilder.build({
+              axisName: true
+            }, {
+              nameMarginLevel: nameMarginLevelMap[xy]
             });
-            group.add(symbol);
           }
-        });
-      }
-    },
-    axisTickLabel: function(opt, axisModel, group, transformGroup) {
-      var ticksEls = buildAxisMajorTicks(group, transformGroup, axisModel, opt);
-      var labelEls = buildAxisLabel(group, transformGroup, axisModel, opt);
-      fixMinMaxLabelShow(axisModel, labelEls, ticksEls);
-      buildAxisMinorTicks(group, transformGroup, axisModel, opt.tickDirection);
-      if (axisModel.get(["axisLabel", "hideOverlap"])) {
-        var labelList = prepareLayoutList(map(labelEls, function(label) {
-          return {
-            label,
-            priority: label.z2,
-            defaultAttr: {
-              ignore: label.ignore
-            }
-          };
-        }));
-        hideOverlap(labelList);
-      }
-    },
-    axisName: function(opt, axisModel, group, transformGroup) {
-      var name = retrieve(opt.axisName, axisModel.get("name"));
-      if (!name) {
-        return;
-      }
-      var nameLocation = axisModel.get("nameLocation");
-      var nameDirection = opt.nameDirection;
-      var textStyleModel = axisModel.getModel("nameTextStyle");
-      var gap = axisModel.get("nameGap") || 0;
-      var extent3 = axisModel.axis.getExtent();
-      var gapSignal = extent3[0] > extent3[1] ? -1 : 1;
-      var pos = [
-        nameLocation === "start" ? extent3[0] - gapSignal * gap : nameLocation === "end" ? extent3[1] + gapSignal * gap : (extent3[0] + extent3[1]) / 2,
-        // Reuse labelOffset.
-        isNameLocationCenter(nameLocation) ? opt.labelOffset + nameDirection * gap : 0
-      ];
-      var labelLayout;
-      var nameRotation = axisModel.get("nameRotate");
-      if (nameRotation != null) {
-        nameRotation = nameRotation * PI6 / 180;
-      }
-      var axisNameAvailableWidth;
-      if (isNameLocationCenter(nameLocation)) {
-        labelLayout = AxisBuilder.innerTextLayout(
-          opt.rotation,
-          nameRotation != null ? nameRotation : opt.rotation,
-          // Adapt to axis.
-          nameDirection
-        );
-      } else {
-        labelLayout = endTextLayout(opt.rotation, nameLocation, nameRotation || 0, extent3);
-        axisNameAvailableWidth = opt.axisNameAvailableWidth;
-        if (axisNameAvailableWidth != null) {
-          axisNameAvailableWidth = Math.abs(axisNameAvailableWidth / Math.sin(labelLayout.rotation));
-          !isFinite(axisNameAvailableWidth) && (axisNameAvailableWidth = null);
+          if (isDetermine) {
+            axis.axisBuilder.build({
+              axisLine: true
+            });
+          }
         }
-      }
-      var textFont = textStyleModel.getFont();
-      var truncateOpt = axisModel.get("nameTruncate", true) || {};
-      var ellipsis = truncateOpt.ellipsis;
-      var maxWidth = retrieve(opt.nameTruncateMaxWidth, truncateOpt.maxWidth, axisNameAvailableWidth);
-      var textEl = new Text_default({
-        x: pos[0],
-        y: pos[1],
-        rotation: labelLayout.rotation,
-        silent: AxisBuilder.isLabelSilent(axisModel),
-        style: createTextStyle(textStyleModel, {
-          text: name,
-          font: textFont,
-          overflow: "truncate",
-          width: maxWidth,
-          ellipsis,
-          fill: textStyleModel.getTextColor() || axisModel.get(["axisLine", "lineStyle", "color"]),
-          align: textStyleModel.get("align") || labelLayout.textAlign,
-          verticalAlign: textStyleModel.get("verticalAlign") || labelLayout.textVerticalAlign
-        }),
-        z2: 1
       });
-      setTooltipConfig({
-        el: textEl,
-        componentModel: axisModel,
-        itemName: name
-      });
-      textEl.__fullText = name;
-      textEl.anid = "name";
-      if (axisModel.get("triggerEvent")) {
-        var eventData = AxisBuilder.makeAxisEventDataBase(axisModel);
-        eventData.targetType = "axisName";
-        eventData.name = name;
-        getECData(textEl).eventData = eventData;
+    });
+  }
+  function prepareOuterBounds(gridModel, rawGridRect, layoutRef) {
+    var outerBoundsRect;
+    var optionOuterBoundsMode = gridModel.get("outerBoundsMode", true);
+    if (optionOuterBoundsMode === "same") {
+      outerBoundsRect = rawGridRect.clone();
+    } else if (optionOuterBoundsMode == null || optionOuterBoundsMode === "auto") {
+      outerBoundsRect = getLayoutRect(gridModel.get("outerBounds", true) || OUTER_BOUNDS_DEFAULT, layoutRef.refContainer);
+    } else if (optionOuterBoundsMode !== "none") {
+      if (true) {
+        error("Invalid grid[" + gridModel.componentIndex + "].outerBoundsMode.");
       }
-      transformGroup.add(textEl);
-      textEl.updateTransform();
-      group.add(textEl);
-      textEl.decomposeTransform();
     }
-  };
-  function endTextLayout(rotation, textPosition, textRotate, extent3) {
-    var rotationDiff = remRadian(textRotate - rotation);
-    var textAlign;
-    var textVerticalAlign;
-    var inverse = extent3[0] > extent3[1];
-    var onLeft = textPosition === "start" && !inverse || textPosition !== "start" && inverse;
-    if (isRadianAroundZero(rotationDiff - PI6 / 2)) {
-      textVerticalAlign = onLeft ? "bottom" : "top";
-      textAlign = "center";
-    } else if (isRadianAroundZero(rotationDiff - PI6 * 1.5)) {
-      textVerticalAlign = onLeft ? "top" : "bottom";
-      textAlign = "center";
+    var optionOuterBoundsContain = gridModel.get("outerBoundsContain", true);
+    var parsedOuterBoundsContain;
+    if (optionOuterBoundsContain == null || optionOuterBoundsContain === "auto") {
+      parsedOuterBoundsContain = "all";
+    } else if (indexOf(["all", "axisLabel"], optionOuterBoundsContain) < 0) {
+      if (true) {
+        error("Invalid grid[" + gridModel.componentIndex + "].outerBoundsContain.");
+      }
+      parsedOuterBoundsContain = "all";
     } else {
-      textVerticalAlign = "middle";
-      if (rotationDiff < PI6 * 1.5 && rotationDiff > PI6 / 2) {
-        textAlign = onLeft ? "left" : "right";
-      } else {
-        textAlign = onLeft ? "right" : "left";
-      }
+      parsedOuterBoundsContain = optionOuterBoundsContain;
     }
+    var outerBoundsClamp = [parsePositionSizeOption(retrieve2(gridModel.get("outerBoundsClampWidth", true), OUTER_BOUNDS_CLAMP_DEFAULT[0]), rawGridRect.width), parsePositionSizeOption(retrieve2(gridModel.get("outerBoundsClampHeight", true), OUTER_BOUNDS_CLAMP_DEFAULT[1]), rawGridRect.height)];
     return {
-      rotation: rotationDiff,
-      textAlign,
-      textVerticalAlign
+      outerBoundsRect,
+      parsedOuterBoundsContain,
+      outerBoundsClamp
     };
   }
-  function fixMinMaxLabelShow(axisModel, labelEls, tickEls) {
-    if (shouldShowAllLabels(axisModel.axis)) {
-      return;
-    }
-    var showMinLabel = axisModel.get(["axisLabel", "showMinLabel"]);
-    var showMaxLabel = axisModel.get(["axisLabel", "showMaxLabel"]);
-    labelEls = labelEls || [];
-    tickEls = tickEls || [];
-    var firstLabel = labelEls[0];
-    var nextLabel = labelEls[1];
-    var lastLabel = labelEls[labelEls.length - 1];
-    var prevLabel = labelEls[labelEls.length - 2];
-    var firstTick = tickEls[0];
-    var nextTick = tickEls[1];
-    var lastTick = tickEls[tickEls.length - 1];
-    var prevTick = tickEls[tickEls.length - 2];
-    if (showMinLabel === false) {
-      ignoreEl(firstLabel);
-      ignoreEl(firstTick);
-    } else if (isTwoLabelOverlapped(firstLabel, nextLabel)) {
-      if (showMinLabel) {
-        ignoreEl(nextLabel);
-        ignoreEl(nextTick);
-      } else {
-        ignoreEl(firstLabel);
-        ignoreEl(firstTick);
-      }
-    }
-    if (showMaxLabel === false) {
-      ignoreEl(lastLabel);
-      ignoreEl(lastTick);
-    } else if (isTwoLabelOverlapped(prevLabel, lastLabel)) {
-      if (showMaxLabel) {
-        ignoreEl(prevLabel);
-        ignoreEl(prevTick);
-      } else {
-        ignoreEl(lastLabel);
-        ignoreEl(lastTick);
-      }
-    }
-  }
-  function ignoreEl(el2) {
-    el2 && (el2.ignore = true);
-  }
-  function isTwoLabelOverlapped(current, next) {
-    var firstRect = current && current.getBoundingRect().clone();
-    var nextRect = next && next.getBoundingRect().clone();
-    if (!firstRect || !nextRect) {
-      return;
-    }
-    var mRotationBack = identity([]);
-    rotate(mRotationBack, mRotationBack, -current.rotation);
-    firstRect.applyTransform(mul([], mRotationBack, current.getLocalTransform()));
-    nextRect.applyTransform(mul([], mRotationBack, next.getLocalTransform()));
-    return firstRect.intersect(nextRect);
-  }
-  function isNameLocationCenter(nameLocation) {
-    return nameLocation === "middle" || nameLocation === "center";
-  }
-  function createTicks(ticksCoords, tickTransform, tickEndCoord, tickLineStyle, anidPrefix) {
-    var tickEls = [];
-    var pt12 = [];
-    var pt22 = [];
-    for (var i = 0; i < ticksCoords.length; i++) {
-      var tickCoord = ticksCoords[i].coord;
-      pt12[0] = tickCoord;
-      pt12[1] = 0;
-      pt22[0] = tickCoord;
-      pt22[1] = tickEndCoord;
-      if (tickTransform) {
-        applyTransform(pt12, pt12, tickTransform);
-        applyTransform(pt22, pt22, tickTransform);
-      }
-      var tickEl = new Line_default({
-        shape: {
-          x1: pt12[0],
-          y1: pt12[1],
-          x2: pt22[0],
-          y2: pt22[1]
-        },
-        style: tickLineStyle,
-        z2: 2,
-        autoBatch: true,
-        silent: true
-      });
-      subPixelOptimizeLine2(tickEl.shape, tickEl.style.lineWidth);
-      tickEl.anid = anidPrefix + "_" + ticksCoords[i].tickValue;
-      tickEls.push(tickEl);
-    }
-    return tickEls;
-  }
-  function buildAxisMajorTicks(group, transformGroup, axisModel, opt) {
-    var axis = axisModel.axis;
-    var tickModel = axisModel.getModel("axisTick");
-    var shown = tickModel.get("show");
-    if (shown === "auto" && opt.handleAutoShown) {
-      shown = opt.handleAutoShown("axisTick");
-    }
-    if (!shown || axis.scale.isBlank()) {
-      return;
-    }
-    var lineStyleModel = tickModel.getModel("lineStyle");
-    var tickEndCoord = opt.tickDirection * tickModel.get("length");
-    var ticksCoords = axis.getTicksCoords();
-    var ticksEls = createTicks(ticksCoords, transformGroup.transform, tickEndCoord, defaults(lineStyleModel.getLineStyle(), {
-      stroke: axisModel.get(["axisLine", "lineStyle", "color"])
-    }), "ticks");
-    for (var i = 0; i < ticksEls.length; i++) {
-      group.add(ticksEls[i]);
-    }
-    return ticksEls;
-  }
-  function buildAxisMinorTicks(group, transformGroup, axisModel, tickDirection) {
-    var axis = axisModel.axis;
-    var minorTickModel = axisModel.getModel("minorTick");
-    if (!minorTickModel.get("show") || axis.scale.isBlank()) {
-      return;
-    }
-    var minorTicksCoords = axis.getMinorTicksCoords();
-    if (!minorTicksCoords.length) {
-      return;
-    }
-    var lineStyleModel = minorTickModel.getModel("lineStyle");
-    var tickEndCoord = tickDirection * minorTickModel.get("length");
-    var minorTickLineStyle = defaults(lineStyleModel.getLineStyle(), defaults(axisModel.getModel("axisTick").getLineStyle(), {
-      stroke: axisModel.get(["axisLine", "lineStyle", "color"])
-    }));
-    for (var i = 0; i < minorTicksCoords.length; i++) {
-      var minorTicksEls = createTicks(minorTicksCoords[i], transformGroup.transform, tickEndCoord, minorTickLineStyle, "minorticks_" + i);
-      for (var k = 0; k < minorTicksEls.length; k++) {
-        group.add(minorTicksEls[k]);
-      }
-    }
-  }
-  function buildAxisLabel(group, transformGroup, axisModel, opt) {
-    var axis = axisModel.axis;
-    var show = retrieve(opt.axisLabelShow, axisModel.get(["axisLabel", "show"]));
-    if (!show || axis.scale.isBlank()) {
-      return;
-    }
-    var labelModel = axisModel.getModel("axisLabel");
-    var labelMargin = labelModel.get("margin");
-    var labels = axis.getViewLabels();
-    var labelRotation = (retrieve(opt.labelRotate, labelModel.get("rotate")) || 0) * PI6 / 180;
-    var labelLayout = AxisBuilder.innerTextLayout(opt.rotation, labelRotation, opt.labelDirection);
-    var rawCategoryData = axisModel.getCategories && axisModel.getCategories(true);
-    var labelEls = [];
-    var silent = AxisBuilder.isLabelSilent(axisModel);
-    var triggerEvent = axisModel.get("triggerEvent");
-    each(labels, function(labelItem, index) {
-      var tickValue = axis.scale.type === "ordinal" ? axis.scale.getRawOrdinalNumber(labelItem.tickValue) : labelItem.tickValue;
-      var formattedLabel = labelItem.formattedLabel;
-      var rawLabel = labelItem.rawLabel;
-      var itemLabelModel = labelModel;
-      if (rawCategoryData && rawCategoryData[tickValue]) {
-        var rawCategoryItem = rawCategoryData[tickValue];
-        if (isObject(rawCategoryItem) && rawCategoryItem.textStyle) {
-          itemLabelModel = new Model_default(rawCategoryItem.textStyle, labelModel, axisModel.ecModel);
-        }
-      }
-      var textColor = itemLabelModel.getTextColor() || axisModel.get(["axisLine", "lineStyle", "color"]);
-      var tickCoord = axis.dataToCoord(tickValue);
-      var align = itemLabelModel.getShallow("align", true) || labelLayout.textAlign;
-      var alignMin = retrieve2(itemLabelModel.getShallow("alignMinLabel", true), align);
-      var alignMax = retrieve2(itemLabelModel.getShallow("alignMaxLabel", true), align);
-      var verticalAlign = itemLabelModel.getShallow("verticalAlign", true) || itemLabelModel.getShallow("baseline", true) || labelLayout.textVerticalAlign;
-      var verticalAlignMin = retrieve2(itemLabelModel.getShallow("verticalAlignMinLabel", true), verticalAlign);
-      var verticalAlignMax = retrieve2(itemLabelModel.getShallow("verticalAlignMaxLabel", true), verticalAlign);
-      var textEl = new Text_default({
-        x: tickCoord,
-        y: opt.labelOffset + opt.labelDirection * labelMargin,
-        rotation: labelLayout.rotation,
-        silent,
-        z2: 10 + (labelItem.level || 0),
-        style: createTextStyle(itemLabelModel, {
-          text: formattedLabel,
-          align: index === 0 ? alignMin : index === labels.length - 1 ? alignMax : align,
-          verticalAlign: index === 0 ? verticalAlignMin : index === labels.length - 1 ? verticalAlignMax : verticalAlign,
-          fill: isFunction(textColor) ? textColor(
-            // (1) In category axis with data zoom, tick is not the original
-            // index of axis.data. So tick should not be exposed to user
-            // in category axis.
-            // (2) Compatible with previous version, which always use formatted label as
-            // input. But in interval scale the formatted label is like '223,445', which
-            // maked user replace ','. So we modify it to return original val but remain
-            // it as 'string' to avoid error in replacing.
-            axis.type === "category" ? rawLabel : axis.type === "value" ? tickValue + "" : tickValue,
-            index
-          ) : textColor
-        })
-      });
-      textEl.anid = "label_" + tickValue;
-      setTooltipConfig({
-        el: textEl,
-        componentModel: axisModel,
-        itemName: formattedLabel,
-        formatterParamsExtra: {
-          isTruncated: function() {
-            return textEl.isTruncated;
-          },
-          value: rawLabel,
-          tickIndex: index
+  var resolveAxisNameOverlapForGrid = function(cfg, ctx, axisModel, nameLayoutInfo, nameMoveDirVec, thisRecord) {
+    var perpendicularDim = axisModel.axis.dim === "x" ? "y" : "x";
+    resolveAxisNameOverlapDefault(cfg, ctx, axisModel, nameLayoutInfo, nameMoveDirVec, thisRecord);
+    if (!isNameLocationCenter(cfg.nameLocation)) {
+      each(ctx.recordMap[perpendicularDim], function(perpenRecord) {
+        if (perpenRecord && perpenRecord.labelInfoList && perpenRecord.dirVec) {
+          moveIfOverlapByLinearLabels(perpenRecord.labelInfoList, perpenRecord.dirVec, nameLayoutInfo, nameMoveDirVec);
         }
       });
-      if (triggerEvent) {
-        var eventData = AxisBuilder.makeAxisEventDataBase(axisModel);
-        eventData.targetType = "axisLabel";
-        eventData.value = rawLabel;
-        eventData.tickIndex = index;
-        if (axis.type === "category") {
-          eventData.dataIndex = tickValue;
-        }
-        getECData(textEl).eventData = eventData;
-      }
-      transformGroup.add(textEl);
-      textEl.updateTransform();
-      labelEls.push(textEl);
-      group.add(textEl);
-      textEl.decomposeTransform();
-    });
-    return labelEls;
-  }
-  var AxisBuilder_default = AxisBuilder;
+    }
+  };
+  var Grid_default = Grid;
 
   // node_modules/echarts/lib/component/axisPointer/modelHelper.js
   function collect(ecModel, api) {
@@ -34859,7 +38053,7 @@ var pptxPreview = (() => {
       var coordSys = seriesModel.coordinateSystem;
       var seriesTooltipTrigger = seriesModel.get(["tooltip", "trigger"], true);
       var seriesTooltipShow = seriesModel.get(["tooltip", "show"], true);
-      if (!coordSys || seriesTooltipTrigger === "none" || seriesTooltipTrigger === false || seriesTooltipTrigger === "item" || seriesTooltipShow === false || seriesModel.get(["axisPointer", "show"], true) === false) {
+      if (!coordSys || !coordSys.model || seriesTooltipTrigger === "none" || seriesTooltipTrigger === false || seriesTooltipTrigger === "item" || seriesTooltipShow === false || seriesModel.get(["axisPointer", "show"], true) === false) {
         return;
       }
       each(result.coordSysAxesInfo[makeKey(coordSys.model)], function(axisInfo) {
@@ -34891,27 +38085,26 @@ var pptxPreview = (() => {
       return;
     }
     var axisPointerModel = axisInfo.axisPointerModel;
-    var scale4 = axisInfo.axis.scale;
+    var scale3 = axisInfo.axis.scale;
     var option = axisPointerModel.option;
     var status = axisPointerModel.get("status");
     var value = axisPointerModel.get("value");
     if (value != null) {
-      value = scale4.parse(value);
+      value = scale3.parse(value);
     }
     var useHandle = isHandleTrigger(axisPointerModel);
     if (status == null) {
       option.status = useHandle ? "show" : "hide";
     }
-    var extent3 = scale4.getExtent().slice();
-    extent3[0] > extent3[1] && extent3.reverse();
+    var extent = scale3.getExtent();
     if (
       // Pick a value on axis when initializing.
-      value == null || value > extent3[1]
+      value == null || value > extent[1]
     ) {
-      value = extent3[1];
+      value = extent[1];
     }
-    if (value < extent3[0]) {
-      value = extent3[0];
+    if (value < extent[0]) {
+      value = extent[0];
     }
     option.value = value;
     if (useHandle) {
@@ -34937,7 +38130,7 @@ var pptxPreview = (() => {
   var axisPointerClazz = {};
   var AxisView = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(AxisView2, _super);
       function AxisView2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -34987,12 +38180,12 @@ var pptxPreview = (() => {
       ;
       AxisView2.type = "axis";
       return AxisView2;
-    }(Component_default2)
+    })(Component_default2)
   );
   var AxisView_default = AxisView;
 
   // node_modules/echarts/lib/component/axis/axisSplitHelper.js
-  var inner7 = makeInner();
+  var inner6 = makeInner();
   function rectCoordAxisBuildSplitArea(axisView, axisGroup, axisModel, gridModel) {
     var axis = axisModel.axis;
     if (axis.scale.isBlank()) {
@@ -35004,13 +38197,14 @@ var pptxPreview = (() => {
     var gridRect = gridModel.coordinateSystem.getRect();
     var ticksCoords = axis.getTicksCoords({
       tickModel: splitAreaModel,
-      clamp: true
+      breakTicks: "none",
+      pruneByBreak: "preserve_extent_bound"
     });
     if (!ticksCoords.length) {
       return;
     }
     var areaColorsLen = areaColors.length;
-    var lastSplitAreaColors = inner7(axisView).splitAreaColors;
+    var lastSplitAreaColors = inner6(axisView).splitAreaColors;
     var newSplitAreaColors = createHashMap();
     var colorIndex = 0;
     if (lastSplitAreaColors) {
@@ -35062,18 +38256,17 @@ var pptxPreview = (() => {
       }));
       colorIndex = (colorIndex + 1) % areaColorsLen;
     }
-    inner7(axisView).splitAreaColors = newSplitAreaColors;
+    inner6(axisView).splitAreaColors = newSplitAreaColors;
   }
   function rectCoordAxisHandleRemove(axisView) {
-    inner7(axisView).splitAreaColors = null;
+    inner6(axisView).splitAreaColors = null;
   }
 
   // node_modules/echarts/lib/component/axis/CartesianAxisView.js
-  var axisBuilderAttrs = ["axisLine", "axisTickLabel", "axisName"];
-  var selfBuilderAttrs = ["splitArea", "splitLine", "minorSplitLine"];
+  var selfBuilderAttrs = ["splitArea", "splitLine", "minorSplitLine", "breakArea"];
   var CartesianAxisView = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(CartesianAxisView2, _super);
       function CartesianAxisView2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -35086,27 +38279,13 @@ var pptxPreview = (() => {
         var oldAxisGroup = this._axisGroup;
         this._axisGroup = new Group_default();
         this.group.add(this._axisGroup);
-        if (!axisModel.get("show")) {
+        if (!shouldAxisShow(axisModel)) {
           return;
         }
-        var gridModel = axisModel.getCoordSysModel();
-        var layout3 = layout2(gridModel, axisModel);
-        var axisBuilder = new AxisBuilder_default(axisModel, extend({
-          handleAutoShown: function(elementType) {
-            var cartesians = gridModel.coordinateSystem.getCartesians();
-            for (var i = 0; i < cartesians.length; i++) {
-              if (isIntervalOrLogScale(cartesians[i].getOtherAxis(axisModel.axis).scale)) {
-                return true;
-              }
-            }
-            return false;
-          }
-        }, layout3));
-        each(axisBuilderAttrs, axisBuilder.add, axisBuilder);
-        this._axisGroup.add(axisBuilder.getGroup());
+        this._axisGroup.add(axisModel.axis.axisBuilder.group);
         each(selfBuilderAttrs, function(name) {
           if (axisModel.get([name, "show"])) {
-            axisElementBuilders[name](this, this._axisGroup, axisModel, gridModel);
+            axisElementBuilders[name](this, this._axisGroup, axisModel, axisModel.getCoordSysModel(), api);
           }
         }, this);
         var isInitialSortFromBarRacing = payload && payload.type === "changeAxisOrder" && payload.isInitSort;
@@ -35120,10 +38299,10 @@ var pptxPreview = (() => {
       };
       CartesianAxisView2.type = "cartesianAxis";
       return CartesianAxisView2;
-    }(AxisView_default)
+    })(AxisView_default)
   );
   var axisElementBuilders = {
-    splitLine: function(axisView, axisGroup, axisModel, gridModel) {
+    splitLine: function(axisView, axisGroup, axisModel, gridModel, api) {
       var axis = axisModel.axis;
       if (axis.scale.isBlank()) {
         return;
@@ -35138,7 +38317,9 @@ var pptxPreview = (() => {
       var isHorizontal = axis.isHorizontal();
       var lineCount = 0;
       var ticksCoords = axis.getTicksCoords({
-        tickModel: splitLineModel
+        tickModel: splitLineModel,
+        breakTicks: "none",
+        pruneByBreak: "preserve_extent_bound"
       });
       var p1 = [];
       var p2 = [];
@@ -35179,7 +38360,7 @@ var pptxPreview = (() => {
         axisGroup.add(line);
       }
     },
-    minorSplitLine: function(axisView, axisGroup, axisModel, gridModel) {
+    minorSplitLine: function(axisView, axisGroup, axisModel, gridModel, api) {
       var axis = axisModel.axis;
       var minorSplitLineModel = axisModel.getModel("minorSplitLine");
       var lineStyleModel = minorSplitLineModel.getModel("lineStyle");
@@ -35223,13 +38404,20 @@ var pptxPreview = (() => {
         }
       }
     },
-    splitArea: function(axisView, axisGroup, axisModel, gridModel) {
+    splitArea: function(axisView, axisGroup, axisModel, gridModel, api) {
       rectCoordAxisBuildSplitArea(axisView, axisGroup, axisModel, gridModel);
+    },
+    breakArea: function(axisView, axisGroup, axisModel, gridModel, api) {
+      var axisBreakHelper = getAxisBreakHelper();
+      var scale3 = axisModel.axis.scale;
+      if (axisBreakHelper && scale3.type !== "ordinal") {
+        axisBreakHelper.rectCoordBuildBreakAxis(axisGroup, axisView, axisModel, gridModel.coordinateSystem.getRect(), api);
+      }
     }
   };
   var CartesianXAxisView = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(CartesianXAxisView2, _super);
       function CartesianXAxisView2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -35238,11 +38426,11 @@ var pptxPreview = (() => {
       }
       CartesianXAxisView2.type = "xAxis";
       return CartesianXAxisView2;
-    }(CartesianAxisView)
+    })(CartesianAxisView)
   );
   var CartesianYAxisView = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(CartesianYAxisView2, _super);
       function CartesianYAxisView2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -35251,13 +38439,13 @@ var pptxPreview = (() => {
       }
       CartesianYAxisView2.type = "yAxis";
       return CartesianYAxisView2;
-    }(CartesianAxisView)
+    })(CartesianAxisView)
   );
 
   // node_modules/echarts/lib/component/grid/installSimple.js
   var GridView = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(GridView2, _super);
       function GridView2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -35279,7 +38467,7 @@ var pptxPreview = (() => {
       };
       GridView2.type = "grid";
       return GridView2;
-    }(Component_default2)
+    })(Component_default2)
   );
   var extraOption = {
     // gridIndex: 0,
@@ -35302,12 +38490,12 @@ var pptxPreview = (() => {
   }
 
   // node_modules/echarts/lib/component/axisPointer/BaseAxisPointer.js
-  var inner8 = makeInner();
+  var inner7 = makeInner();
   var clone3 = clone;
   var bind2 = bind;
   var BaseAxisPointer = (
     /** @class */
-    function() {
+    (function() {
       function BaseAxisPointer2() {
         this._dragging = false;
         this.animationThreshold = 15;
@@ -35369,7 +38557,7 @@ var pptxPreview = (() => {
         }
         if (animation === "auto" || animation == null) {
           var animationThreshold = this.animationThreshold;
-          if (isCategoryAxis && axis.getBandWidth() > animationThreshold) {
+          if (isCategoryAxis && calcBandWidth(axis).w > animationThreshold) {
             return true;
           }
           if (useSnap) {
@@ -35386,19 +38574,19 @@ var pptxPreview = (() => {
       BaseAxisPointer2.prototype.createPointerEl = function(group, elOption, axisModel, axisPointerModel) {
         var pointerOption = elOption.pointer;
         if (pointerOption) {
-          var pointerEl = inner8(group).pointerEl = new graphic_exports[pointerOption.type](clone3(elOption.pointer));
+          var pointerEl = inner7(group).pointerEl = new graphic_exports[pointerOption.type](clone3(elOption.pointer));
           group.add(pointerEl);
         }
       };
       BaseAxisPointer2.prototype.createLabelEl = function(group, elOption, axisModel, axisPointerModel) {
         if (elOption.label) {
-          var labelEl = inner8(group).labelEl = new Text_default(clone3(elOption.label));
+          var labelEl = inner7(group).labelEl = new Text_default(clone3(elOption.label));
           group.add(labelEl);
           updateLabelShowHide(labelEl, axisPointerModel);
         }
       };
       BaseAxisPointer2.prototype.updatePointerEl = function(group, elOption, updateProps3) {
-        var pointerEl = inner8(group).pointerEl;
+        var pointerEl = inner7(group).pointerEl;
         if (pointerEl && elOption.pointer) {
           pointerEl.setStyle(elOption.pointer.style);
           updateProps3(pointerEl, {
@@ -35407,7 +38595,7 @@ var pptxPreview = (() => {
         }
       };
       BaseAxisPointer2.prototype.updateLabelEl = function(group, elOption, updateProps3, axisPointerModel) {
-        var labelEl = inner8(group).labelEl;
+        var labelEl = inner7(group).labelEl;
         if (labelEl) {
           labelEl.setStyle(elOption.label.style);
           updateProps3(labelEl, {
@@ -35474,7 +38662,7 @@ var pptxPreview = (() => {
         this._payloadInfo = trans;
         handle.stopAnimation();
         handle.attr(getHandleTransProps(trans));
-        inner8(handle).lastProp = null;
+        inner7(handle).lastProp = null;
         this._doDispatchAxisPointer();
       };
       BaseAxisPointer2.prototype._doDispatchAxisPointer = function() {
@@ -35535,19 +38723,19 @@ var pptxPreview = (() => {
         };
       };
       return BaseAxisPointer2;
-    }()
+    })()
   );
   function updateProps2(animationModel, moveAnimation, el2, props) {
-    if (!propsEqual(inner8(el2).lastProp, props)) {
-      inner8(el2).lastProp = props;
+    if (!propsEqual(inner7(el2).lastProp, props)) {
+      inner7(el2).lastProp = props;
       moveAnimation ? updateProps(el2, props, animationModel) : (el2.stopAnimation(), el2.attr(props));
     }
   }
   function propsEqual(lastProps, newProps) {
     if (isObject(lastProps) && isObject(newProps)) {
       var equals_1 = true;
-      each(newProps, function(item, key) {
-        equals_1 = equals_1 && propsEqual(lastProps[key], item);
+      each(newProps, function(item, key2) {
+        equals_1 = equals_1 && propsEqual(lastProps[key2], item);
       });
       return !!equals_1;
     } else {
@@ -35704,11 +38892,24 @@ var pptxPreview = (() => {
       height: wh[1 - xDimIndex]
     };
   }
+  function calcAxisPointerShadowBandWidth(axis, seriesDataIndices, ecModel) {
+    return calcBandWidth(axis, {
+      fromStat: {
+        sers: map(seriesDataIndices, function(item) {
+          return ecModel.getSeriesByIndex(item.seriesIndex);
+        })
+      },
+      min: 1
+    }).w;
+  }
+  function calcAxisPointerShadowEnds(val, axisExtent, bandWidth) {
+    return [mathMax2(mathMin2(axisExtent[0], axisExtent[1]), val - bandWidth / 2), mathMin2(val + bandWidth / 2, mathMax2(axisExtent[0], axisExtent[1]))];
+  }
 
   // node_modules/echarts/lib/component/axisPointer/CartesianAxisPointer.js
   var CartesianAxisPointer = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(CartesianAxisPointer2, _super);
       function CartesianAxisPointer2() {
         return _super !== null && _super.apply(this, arguments) || this;
@@ -35717,28 +38918,21 @@ var pptxPreview = (() => {
         var axis = axisModel.axis;
         var grid = axis.grid;
         var axisPointerType = axisPointerModel.get("type");
+        var thisExtent = axis.getGlobalExtent();
         var otherExtent = getCartesian(grid, axis).getOtherAxis(axis).getGlobalExtent();
         var pixelValue = axis.toGlobalCoord(axis.dataToCoord(value, true));
         if (axisPointerType && axisPointerType !== "none") {
           var elStyle = buildElStyle(axisPointerModel);
-          var pointerOption = pointerShapeBuilder[axisPointerType](axis, pixelValue, otherExtent);
+          var pointerOption = pointerShapeBuilder[axisPointerType](axis, pixelValue, thisExtent, otherExtent, axisPointerModel.get("seriesDataIndices"), axisPointerModel.ecModel);
           pointerOption.style = elStyle;
           elOption.graphicKey = pointerOption.type;
           elOption.pointer = pointerOption;
         }
-        var layoutInfo = layout2(grid.model, axisModel);
-        buildCartesianSingleLabelElOption(
-          // @ts-ignore
-          value,
-          elOption,
-          layoutInfo,
-          axisModel,
-          axisPointerModel,
-          api
-        );
+        var layoutInfo = layout(grid.getRect(), axisModel);
+        buildCartesianSingleLabelElOption(value, elOption, layoutInfo, axisModel, axisPointerModel, api);
       };
       CartesianAxisPointer2.prototype.getHandleTransform = function(value, axisModel, axisPointerModel) {
-        var layoutInfo = layout2(axisModel.axis.grid.model, axisModel, {
+        var layoutInfo = layout(axisModel.axis.grid.getRect(), axisModel, {
           labelInside: false
         });
         layoutInfo.labelMargin = axisPointerModel.get(["handle", "margin"]);
@@ -35757,8 +38951,8 @@ var pptxPreview = (() => {
         var dimIndex = axis.dim === "x" ? 0 : 1;
         var currPosition = [transform.x, transform.y];
         currPosition[dimIndex] += delta[dimIndex];
-        currPosition[dimIndex] = Math.min(axisExtent[1], currPosition[dimIndex]);
-        currPosition[dimIndex] = Math.max(axisExtent[0], currPosition[dimIndex]);
+        currPosition[dimIndex] = mathMin2(axisExtent[1], currPosition[dimIndex]);
+        currPosition[dimIndex] = mathMax2(axisExtent[0], currPosition[dimIndex]);
         var cursorOtherValue = (otherExtent[1] + otherExtent[0]) / 2;
         var cursorPoint = [cursorOtherValue, cursorOtherValue];
         cursorPoint[dimIndex] = currPosition[dimIndex];
@@ -35776,7 +38970,7 @@ var pptxPreview = (() => {
         };
       };
       return CartesianAxisPointer2;
-    }(BaseAxisPointer_default)
+    })(BaseAxisPointer_default)
   );
   function getCartesian(grid, axis) {
     var opt = {};
@@ -35784,7 +38978,7 @@ var pptxPreview = (() => {
     return grid.getCartesian(opt);
   }
   var pointerShapeBuilder = {
-    line: function(axis, pixelValue, otherExtent) {
+    line: function(axis, pixelValue, thisExtent, otherExtent) {
       var targetShape = makeLineShape([pixelValue, otherExtent[0]], [pixelValue, otherExtent[1]], getAxisDimIndex(axis));
       return {
         type: "Line",
@@ -35792,12 +38986,13 @@ var pptxPreview = (() => {
         shape: targetShape
       };
     },
-    shadow: function(axis, pixelValue, otherExtent) {
-      var bandWidth = Math.max(1, axis.getBandWidth());
-      var span = otherExtent[1] - otherExtent[0];
+    shadow: function(axis, pixelValue, thisExtent, otherExtent, seriesDataIndices, ecModel) {
+      var bandWidth = calcAxisPointerShadowBandWidth(axis, seriesDataIndices, ecModel);
+      var otherSpan = otherExtent[1] - otherExtent[0];
+      var _a2 = calcAxisPointerShadowEnds(pixelValue, thisExtent, bandWidth), min3 = _a2[0], max3 = _a2[1];
       return {
         type: "Rect",
-        shape: makeRectShape([pixelValue - bandWidth / 2, otherExtent[0]], [bandWidth, span], getAxisDimIndex(axis))
+        shape: makeRectShape([min3, otherExtent[0]], [max3 - min3, otherSpan], getAxisDimIndex(axis))
       };
     }
   };
@@ -35809,7 +39004,7 @@ var pptxPreview = (() => {
   // node_modules/echarts/lib/component/axisPointer/AxisPointerModel.js
   var AxisPointerModel = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(AxisPointerModel2, _super);
       function AxisPointerModel2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -35836,21 +39031,21 @@ var pptxPreview = (() => {
         animation: null,
         animationDurationUpdate: 200,
         lineStyle: {
-          color: "#B9BEC9",
+          color: tokens_default.color.border,
           width: 1,
           type: "dashed"
         },
         shadowStyle: {
-          color: "rgba(210,219,238,0.2)"
+          color: tokens_default.color.shadowTint
         },
         label: {
           show: true,
           formatter: null,
           precision: "auto",
           margin: 3,
-          color: "#fff",
+          color: tokens_default.color.neutral00,
           padding: [5, 7, 5, 7],
-          backgroundColor: "auto",
+          backgroundColor: tokens_default.color.accent60,
           borderColor: null,
           borderWidth: 0,
           borderRadius: 3
@@ -35864,45 +39059,42 @@ var pptxPreview = (() => {
           margin: 50,
           // color: '#1b8bbd'
           // color: '#2f4554'
-          color: "#333",
-          shadowBlur: 3,
-          shadowColor: "#aaa",
-          shadowOffsetX: 0,
-          shadowOffsetY: 2,
+          color: tokens_default.color.accent40,
           // For mobile performance
           throttle: 40
         }
       };
       return AxisPointerModel2;
-    }(Component_default)
+    })(Component_default)
   );
   var AxisPointerModel_default = AxisPointerModel;
 
   // node_modules/echarts/lib/component/axisPointer/globalListener.js
-  var inner9 = makeInner();
+  var inner8 = makeInner();
   var each4 = each;
-  function register(key, api, handler) {
+  function register(key2, api, handler) {
     if (env_default.node) {
       return;
     }
     var zr = api.getZr();
-    inner9(zr).records || (inner9(zr).records = {});
+    inner8(zr).records || (inner8(zr).records = {});
     initGlobalListeners(zr, api);
-    var record = inner9(zr).records[key] || (inner9(zr).records[key] = {});
+    var record = inner8(zr).records[key2] || (inner8(zr).records[key2] = {});
     record.handler = handler;
   }
   function initGlobalListeners(zr, api) {
-    if (inner9(zr).initialized) {
+    if (inner8(zr).initialized) {
       return;
     }
-    inner9(zr).initialized = true;
+    inner8(zr).initialized = true;
     useHandler("click", curry(doEnter, "click"));
     useHandler("mousemove", curry(doEnter, "mousemove"));
+    useHandler("mousewheel", curry(doEnter, "mousewheel"));
     useHandler("globalout", onLeave);
     function useHandler(eventType, cb) {
       zr.on(eventType, function(e2) {
         var dis = makeDispatchAction(api);
-        each4(inner9(zr).records, function(record) {
+        each4(inner8(zr).records, function(record) {
           record && cb(record, e2, dis.dispatchAction);
         });
         dispatchTooltipFinally(dis.pendings, api);
@@ -35948,21 +39140,21 @@ var pptxPreview = (() => {
       pendings
     };
   }
-  function unregister(key, api) {
+  function unregister(key2, api) {
     if (env_default.node) {
       return;
     }
     var zr = api.getZr();
-    var record = (inner9(zr).records || {})[key];
+    var record = (inner8(zr).records || {})[key2];
     if (record) {
-      inner9(zr).records[key] = null;
+      inner8(zr).records[key2] = null;
     }
   }
 
   // node_modules/echarts/lib/component/axisPointer/AxisPointerView.js
   var AxisPointerView = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(AxisPointerView2, _super);
       function AxisPointerView2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -35971,7 +39163,7 @@ var pptxPreview = (() => {
       }
       AxisPointerView2.prototype.render = function(globalAxisPointerModel, ecModel, api) {
         var globalTooltipModel = ecModel.getComponent("tooltip");
-        var triggerOn = globalAxisPointerModel.get("triggerOn") || globalTooltipModel && globalTooltipModel.get("triggerOn") || "mousemove|click";
+        var triggerOn = globalAxisPointerModel.get("triggerOn") || globalTooltipModel && globalTooltipModel.get("triggerOn") || "mousemove|click|mousewheel";
         register("axisPointer", api, function(currTrigger, e2, dispatchAction) {
           if (triggerOn !== "none" && (currTrigger === "leave" || triggerOn.indexOf(currTrigger) >= 0)) {
             dispatchAction({
@@ -35991,7 +39183,7 @@ var pptxPreview = (() => {
       };
       AxisPointerView2.type = "axisPointer";
       return AxisPointerView2;
-    }(Component_default2)
+    })(Component_default2)
   );
   var AxisPointerView_default = AxisPointerView;
 
@@ -36045,7 +39237,7 @@ var pptxPreview = (() => {
   }
 
   // node_modules/echarts/lib/component/axisPointer/axisTrigger.js
-  var inner10 = makeInner();
+  var inner9 = makeInner();
   function axisTrigger(payload, ecModel, api) {
     var currTrigger = payload.currTrigger;
     var point = [payload.x, payload.y];
@@ -36079,7 +39271,7 @@ var pptxPreview = (() => {
     };
     each(coordSysAxesInfo.coordSysMap, function(coordSys, coordSysKey) {
       var coordSysContainsPoint = isIllegalPoint || coordSys.containPoint(point);
-      each(coordSysAxesInfo.coordSysAxesInfo[coordSysKey], function(axisInfo, key) {
+      each(coordSysAxesInfo.coordSysAxesInfo[coordSysKey], function(axisInfo, key2) {
         var axis = axisInfo.axis;
         var inputAxisInfo = findInputAxisInfo(inputAxesInfo, axisInfo);
         if (!shouldHide && coordSysContainsPoint && (!inputAxesInfo || inputAxisInfo)) {
@@ -36152,7 +39344,8 @@ var pptxPreview = (() => {
         dataIndices = result.dataIndices;
         seriesNestestValue = result.nestestValue;
       } else {
-        dataIndices = series.getData().indicesOfNearest(
+        dataIndices = series.indicesOfNearest(
+          dim,
           dataDim[0],
           value,
           // Add a threshold to avoid find the wrong dataIndex
@@ -36165,7 +39358,7 @@ var pptxPreview = (() => {
         }
         seriesNestestValue = series.getData().get(dataDim[0], dataIndices[0]);
       }
-      if (seriesNestestValue == null || !isFinite(seriesNestestValue)) {
+      if (!isNullableNumberFinite(seriesNestestValue)) {
         return;
       }
       var diff = value - seriesNestestValue;
@@ -36224,7 +39417,7 @@ var pptxPreview = (() => {
       axisType: axisModel.type,
       axisId: axisModel.id,
       value,
-      // Caustion: viewHelper.getValueLabel is actually on "view stage", which
+      // Caution: viewHelper.getValueLabel is actually on "view stage", which
       // depends that all models have been updated. So it should not be performed
       // here. Considering axisPointerModel used here is volatile, which is hard
       // to be retrieve in TooltipView, we prepare parameters here.
@@ -36237,9 +39430,9 @@ var pptxPreview = (() => {
   }
   function updateModelActually(showValueMap, axesInfo, outputPayload) {
     var outputAxesInfo = outputPayload.axesInfo = [];
-    each(axesInfo, function(axisInfo, key) {
+    each(axesInfo, function(axisInfo, key2) {
       var option = axisInfo.axisPointerModel.option;
-      var valItem = showValueMap[key];
+      var valItem = showValueMap[key2];
       if (valItem) {
         !axisInfo.useHandle && (option.status = "show");
         option.value = valItem.value;
@@ -36278,22 +39471,27 @@ var pptxPreview = (() => {
   function dispatchHighDownActually(axesInfo, dispatchAction, api) {
     var zr = api.getZr();
     var highDownKey = "axisPointerLastHighlights";
-    var lastHighlights = inner10(zr)[highDownKey] || {};
-    var newHighlights = inner10(zr)[highDownKey] = {};
-    each(axesInfo, function(axisInfo, key) {
+    var lastHighlights = inner9(zr)[highDownKey] || {};
+    var newHighlights = inner9(zr)[highDownKey] = {};
+    each(axesInfo, function(axisInfo, key2) {
       var option = axisInfo.axisPointerModel.option;
       option.status === "show" && axisInfo.triggerEmphasis && each(option.seriesDataIndices, function(batchItem) {
-        var key2 = batchItem.seriesIndex + " | " + batchItem.dataIndex;
-        newHighlights[key2] = batchItem;
+        newHighlights[batchItem.seriesIndex + "|" + batchItem.dataIndex] = batchItem;
       });
     });
     var toHighlight = [];
     var toDownplay = [];
-    each(lastHighlights, function(batchItem, key) {
-      !newHighlights[key] && toDownplay.push(batchItem);
+    function makeHighDownItem(batchItem) {
+      return {
+        seriesIndex: batchItem.seriesIndex,
+        dataIndex: batchItem.dataIndex
+      };
+    }
+    each(lastHighlights, function(batchItem, key2) {
+      !newHighlights[key2] && toDownplay.push(makeHighDownItem(batchItem));
     });
-    each(newHighlights, function(batchItem, key) {
-      !lastHighlights[key] && toHighlight.push(batchItem);
+    each(newHighlights, function(batchItem, key2) {
+      !lastHighlights[key2] && toHighlight.push(makeHighDownItem(batchItem));
     });
     toDownplay.length && api.dispatchAction({
       type: "downplay",
@@ -36345,8 +39543,10 @@ var pptxPreview = (() => {
         }
       }
     });
-    registers.registerProcessor(registers.PRIORITY.PROCESSOR.STATISTIC, function(ecModel, api) {
-      ecModel.getComponent("axisPointer").coordSysAxesInfo = collect(ecModel, api);
+    registers.registerProcessor(registers.PRIORITY.PROCESSOR.STATISTIC, {
+      overallReset: function(ecModel, api) {
+        ecModel.getComponent("axisPointer").coordSysAxesInfo = collect(ecModel, api);
+      }
     });
     registers.registerAction({
       type: "updateAxisPointer",
@@ -36366,7 +39566,7 @@ var pptxPreview = (() => {
     var padding = normalizeCssArray2(componentModel.get("padding"));
     var style = componentModel.getItemStyle(["color", "opacity"]);
     style.fill = componentModel.get("backgroundColor");
-    rect = new Rect_default({
+    var bgRect = new Rect_default({
       shape: {
         x: rect.x - padding[3],
         y: rect.y - padding[0],
@@ -36378,13 +39578,13 @@ var pptxPreview = (() => {
       silent: true,
       z2: -1
     });
-    return rect;
+    return bgRect;
   }
 
   // node_modules/echarts/lib/component/tooltip/TooltipModel.js
   var TooltipModel = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(TooltipModel2, _super);
       function TooltipModel2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -36403,20 +39603,20 @@ var pptxPreview = (() => {
         // 'item' | 'axis' | 'none'
         trigger: "item",
         // 'click' | 'mousemove' | 'none'
-        triggerOn: "mousemove|click",
+        triggerOn: "mousemove|click|mousewheel",
         alwaysShowContent: false,
-        displayMode: "single",
         renderMode: "auto",
         // whether restraint content inside viewRect.
         // If renderMode: 'richText', default true.
-        // If renderMode: 'html', defaut false (for backward compat).
+        // If renderMode: 'html', defaults to `false` (for backward compat).
         confine: null,
         showDelay: 0,
         hideDelay: 100,
         // Animation transition time, unit is second
         transitionDuration: 0.4,
+        displayTransition: true,
         enterable: false,
-        backgroundColor: "#fff",
+        backgroundColor: tokens_default.color.neutral00,
         // box shadow
         shadowBlur: 10,
         shadowColor: "rgba(0, 0, 0, .2)",
@@ -36426,6 +39626,7 @@ var pptxPreview = (() => {
         borderRadius: 4,
         // tooltip border width, unit is px, default is 0 (no border)
         borderWidth: 1,
+        defaultBorderColor: tokens_default.color.border,
         // Tooltip inside padding, default is 5 for all direction
         // Array is allowed to set up, right, bottom, left, same with css
         // The default value: See `tooltip/tooltipMarkup.ts#getPaddingFromTooltipModel`.
@@ -36446,7 +39647,7 @@ var pptxPreview = (() => {
           animationDurationUpdate: 200,
           animationEasingUpdate: "exponentialOut",
           crossStyle: {
-            color: "#999",
+            color: tokens_default.color.borderShade,
             width: 1,
             type: "dashed",
             // TODO formatter
@@ -36456,12 +39657,12 @@ var pptxPreview = (() => {
           // otherwise it will always override those styles on option.axisPointer.
         },
         textStyle: {
-          color: "#666",
+          color: tokens_default.color.tertiary,
           fontSize: 14
         }
       };
       return TooltipModel2;
-    }(Component_default)
+    })(Component_default)
   );
   var TooltipModel_default = TooltipModel;
 
@@ -36533,13 +39734,17 @@ var pptxPreview = (() => {
     var styleCss = ["position:absolute;width:" + arrowSize + "px;height:" + arrowSize + "px;z-index:-1;", positionStyle + ";" + transformStyle + ";", "border-bottom:" + borderStyle, "border-right:" + borderStyle, "background-color:" + backgroundColor2 + ";"];
     return '<div style="' + styleCss.join("") + '"></div>';
   }
-  function assembleTransition(duration, onlyFade) {
+  function assembleTransition(duration, onlyFadeTransition, enableDisplayTransition) {
     var transitionCurve = "cubic-bezier(0.23,1,0.32,1)";
-    var transitionOption = " " + duration / 2 + "s " + transitionCurve;
-    var transitionText = "opacity" + transitionOption + ",visibility" + transitionOption;
-    if (!onlyFade) {
+    var transitionOption = "";
+    var transitionText = "";
+    if (enableDisplayTransition) {
+      transitionOption = " " + duration / 2 + "s " + transitionCurve;
+      transitionText = "opacity" + transitionOption + ",visibility" + transitionOption;
+    }
+    if (!onlyFadeTransition) {
       transitionOption = " " + duration + "s " + transitionCurve;
-      transitionText += env_default.transformSupported ? "," + CSS_TRANSFORM_VENDOR + transitionOption : ",left" + transitionOption + ",top" + transitionOption;
+      transitionText += (transitionText.length ? "," : "") + (env_default.transformSupported ? "" + CSS_TRANSFORM_VENDOR + transitionOption : ",left" + transitionOption + ",top" + transitionOption);
     }
     return CSS_TRANSITION_VENDOR + ":" + transitionText;
   }
@@ -36556,8 +39761,8 @@ var pptxPreview = (() => {
   function assembleFont(textStyleModel) {
     var cssText = [];
     var fontSize = textStyleModel.get("fontSize");
-    var color = textStyleModel.getTextColor();
-    color && cssText.push("color:" + color);
+    var color3 = textStyleModel.getTextColor();
+    color3 && cssText.push("color:" + color3);
     cssText.push("font:" + textStyleModel.getFont());
     var lineHeight = retrieve2(textStyleModel.get("lineHeight"), Math.round(fontSize * 3 / 2));
     fontSize && cssText.push("line-height:" + lineHeight + "px");
@@ -36572,7 +39777,7 @@ var pptxPreview = (() => {
     });
     return cssText.join(";");
   }
-  function assembleCssText(tooltipModel, enableTransition, onlyFade) {
+  function assembleCssText(tooltipModel, enableTransition, onlyFadeTransition, enableDisplayTransition) {
     var cssText = [];
     var transitionDuration = tooltipModel.get("transitionDuration");
     var backgroundColor2 = tooltipModel.get("backgroundColor");
@@ -36584,7 +39789,7 @@ var pptxPreview = (() => {
     var padding = getPaddingFromTooltipModel(tooltipModel, "html");
     var boxShadow = shadowOffsetX + "px " + shadowOffsetY + "px " + shadowBlur + "px " + shadowColor;
     cssText.push("box-shadow:" + boxShadow);
-    enableTransition && transitionDuration && cssText.push(assembleTransition(transitionDuration, onlyFade));
+    enableTransition && transitionDuration > 0 && cssText.push(assembleTransition(transitionDuration, onlyFadeTransition, enableDisplayTransition));
     if (backgroundColor2) {
       cssText.push("background-color:" + backgroundColor2);
     }
@@ -36621,7 +39826,7 @@ var pptxPreview = (() => {
   }
   var TooltipHTMLContent = (
     /** @class */
-    function() {
+    (function() {
       function TooltipHTMLContent2(api, opt) {
         this._show = false;
         this._styleCoord = [0, 0, 0, 0];
@@ -36680,6 +39885,7 @@ var pptxPreview = (() => {
         var alwaysShowContent = tooltipModel.get("alwaysShowContent");
         alwaysShowContent && this._moveIfResized();
         this._alwaysShowContent = alwaysShowContent;
+        this._enableDisplayTransition = tooltipModel.get("displayTransition") && tooltipModel.get("transitionDuration") > 0;
         this.el.className = tooltipModel.get("className") || "";
       };
       TooltipHTMLContent2.prototype.show = function(tooltipModel, nearPointColor) {
@@ -36691,7 +39897,7 @@ var pptxPreview = (() => {
         if (!el2.innerHTML) {
           style.display = "none";
         } else {
-          style.cssText = gCssText + assembleCssText(tooltipModel, !this._firstShow, this._longHide) + assembleTransform(styleCoord[0], styleCoord[1], true) + ("border-color:" + convertToColorString(nearPointColor) + ";") + (tooltipModel.get("extraCssText") || "") + (";pointer-events:" + (this._enterable ? "auto" : "none"));
+          style.cssText = gCssText + assembleCssText(tooltipModel, !this._firstShow, this._longHide, this._enableDisplayTransition) + assembleTransform(styleCoord[0], styleCoord[1], true) + ("border-color:" + convertToColorString(nearPointColor) + ";") + (tooltipModel.get("extraCssText") || "") + (";pointer-events:" + (this._enterable ? "auto" : "none"));
         }
         this._show = true;
         this._firstShow = false;
@@ -36755,8 +39961,12 @@ var pptxPreview = (() => {
       TooltipHTMLContent2.prototype.hide = function() {
         var _this = this;
         var style = this.el.style;
-        style.visibility = "hidden";
-        style.opacity = "0";
+        if (this._enableDisplayTransition) {
+          style.visibility = "hidden";
+          style.opacity = "0";
+        } else {
+          style.display = "none";
+        }
         env_default.transform3dSupported && (style.willChange = "");
         this._show = false;
         this._longHideTimeout = setTimeout(function() {
@@ -36780,19 +39990,25 @@ var pptxPreview = (() => {
       TooltipHTMLContent2.prototype.dispose = function() {
         clearTimeout(this._hideTimeout);
         clearTimeout(this._longHideTimeout);
-        var parentNode2 = this.el.parentNode;
-        parentNode2 && parentNode2.removeChild(this.el);
+        var zr = this._zr;
+        transformLocalCoordClear(zr && zr.painter && zr.painter.getViewportRoot(), this._container);
+        var el2 = this.el;
+        if (el2) {
+          el2.onmouseenter = el2.onmousemove = el2.onmouseleave = null;
+          var parentNode2 = el2.parentNode;
+          parentNode2 && parentNode2.removeChild(el2);
+        }
         this.el = this._container = null;
       };
       return TooltipHTMLContent2;
-    }()
+    })()
   );
   var TooltipHTMLContent_default = TooltipHTMLContent;
 
   // node_modules/echarts/lib/component/tooltip/TooltipRichContent.js
   var TooltipRichContent = (
     /** @class */
-    function() {
+    (function() {
       function TooltipRichContent2(api) {
         this._show = false;
         this._styleCoord = [0, 0, 0, 0];
@@ -36914,7 +40130,7 @@ var pptxPreview = (() => {
         this._zr.remove(this.el);
       };
       return TooltipRichContent2;
-    }()
+    })()
   );
   function mathMaxWith0(val) {
     return Math.max(0, val);
@@ -36949,7 +40165,7 @@ var pptxPreview = (() => {
   });
   var TooltipView = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(TooltipView2, _super);
       function TooltipView2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -37003,6 +40219,10 @@ var pptxPreview = (() => {
         var ecModel = this._ecModel;
         var api = this._api;
         var triggerOn = tooltipModel.get("triggerOn");
+        if (tooltipModel.get("trigger") !== "axis") {
+          this._lastDataByCoordSys = null;
+          this._cbParamsList = null;
+        }
         if (this._lastX != null && this._lastY != null && triggerOn !== "none" && triggerOn !== "click") {
           var self_1 = this;
           clearTimeout(this._refreshUpdateTimeout);
@@ -37095,6 +40315,7 @@ var pptxPreview = (() => {
           tooltipContent.hideLater(this._tooltipModel.get("hideDelay"));
         }
         this._lastX = this._lastY = this._lastDataByCoordSys = null;
+        this._cbParamsList = null;
         if (payload.from !== this.uid) {
           this._hide(makeDispatchAction2(payload, api));
         }
@@ -37140,16 +40361,21 @@ var pptxPreview = (() => {
             return;
           }
           this._lastDataByCoordSys = null;
+          this._cbParamsList = null;
           var seriesDispatcher_1;
           var cmptDispatcher_1;
           findEventDispatcher(el2, function(target) {
-            if (getECData(target).dataIndex != null) {
-              seriesDispatcher_1 = target;
+            if (target.tooltipDisabled) {
+              seriesDispatcher_1 = cmptDispatcher_1 = null;
               return true;
             }
-            if (getECData(target).tooltipConfig != null) {
+            if (seriesDispatcher_1 || cmptDispatcher_1) {
+              return;
+            }
+            if (getECData(target).dataIndex != null) {
+              seriesDispatcher_1 = target;
+            } else if (getECData(target).tooltipConfig != null) {
               cmptDispatcher_1 = target;
-              return true;
             }
           }, true);
           if (seriesDispatcher_1) {
@@ -37161,6 +40387,7 @@ var pptxPreview = (() => {
           }
         } else {
           this._lastDataByCoordSys = null;
+          this._cbParamsList = null;
           this._hide(dispatchAction);
         }
       };
@@ -37187,10 +40414,12 @@ var pptxPreview = (() => {
           each(itemCoordSys.dataByAxis, function(axisItem) {
             var axisModel = ecModel.getComponent(axisItem.axisDim + "Axis", axisItem.axisIndex);
             var axisValue = axisItem.value;
+            var axis = axisModel.axis;
+            var axisValueParsed = axis.scale.parse(axisValue);
             if (!axisModel || axisValue == null) {
               return;
             }
-            var axisValueLabel = getValueLabel(axisValue, axisModel.axis, ecModel, axisItem.seriesDataIndices, axisItem.valueLabelOpt);
+            var axisValueLabel = getValueLabel(axisValue, axis, ecModel, axisItem.seriesDataIndices, axisItem.valueLabelOpt);
             var axisSectionMarkup = createTooltipMarkup("section", {
               header: axisValueLabel,
               noHeader: !trim(axisValueLabel),
@@ -37210,7 +40439,7 @@ var pptxPreview = (() => {
               cbParams.axisType = axisItem.axisType;
               cbParams.axisId = axisItem.axisId;
               cbParams.axisValue = getAxisRawValue(axisModel.axis, {
-                value: axisValue
+                value: axisValueParsed
               });
               cbParams.axisValueLabel = axisValueLabel;
               cbParams.marker = markupStyleCreator.makeTooltipMarker("item", convertToColorString(cbParams.color), renderMode);
@@ -37338,7 +40567,7 @@ var pptxPreview = (() => {
         var formatter = tooltipModel.get("formatter");
         positionExpr = positionExpr || tooltipModel.get("position");
         var html = defaultHtml;
-        var nearPoint = this._getNearestPoint([x, y], params, tooltipModel.get("trigger"), tooltipModel.get("borderColor"));
+        var nearPoint = this._getNearestPoint([x, y], params, tooltipModel.get("trigger"), tooltipModel.get("borderColor"), tooltipModel.get("defaultBorderColor", true));
         var nearPointColor = nearPoint.color;
         if (formatter) {
           if (isString(formatter)) {
@@ -37367,10 +40596,10 @@ var pptxPreview = (() => {
         tooltipContent.show(tooltipModel, nearPointColor);
         this._updatePosition(tooltipModel, positionExpr, x, y, tooltipContent, params, el2);
       };
-      TooltipView2.prototype._getNearestPoint = function(point, tooltipDataParams, trigger, borderColor) {
+      TooltipView2.prototype._getNearestPoint = function(point, tooltipDataParams, trigger, borderColor, defaultBorderColor) {
         if (trigger === "axis" || isArray(tooltipDataParams)) {
           return {
-            color: borderColor || (this._renderMode === "html" ? "#fff" : "none")
+            color: borderColor || defaultBorderColor
           };
         }
         if (!isArray(tooltipDataParams)) {
@@ -37461,6 +40690,7 @@ var pptxPreview = (() => {
       };
       TooltipView2.prototype._hide = function(dispatchAction) {
         this._lastDataByCoordSys = null;
+        this._cbParamsList = null;
         dispatchAction({
           type: "hideTip",
           from: this.uid
@@ -37473,10 +40703,14 @@ var pptxPreview = (() => {
         clear(this, "_updatePosition");
         this._tooltipContent.dispose();
         unregister("itemTooltip", api);
+        this._tooltipContent = null;
+        this._tooltipModel = null;
+        this._lastDataByCoordSys = null;
+        this._cbParamsList = null;
       };
       TooltipView2.type = "tooltip";
       return TooltipView2;
-    }(Component_default2)
+    })(Component_default2)
   );
   function buildTooltipModel(modelCascade, globalTooltipModel, defaultTooltipOption) {
     var ecModel = globalTooltipModel.ecModel;
@@ -37626,7 +40860,7 @@ var pptxPreview = (() => {
   // node_modules/echarts/lib/component/title/install.js
   var TitleModel = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(TitleModel2, _super);
       function TitleModel2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -37646,29 +40880,29 @@ var pptxPreview = (() => {
         target: "blank",
         subtext: "",
         subtarget: "blank",
-        left: 0,
-        top: 0,
-        backgroundColor: "rgba(0,0,0,0)",
-        borderColor: "#ccc",
+        left: "center",
+        top: tokens_default.size.m,
+        backgroundColor: tokens_default.color.transparent,
+        borderColor: tokens_default.color.primary,
         borderWidth: 0,
         padding: 5,
         itemGap: 10,
         textStyle: {
           fontSize: 18,
           fontWeight: "bold",
-          color: "#464646"
+          color: tokens_default.color.primary
         },
         subtextStyle: {
           fontSize: 12,
-          color: "#6E7079"
+          color: tokens_default.color.quaternary
         }
       };
       return TitleModel2;
-    }(Component_default)
+    })(Component_default)
   );
   var TitleView = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(TitleView2, _super);
       function TitleView2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -37732,10 +40966,8 @@ var pptxPreview = (() => {
         var layoutOption = titleModel.getBoxLayoutParams();
         layoutOption.width = groupRect.width;
         layoutOption.height = groupRect.height;
-        var layoutRect = getLayoutRect(layoutOption, {
-          width: api.getWidth(),
-          height: api.getHeight()
-        }, titleModel.get("padding"));
+        var layoutRef = createBoxLayoutReference(titleModel, api);
+        var layoutRect = getLayoutRect(layoutOption, layoutRef.refContainer, titleModel.get("padding"));
         if (!textAlign) {
           textAlign = titleModel.get("left") || titleModel.get("right");
           if (textAlign === "middle") {
@@ -37788,7 +41020,7 @@ var pptxPreview = (() => {
       };
       TitleView2.type = "title";
       return TitleView2;
-    }(Component_default2)
+    })(Component_default2)
   );
   function install8(registers) {
     registers.registerComponentModel(TitleModel);
@@ -37811,7 +41043,7 @@ var pptxPreview = (() => {
   };
   var LegendModel = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(LegendModel2, _super);
       function LegendModel2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -37979,21 +41211,21 @@ var pptxPreview = (() => {
         orient: "horizontal",
         left: "center",
         // right: 'center',
-        top: 0,
-        // bottom: null,
+        // top: 0,
+        bottom: tokens_default.size.m,
         align: "auto",
-        backgroundColor: "rgba(0,0,0,0)",
-        borderColor: "#ccc",
+        backgroundColor: tokens_default.color.transparent,
+        borderColor: tokens_default.color.border,
         borderRadius: 0,
         borderWidth: 0,
         padding: 5,
-        itemGap: 10,
+        itemGap: 8,
         itemWidth: 25,
         itemHeight: 14,
         symbolRotate: "inherit",
         symbolKeepAspect: true,
-        inactiveColor: "#ccc",
-        inactiveBorderColor: "#ccc",
+        inactiveColor: tokens_default.color.disabled,
+        inactiveBorderColor: tokens_default.color.disabled,
         inactiveBorderWidth: "auto",
         itemStyle: {
           color: "inherit",
@@ -38008,7 +41240,7 @@ var pptxPreview = (() => {
         lineStyle: {
           width: "auto",
           color: "inherit",
-          inactiveColor: "#ccc",
+          inactiveColor: tokens_default.color.disabled,
           inactiveWidth: 2,
           opacity: "inherit",
           type: "inherit",
@@ -38018,7 +41250,7 @@ var pptxPreview = (() => {
           miterLimit: "inherit"
         },
         textStyle: {
-          color: "#333"
+          color: tokens_default.color.secondary
         },
         selectedMode: true,
         selector: false,
@@ -38028,15 +41260,14 @@ var pptxPreview = (() => {
           padding: [3, 5, 3, 5],
           fontSize: 12,
           fontFamily: "sans-serif",
-          color: "#666",
+          color: tokens_default.color.tertiary,
           borderWidth: 1,
-          borderColor: "#666"
+          borderColor: tokens_default.color.border
         },
         emphasis: {
           selectorLabel: {
             show: true,
-            color: "#eee",
-            backgroundColor: "#666"
+            color: tokens_default.color.quaternary
           }
         },
         selectorPosition: "auto",
@@ -38044,10 +41275,11 @@ var pptxPreview = (() => {
         selectorButtonGap: 10,
         tooltip: {
           show: false
-        }
+        },
+        triggerEvent: false
       };
       return LegendModel2;
-    }(Component_default)
+    })(Component_default)
   );
   var LegendModel_default = LegendModel;
 
@@ -38057,7 +41289,7 @@ var pptxPreview = (() => {
   var Group2 = Group_default;
   var LegendView = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(LegendView2, _super);
       function LegendView2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -38094,22 +41326,23 @@ var pptxPreview = (() => {
           selectorPosition = orient === "horizontal" ? "end" : "start";
         }
         this.renderInner(itemAlign, legendModel, ecModel, api, selector, orient, selectorPosition);
+        var refContainer = createBoxLayoutReference(legendModel, api).refContainer;
         var positionInfo = legendModel.getBoxLayoutParams();
-        var viewportSize = {
-          width: api.getWidth(),
-          height: api.getHeight()
-        };
         var padding = legendModel.get("padding");
-        var maxSize = getLayoutRect(positionInfo, viewportSize, padding);
+        var maxSize = getLayoutRect(positionInfo, refContainer, padding);
         var mainRect = this.layoutInner(legendModel, itemAlign, maxSize, isFirstRender, selector, selectorPosition);
         var layoutRect = getLayoutRect(defaults({
           width: mainRect.width,
           height: mainRect.height
-        }, positionInfo), viewportSize, padding);
+        }, positionInfo), refContainer, padding);
         this.group.x = layoutRect.x - mainRect.x;
         this.group.y = layoutRect.y - mainRect.y;
         this.group.markRedraw();
-        this.group.add(this._backgroundEl = makeBackground(mainRect, legendModel));
+        this.group.add(this._backgroundEl = makeBackground(
+          mainRect,
+          // FXIME: most itemStyle options does not work in background because inherit is not handled yet.
+          legendModel
+        ));
       };
       LegendView2.prototype.resetInner = function() {
         this.getContentGroup().removeAll();
@@ -38120,11 +41353,13 @@ var pptxPreview = (() => {
         var contentGroup = this.getContentGroup();
         var legendDrawnMap = createHashMap();
         var selectMode = legendModel.get("selectedMode");
+        var triggerEvent = legendModel.get("triggerEvent");
         var excludeSeriesId = [];
         ecModel.eachRawSeries(function(seriesModel) {
           !seriesModel.get("legendHoverLink") && excludeSeriesId.push(seriesModel.id);
         });
         each5(legendModel.getData(), function(legendItemModel, dataIndex) {
+          var _this = this;
           var name = legendItemModel.get("name");
           if (!this.newlineDisabled && (name === "" || name === "\n")) {
             var g = new Group2();
@@ -38151,9 +41386,15 @@ var pptxPreview = (() => {
                 ecData.ssrType = "legend";
               });
             }
+            if (triggerEvent) {
+              itemGroup.eachChild(function(child) {
+                _this.packEventData(child, legendModel, seriesModel, dataIndex, name);
+              });
+            }
             legendDrawnMap.set(name, true);
           } else {
             ecModel.eachRawSeries(function(seriesModel2) {
+              var _this2 = this;
               if (legendDrawnMap.get(name)) {
                 return;
               }
@@ -38182,6 +41423,11 @@ var pptxPreview = (() => {
                     ecData.ssrType = "legend";
                   });
                 }
+                if (triggerEvent) {
+                  itemGroup2.eachChild(function(child) {
+                    _this2.packEventData(child, legendModel, seriesModel2, dataIndex, name);
+                  });
+                }
                 legendDrawnMap.set(name, true);
               }
             }, this);
@@ -38196,6 +41442,17 @@ var pptxPreview = (() => {
           this._createSelector(selector, legendModel, api, orient, selectorPosition);
         }
       };
+      LegendView2.prototype.packEventData = function(el2, legendModel, seriesModel, dataIndex, name) {
+        var eventData = {
+          componentType: "legend",
+          componentIndex: legendModel.componentIndex,
+          dataIndex,
+          value: name,
+          seriesIndex: seriesModel.seriesIndex
+        };
+        getECData(el2).eventData = eventData;
+      };
+      ;
       LegendView2.prototype._createSelector = function(selector, legendModel, api, orient, selectorPosition) {
         var selectorGroup = this.getSelectorGroup();
         each5(selector, function createSelectorButton(selectorItem) {
@@ -38360,7 +41617,7 @@ var pptxPreview = (() => {
       };
       LegendView2.type = "legend.plain";
       return LegendView2;
-    }(Component_default2)
+    })(Component_default2)
   );
   function getLegendStyle(iconType, legendItemModel, lineVisualStyle, itemVisualStyle, drawType, isSelected, api) {
     function handleCommonProps(style, visualStyle) {
@@ -38414,7 +41671,7 @@ var pptxPreview = (() => {
     icon.setOrigin([opt.itemWidth / 2, opt.itemHeight / 2]);
     if (symboType.indexOf("empty") > -1) {
       icon.style.stroke = icon.style.fill;
-      icon.style.fill = "#fff";
+      icon.style.fill = tokens_default.color.neutral00;
       icon.style.lineWidth = 2;
     }
     return icon;
@@ -38427,18 +41684,8 @@ var pptxPreview = (() => {
     });
     dispatchHighlightAction(seriesName, dataName, api, excludeSeriesId);
   }
-  function isUseHoverLayer(api) {
-    var list = api.getZr().storage.getDisplayList();
-    var emphasisState;
-    var i = 0;
-    var len2 = list.length;
-    while (i < len2 && !(emphasisState = list[i].states.emphasis)) {
-      i++;
-    }
-    return emphasisState && emphasisState.hoverLayer;
-  }
   function dispatchHighlightAction(seriesName, dataName, api, excludeSeriesId) {
-    if (!isUseHoverLayer(api)) {
+    if (!api.usingTHL()) {
       api.dispatchAction({
         type: "highlight",
         seriesName,
@@ -38448,7 +41695,7 @@ var pptxPreview = (() => {
     }
   }
   function dispatchDownplayAction(seriesName, dataName, api, excludeSeriesId) {
-    if (!isUseHoverLayer(api)) {
+    if (!api.usingTHL()) {
       api.dispatchAction({
         type: "downplay",
         seriesName,
@@ -38458,23 +41705,6 @@ var pptxPreview = (() => {
     }
   }
   var LegendView_default = LegendView;
-
-  // node_modules/echarts/lib/component/legend/legendFilter.js
-  function legendFilter(ecModel) {
-    var legendModels = ecModel.findComponents({
-      mainType: "legend"
-    });
-    if (legendModels && legendModels.length) {
-      ecModel.filterSeries(function(series) {
-        for (var i = 0; i < legendModels.length; i++) {
-          if (!legendModels[i].isSelected(series.name)) {
-            return false;
-          }
-        }
-        return true;
-      });
-    }
-  }
 
   // node_modules/echarts/lib/component/legend/legendAction.js
   function legendSelectActionHandler(methodName, payload, ecModel) {
@@ -38533,11 +41763,29 @@ var pptxPreview = (() => {
     registers.registerAction("legendUnSelect", "legendunselected", curry(legendSelectActionHandler, "unSelect"));
   }
 
+  // node_modules/echarts/lib/component/legend/legendFilter.js
+  var legendFilterStageHandler = createSimpleOverallStageHandler2(legendFilter);
+  function legendFilter(ecModel) {
+    var legendModels = ecModel.findComponents({
+      mainType: "legend"
+    });
+    if (legendModels && legendModels.length) {
+      ecModel.filterSeries(function(series) {
+        for (var i = 0; i < legendModels.length; i++) {
+          if (!legendModels[i].isSelected(series.name)) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+  }
+
   // node_modules/echarts/lib/component/legend/installLegendPlain.js
   function install9(registers) {
     registers.registerComponentModel(LegendModel_default);
     registers.registerComponentView(LegendView_default);
-    registers.registerProcessor(registers.PRIORITY.PROCESSOR.SERIES_FILTER, legendFilter);
+    registers.registerProcessor(registers.PRIORITY.PROCESSOR.SERIES_FILTER, legendFilterStageHandler);
     registers.registerSubTypeDefaulter("legend", function() {
       return "plain";
     });
@@ -38547,7 +41795,7 @@ var pptxPreview = (() => {
   // node_modules/echarts/lib/component/legend/ScrollableLegendModel.js
   var ScrollableLegendModel = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(ScrollableLegendModel2, _super);
       function ScrollableLegendModel2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -38577,16 +41825,16 @@ var pptxPreview = (() => {
           horizontal: ["M0,0L12,-10L12,10z", "M0,0L-12,-10L-12,10z"],
           vertical: ["M0,0L20,0L10,-20z", "M0,0L20,0L10,20z"]
         },
-        pageIconColor: "#2f4554",
-        pageIconInactiveColor: "#aaa",
+        pageIconColor: tokens_default.color.accent50,
+        pageIconInactiveColor: tokens_default.color.accent10,
         pageIconSize: 15,
         pageTextStyle: {
-          color: "#333"
+          color: tokens_default.color.tertiary
         },
         animationDurationUpdate: 800
       });
       return ScrollableLegendModel2;
-    }(LegendModel_default)
+    })(LegendModel_default)
   );
   function mergeAndNormalizeLayoutParams(legendModel, target, raw) {
     var orient = legendModel.getOrient();
@@ -38601,11 +41849,11 @@ var pptxPreview = (() => {
 
   // node_modules/echarts/lib/component/legend/ScrollableLegendView.js
   var Group3 = Group_default;
-  var WH = ["width", "height"];
-  var XY = ["x", "y"];
+  var WH3 = ["width", "height"];
+  var XY3 = ["x", "y"];
   var ScrollableLegendView = (
     /** @class */
-    function(_super) {
+    (function(_super) {
       __extends(ScrollableLegendView2, _super);
       function ScrollableLegendView2() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -38666,10 +41914,10 @@ var pptxPreview = (() => {
       ScrollableLegendView2.prototype.layoutInner = function(legendModel, itemAlign, maxSize, isFirstRender, selector, selectorPosition) {
         var selectorGroup = this.getSelectorGroup();
         var orientIdx = legendModel.getOrient().index;
-        var wh = WH[orientIdx];
-        var xy = XY[orientIdx];
-        var hw = WH[1 - orientIdx];
-        var yx = XY[1 - orientIdx];
+        var wh = WH3[orientIdx];
+        var xy = XY3[orientIdx];
+        var hw = WH3[1 - orientIdx];
+        var yx = XY3[1 - orientIdx];
         selector && box(
           // Buttons in selectorGroup always layout horizontally
           "horizontal",
@@ -38785,8 +42033,8 @@ var pptxPreview = (() => {
       ScrollableLegendView2.prototype._updatePageInfoView = function(legendModel, pageInfo) {
         var controllerGroup = this._controllerGroup;
         each(["pagePrev", "pageNext"], function(name) {
-          var key = name + "DataIndex";
-          var canJump = pageInfo[key] != null;
+          var key2 = name + "DataIndex";
+          var canJump = pageInfo[key2] != null;
           var icon = controllerGroup.childOfName(name);
           if (icon) {
             icon.setStyle("fill", canJump ? legendModel.get("pageIconColor", true) : legendModel.get("pageIconInactiveColor", true));
@@ -38808,8 +42056,8 @@ var pptxPreview = (() => {
         var contentGroup = this.getContentGroup();
         var containerRectSize = this._containerGroup.__rectSize;
         var orientIdx = legendModel.getOrient().index;
-        var wh = WH[orientIdx];
-        var xy = XY[orientIdx];
+        var wh = WH3[orientIdx];
+        var xy = XY3[orientIdx];
         var targetItemIndex = this._findTargetItemIndex(scrollDataIndex);
         var children = contentGroup.children();
         var targetItem = children[targetItemIndex];
@@ -38899,7 +42147,7 @@ var pptxPreview = (() => {
       };
       ScrollableLegendView2.type = "legend.scroll";
       return ScrollableLegendView2;
-    }(LegendView_default)
+    })(LegendView_default)
   );
   var ScrollableLegendView_default = ScrollableLegendView;
 
@@ -38937,7 +42185,7 @@ var pptxPreview = (() => {
   var PI7 = Math.PI;
   var PI29 = Math.PI * 2;
   var degree = 180 / PI7;
-  var SVGPathRebuilder = function() {
+  var SVGPathRebuilder = (function() {
     function SVGPathRebuilder2() {
     }
     SVGPathRebuilder2.prototype.reset = function(precision) {
@@ -39028,12 +42276,12 @@ var pptxPreview = (() => {
       return this._str;
     };
     return SVGPathRebuilder2;
-  }();
+  })();
   var SVGPathRebuilder_default = SVGPathRebuilder;
 
   // node_modules/zrender/lib/svg/mapStyleToAttrs.js
   var NONE = "none";
-  var mathRound2 = Math.round;
+  var mathRound3 = Math.round;
   function pathHasFill(style) {
     var fill = style.fill;
     return fill != null && fill !== NONE;
@@ -39081,7 +42329,7 @@ var pptxPreview = (() => {
       if (style.lineDash) {
         var _a2 = getLineDash(el2), lineDash = _a2[0], lineDashOffset = _a2[1];
         if (lineDash) {
-          lineDashOffset = mathRound2(lineDashOffset || 0);
+          lineDashOffset = mathRound3(lineDashOffset || 0);
           updateAttr("stroke-dasharray", lineDash.join(","));
           if (lineDashOffset || forceUpdate) {
             updateAttr("stroke-dashoffset", lineDashOffset);
@@ -39111,21 +42359,21 @@ var pptxPreview = (() => {
   function createElement(name) {
     return document.createElementNS(SVGNS, name);
   }
-  function createVNode(tag, key, attrs, children, text) {
+  function createVNode(tag, key2, attrs, children, text) {
     return {
       tag,
       attrs: attrs || {},
       children,
       text,
-      key
+      key: key2
     };
   }
   function createElementOpen(name, attrs) {
     var attrsStr = [];
     if (attrs) {
-      for (var key in attrs) {
-        var val = attrs[key];
-        var part = key;
+      for (var key2 in attrs) {
+        var val = attrs[key2];
+        var part = key2;
         if (val === false) {
           continue;
         } else if (val !== true && val != null) {
@@ -39462,8 +42710,8 @@ var pptxPreview = (() => {
         return animationName + " " + groupAnimator[0] + " both";
       }
     }
-    for (var key in groupAnimators) {
-      var animationCfg = createSingleCSSAnimation(groupAnimators[key]);
+    for (var key2 in groupAnimators) {
+      var animationCfg = createSingleCSSAnimation(groupAnimators[key2]);
       if (animationCfg) {
         cssAnimations.push(animationCfg);
       }
@@ -39537,14 +42785,14 @@ var pptxPreview = (() => {
     return val && isFunction(val.toDataURL);
   }
   function setStyleAttrs(attrs, style, el2, scope) {
-    mapStyleToAttrs(function(key, val) {
-      var isFillStroke = key === "fill" || key === "stroke";
+    mapStyleToAttrs(function(key2, val) {
+      var isFillStroke = key2 === "fill" || key2 === "stroke";
       if (isFillStroke && isGradient(val)) {
-        setGradient(style, attrs, key, scope);
+        setGradient(style, attrs, key2, scope);
       } else if (isFillStroke && isPattern(val)) {
-        setPattern(el2, attrs, key, scope);
+        setPattern(el2, attrs, key2, scope);
       } else {
-        attrs[key] = val;
+        attrs[key2] = val;
       }
       if (isFillStroke && scope.ssr && val === "none") {
         attrs["pointer-events"] = "visible";
@@ -39555,8 +42803,8 @@ var pptxPreview = (() => {
   function setMetaData(attrs, el2) {
     var metaData = getElementSSRData(el2);
     if (metaData) {
-      metaData.each(function(val, key) {
-        val != null && (attrs[(META_DATA_PREFIX + key).toLowerCase()] = val + "");
+      metaData.each(function(val, key2) {
+        val != null && (attrs[(META_DATA_PREFIX + key2).toLowerCase()] = val + "");
       });
       if (el2.isSilent()) {
         attrs[META_DATA_PREFIX + "silent"] = "true";
@@ -39770,7 +43018,7 @@ var pptxPreview = (() => {
         var offsetX = style.shadowOffsetX || 0;
         var offsetY = style.shadowOffsetY || 0;
         var blur_1 = style.shadowBlur;
-        var _a2 = normalizeColor(style.shadowColor), opacity = _a2.opacity, color = _a2.color;
+        var _a2 = normalizeColor(style.shadowColor), opacity = _a2.opacity, color3 = _a2.color;
         var stdDx = blur_1 / 2 / scaleX;
         var stdDy = blur_1 / 2 / scaleY;
         var stdDeviation = stdDx + " " + stdDy;
@@ -39786,7 +43034,7 @@ var pptxPreview = (() => {
             "dx": offsetX / scaleX,
             "dy": offsetY / scaleY,
             "stdDeviation": stdDeviation,
-            "flood-color": color,
+            "flood-color": color3,
             "flood-opacity": opacity
           })
         ]);
@@ -39823,11 +43071,11 @@ var pptxPreview = (() => {
     for (var i = 0, len2 = colors.length; i < len2; ++i) {
       var offset = round4(colors[i].offset) * 100 + "%";
       var stopColor = colors[i].color;
-      var _a2 = normalizeColor(stopColor), color = _a2.color, opacity = _a2.opacity;
+      var _a2 = normalizeColor(stopColor), color3 = _a2.color, opacity = _a2.opacity;
       var stopsAttrs = {
         "offset": offset
       };
-      stopsAttrs["stop-color"] = color;
+      stopsAttrs["stop-color"] = color3;
       if (opacity < 1) {
         stopsAttrs["stop-opacity"] = opacity;
       }
@@ -40000,14 +43248,14 @@ var pptxPreview = (() => {
   function createKeyToOldIdx(children, beginIdx, endIdx) {
     var map3 = {};
     for (var i = beginIdx; i <= endIdx; ++i) {
-      var key = children[i].key;
-      if (key !== void 0) {
+      var key2 = children[i].key;
+      if (key2 !== void 0) {
         if (true) {
-          if (map3[key] != null) {
-            console.error("Duplicate key " + key);
+          if (map3[key2] != null) {
+            console.error("Duplicate key " + key2);
           }
         }
-        map3[key] = i;
+        map3[key2] = i;
       }
     }
     return map3;
@@ -40061,41 +43309,41 @@ var pptxPreview = (() => {
     }
   }
   function updateAttrs(oldVnode, vnode) {
-    var key;
+    var key2;
     var elm = vnode.elm;
     var oldAttrs = oldVnode && oldVnode.attrs || {};
     var attrs = vnode.attrs || {};
     if (oldAttrs === attrs) {
       return;
     }
-    for (key in attrs) {
-      var cur = attrs[key];
-      var old = oldAttrs[key];
+    for (key2 in attrs) {
+      var cur = attrs[key2];
+      var old = oldAttrs[key2];
       if (old !== cur) {
         if (cur === true) {
-          elm.setAttribute(key, "");
+          elm.setAttribute(key2, "");
         } else if (cur === false) {
-          elm.removeAttribute(key);
+          elm.removeAttribute(key2);
         } else {
-          if (key === "style") {
+          if (key2 === "style") {
             elm.style.cssText = cur;
-          } else if (key.charCodeAt(0) !== xChar) {
-            elm.setAttribute(key, cur);
-          } else if (key === "xmlns:xlink" || key === "xmlns") {
-            elm.setAttributeNS(XMLNS, key, cur);
-          } else if (key.charCodeAt(3) === colonChar) {
-            elm.setAttributeNS(XML_NAMESPACE, key, cur);
-          } else if (key.charCodeAt(5) === colonChar) {
-            elm.setAttributeNS(XLINKNS, key, cur);
+          } else if (key2.charCodeAt(0) !== xChar) {
+            elm.setAttribute(key2, cur);
+          } else if (key2 === "xmlns:xlink" || key2 === "xmlns") {
+            elm.setAttributeNS(XMLNS, key2, cur);
+          } else if (key2.charCodeAt(3) === colonChar) {
+            elm.setAttributeNS(XML_NAMESPACE, key2, cur);
+          } else if (key2.charCodeAt(5) === colonChar) {
+            elm.setAttributeNS(XLINKNS, key2, cur);
           } else {
-            elm.setAttribute(key, cur);
+            elm.setAttribute(key2, cur);
           }
         }
       }
     }
-    for (key in oldAttrs) {
-      if (!(key in attrs)) {
-        elm.removeAttribute(key);
+    for (key2 in oldAttrs) {
+      if (!(key2 in attrs)) {
+        elm.removeAttribute(key2);
       }
     }
   }
@@ -40215,10 +43463,9 @@ var pptxPreview = (() => {
 
   // node_modules/zrender/lib/svg/Painter.js
   var svgId = 0;
-  var SVGPainter = function() {
+  var SVGPainter = (function() {
     function SVGPainter2(root, storage, opts) {
       this.type = "svg";
-      this.refreshHover = createMethodNotSupport("refreshHover");
       this.configLayer = createMethodNotSupport("configLayer");
       this.storage = storage;
       this._opts = opts = extend({}, opts);
@@ -40417,7 +43664,7 @@ var pptxPreview = (() => {
       return prefix + "charset=UTF-8," + encodeURIComponent(str);
     };
     return SVGPainter2;
-  }();
+  })();
   function createMethodNotSupport(method) {
     return function() {
       if (true) {
@@ -40447,8 +43694,8 @@ var pptxPreview = (() => {
           }
         }, bgVNode.attrs, "fill", scope);
       } else {
-        var _a2 = normalizeColor(backgroundColor2), color = _a2.color, opacity = _a2.opacity;
-        bgVNode.attrs.fill = color;
+        var _a2 = normalizeColor(backgroundColor2), color3 = _a2.color, opacity = _a2.opacity;
+        bgVNode.attrs.fill = color3;
         opacity < 1 && (bgVNode.attrs["fill-opacity"] = opacity);
       }
     }
@@ -40643,7 +43890,7 @@ var pptxPreview = (() => {
     var t = 60, n = 62, r = 45, a = 47, i = 33, o2 = 39, s = 34, l = 63, u = `\r
 	>/= `, c = 0, L = e2.length;
     return q_ = 1, Iee(
-      function f() {
+      (function f() {
         for (var d = []; e2[c]; ) {
           if (e2.charCodeAt(c) == t) {
             if (e2.charCodeAt(c + 1) === a) return c = e2.indexOf(">", c), d;
@@ -40685,7 +43932,7 @@ var pptxPreview = (() => {
           c++;
         }
         return d;
-      }()
+      })()
     );
   }
   function Iee(e2) {
@@ -40740,7 +43987,7 @@ var pptxPreview = (() => {
     } else if (e2["a:sysClr"]) r.color = "#" + e2["a:sysClr"].attrs.lastClr;
     else if (e2["a:prstClr"]) {
       var i = Se.get(e2["a:prstClr"], ["attrs", "val"]);
-      r.color = function(d) {
+      r.color = (function(d) {
         var h, p = [
           "white",
           "AliceBlue",
@@ -41043,7 +44290,7 @@ var pptxPreview = (() => {
           "9acd32"
         ], y = p.indexOf(d);
         return y != -1 && (h = g[y]), "#".concat(h || "000000");
-      }(i);
+      })(i);
     }
     var o2 = e2["a:srgbClr"] || e2["a:schemeClr"] || e2["a:sysClr"], s = Se.get(o2, ["a:alpha", "attrs", "val"], 1e5);
     r.alpha = s / 1e5;
@@ -41118,17 +44365,17 @@ var pptxPreview = (() => {
         n = i[0], r = i[1], a = i[2];
       }
       if (e2.lumMod) {
-        var o2 = function(c, f, d, h) {
+        var o2 = (function(c, f, d, h) {
           var p = kk(c, f, d), g = p.h, y = p.l * h;
           return y >= 1 && (y = 1), Mk(g, p.s, y);
-        }(n, r, a, e2.lumMod);
+        })(n, r, a, e2.lumMod);
         n = o2[0], r = o2[1], a = o2[2];
       }
-      if (e2.lumOff && (o2 = function(c, f, d, h) {
+      if (e2.lumOff && (o2 = (function(c, f, d, h) {
         var p = kk(c, f, d), g = p.h, y = h + p.l;
         return y > 1 && (y = 1), Mk(g, p.s, y);
-      }(n, r, a, e2.lumOff), n = o2[0], r = o2[1], a = o2[2]), e2.tint || t != null && t.light) {
-        var s = function(c, f, d, h) {
+      })(n, r, a, e2.lumOff), n = o2[0], r = o2[1], a = o2[2]), e2.tint || t != null && t.light) {
+        var s = (function(c, f, d, h) {
           h >= 1 && (h = 1);
           var g = function(v) {
             return Math.pow(Math.max(0, Math.min(255, v)) / 255, 2.2);
@@ -41142,7 +44389,7 @@ var pptxPreview = (() => {
             y(g(f) * h + (1 - h)),
             y(g(d) * h + (1 - h))
           ];
-        }(n, r, a, e2.tint || (t == null ? void 0 : t.light));
+        })(n, r, a, e2.tint || (t == null ? void 0 : t.light));
         n = s[0], r = s[1], a = s[2];
       }
       if (t != null && t.dark) {
@@ -41153,7 +44400,7 @@ var pptxPreview = (() => {
       return "rgba(".concat(n, ",").concat(r, ",").concat(a, ",").concat(u, ")");
     }
   }
-  var U0 = function() {
+  var U0 = (function() {
     function e2(t, n, r) {
       var a, i;
       this.uuid = p3e(), this.offset = { x: 0, y: 0 }, this.extend = { w: 0, h: 0 }, this.rotate = 0, this.order = 0, this.flipV = false, this.flipH = false, this.source = t, this.ctx = n, this.group = r;
@@ -41206,8 +44453,8 @@ var pptxPreview = (() => {
         "a:xfrm"
       ]))), t;
     }, e2;
-  }();
-  var cJe = function() {
+  })();
+  var cJe = (function() {
     function e2(t, n) {
       this.props = {}, this.inheritProps = {}, this.source = t, this.node = n, this._getInheritBodyProps(), this._parseBodyProps(), this._parseLstStyle(), this._parseText();
       var r = n && n.theme && n.theme.fontScheme && n.theme.fontScheme.minor;
@@ -41536,7 +44783,7 @@ var pptxPreview = (() => {
       var i = Se.get(t, "a:highlight");
       return i && (n.background = $r(i, this.node.theme, this.node)), (o = Se.get(t, ["a:latin", "attrs", "typeface"])) && (n.typeface = resolveTypeface(o, this.node.theme)), (o = Se.get(t, ["a:ea", "attrs", "typeface"])) && (n.typefaceEa = resolveTypeface(o, this.node.theme)), n;
     }, e2;
-  }();
+  })();
   function Av(e2, t, n) {
     var r = {};
     if (!Se.get(e2, "a:noFill")) {
@@ -41555,7 +44802,7 @@ var pptxPreview = (() => {
       return r;
     }
   }
-  var Jy = function(e2) {
+  var Jy = (function(e2) {
     function t(n, r, a, i) {
       var o2 = e2.call(this, n, a, i) || this;
       return o2.border = {}, o2.prstGeom = {}, o2.isTextBox = false, o2.pptx = r, o2._parseShape(), o2._parIsTextBox(), o2._parsePrstGeom(), o2._parseBackground(), o2._parseBorder(), o2._parseTxt(), o2;
@@ -41645,8 +44892,8 @@ var pptxPreview = (() => {
     }, t.prototype._parseTxt = function() {
       this.textBody = new cJe(Se.get(this.source, ["p:txBody"]), this);
     }, t.defaultBorderWidth = 0.75, t;
-  }(U0);
-  var TS = function(e2) {
+  })(U0);
+  var TS = (function(e2) {
     function t(n, r, a, i, o2) {
       var s, l, u = e2.call(this, r, i, o2) || this;
       u.userDrawn = true, u.pptx = a, u.path = n;
@@ -41683,8 +44930,8 @@ var pptxPreview = (() => {
       enumerable: false,
       configurable: true
     }), t;
-  }(U0);
-  var Eee = function(e2) {
+  })(U0);
+  var Eee = (function(e2) {
     function t(n, r, a, i) {
       var o2 = e2.call(this, n, a, i) || this;
       return o2.userDrawn = true, o2.props = { tableStyleId: "" }, o2.tableGrid = { gridCol: [] }, o2.tr = [], o2.tableStyles = {}, o2.pptx = r, o2._parseTableProps(), o2._parseTableGrid(), o2._parseTr(), o2._parseInheritStyles(), o2;
@@ -41968,8 +45215,8 @@ var pptxPreview = (() => {
         });
       });
     }, t;
-  }(U0);
-  var uO = function() {
+  })(U0);
+  var uO = (function() {
     function e2(t, n, r, a) {
       if (this.offset = { x: 0, y: 0 }, this.chOffset = { x: 0, y: 0 }, this.extend = { w: 0, h: 0 }, this.chExtend = { w: 0, h: 0 }, this.rotate = 0, this.nodes = [], this.flipV = false, this.flipH = false, this.userDrawn = true, this.order = Se.get(t, ["attrs", "order"]), this.pptx = n, this.ctx = r, this.source = t, this.group = a, this.source["p:grpSpPr"]) {
         var i = Se.get(this.source, ["p:grpSpPr", "a:xfrm"]);
@@ -42017,8 +45264,8 @@ var pptxPreview = (() => {
       var t = this.source;
       K0(this.nodes, t, this.pptx, this.ctx, this);
     }, e2;
-  }();
-  var Lee = function(e2) {
+  })();
+  var Lee = (function(e2) {
     function t(n, r, a, i) {
       var o2 = e2.call(this, n, a, i) || this;
       return o2.nodes = [], o2.pptx = r, o2;
@@ -42055,8 +45302,8 @@ var pptxPreview = (() => {
         });
       });
     }, t;
-  }(U0);
-  var Dee = function(e2) {
+  })(U0);
+  var Dee = (function(e2) {
     function t(n, r, a, i) {
       var o2 = e2.call(this, n, a, i) || this;
       return o2.options = {
@@ -42123,11 +45370,11 @@ var pptxPreview = (() => {
       }, this.options.xAxis = {
         type: "category",
         data: this.getCategory(a[0])
-      }, this.options.yAxis = { type: "value" }, this.options.series = this.parseLineSeries(a, n), this._palette(this.parseLineColors(a)), this.options.legend = function(legend) {
+      }, this.options.yAxis = { type: "value" }, this.options.series = this.parseLineSeries(a, n), this._palette(this.parseLineColors(a)), this.options.legend = (function(legend) {
         if (!legend) return { show: false };
         var pos = Se.get(legend, ["c:legendPos", "attrs", "val"]) || "r";
         return pos === "t" || pos === "tr" ? { top: "top", left: pos === "tr" ? "right" : "center" } : { bottom: "bottom", left: "center" };
-      }(Se.get(r, ["c:legend"])), Se.get(n, ["c:grouping", "attrs", "val"]) === "percentStacked" && (this.options.tooltip.valueFormatter = function(i) {
+      })(Se.get(r, ["c:legend"])), Se.get(n, ["c:grouping", "attrs", "val"]) === "percentStacked" && (this.options.tooltip.valueFormatter = function(i) {
         return (100 * i).toFixed(2) + "%";
       });
     }, t.prototype.parseBar = function(n, r) {
@@ -42142,11 +45389,11 @@ var pptxPreview = (() => {
       }, this.options.xAxis = { type: "value" }) : (this.options.xAxis = {
         type: "category",
         data: this.getCategory(a[0])
-      }, this.options.yAxis = { type: "value" }), this.options.series = this.parseBarSeries(a, n), this._palette(this.parseBarColors(a)), this.options.legend = function(legend) {
+      }, this.options.yAxis = { type: "value" }), this.options.series = this.parseBarSeries(a, n), this._palette(this.parseBarColors(a)), this.options.legend = (function(legend) {
         if (!legend) return { show: false };
         var pos = Se.get(legend, ["c:legendPos", "attrs", "val"]) || "r";
         return pos === "t" || pos === "tr" ? { top: "top", left: pos === "tr" ? "right" : "center" } : { bottom: "bottom", left: "center" };
-      }(Se.get(r, ["c:legend"])), Se.get(n, ["c:grouping", "attrs", "val"]) === "percentStacked" && (this.options.tooltip.valueFormatter = function(i) {
+      })(Se.get(r, ["c:legend"])), Se.get(n, ["c:grouping", "attrs", "val"]) === "percentStacked" && (this.options.tooltip.valueFormatter = function(i) {
         return (100 * i).toFixed(2) + "%";
       });
     }, t.prototype.parsePie = function(n) {
@@ -42274,7 +45521,7 @@ var pptxPreview = (() => {
         return +Se.get(a, ["c:v"]);
       });
     }, t;
-  }(U0);
+  })(U0);
   function fW(e2) {
     var t = {}, n = Se.get(e2, "attrs") || {};
     return Object.keys(n).forEach(function(r) {
@@ -42400,7 +45647,7 @@ var pptxPreview = (() => {
       });
     });
   }
-  var fJe = function() {
+  var fJe = (function() {
     function e2(t, n, r) {
       this.slideType = "slide", this.rels = {}, this.background = { type: "none" }, this.nodes = [], this.name = t, this.source = n, this.pptx = r;
     }
@@ -42500,8 +45747,8 @@ var pptxPreview = (() => {
       var r = this.slideLayout.getNodeByIdx(t), a = Se.get(r.source, n);
       return a || this.slideLayout.getNodeInheritAttrsByIdx(t, n);
     }, e2;
-  }();
-  var dJe = function() {
+  })();
+  var dJe = (function() {
     function e2(t, n, r) {
       this.slideType = "slideLayout", this.rels = {}, this.background = { type: "none" }, this.nodes = [], this.name = t, this.source = n, this.pptx = r;
     }
@@ -42599,8 +45846,8 @@ var pptxPreview = (() => {
       var r = this.slideMaster.getNodeByIdx(t);
       return r && Se.get(r.source, n);
     }, e2;
-  }();
-  var hJe = function() {
+  })();
+  var hJe = (function() {
     function e2(t, n, r) {
       this.slideType = "slideMaster", this.rels = {}, this.background = { type: "none" }, this.textStyles = { titleStyle: {}, bodyStyle: {}, otherStyle: {} }, this.defaultTextStyle = {}, this.nodes = [], this.tableStyles = {}, this.name = t, this.source = n, this.pptx = r, this.load();
     }
@@ -42741,8 +45988,8 @@ var pptxPreview = (() => {
     }, e2.prototype.getNodeInheritAttrsByType = function(t, n) {
     }, e2.prototype.getNodeInheritAttrsByIdx = function(t, n) {
     }, e2;
-  }();
-  var vJe = function() {
+  })();
+  var vJe = (function() {
     function e2(t, n, r) {
       this.clrScheme = {}, this.borderScheme = [], this.fontScheme = {}, this.name = t, this.source = n, this.pptx = r, this._parseClrScheme(), this._parseFontScheme(), this._parseLineStyleLst();
     }
@@ -42784,8 +46031,8 @@ var pptxPreview = (() => {
     }, e2.prototype.getLineStyle = function(t) {
       return this.borderScheme[t - 1];
     }, e2;
-  }();
-  var hW = function() {
+  })();
+  var hW = (function() {
     function e2(t) {
       this.slides = [], this.slideLayouts = [], this.slideMaster = [], this.themes = [], this.medias = {}, this.maxSlides = t > 0 ? t : Infinity, this.slideTotal = 0, this.wps = false;
     }
@@ -42985,7 +46232,7 @@ var pptxPreview = (() => {
                 return p._zipContents.files[m2];
               }), n = 0, r = t, g.label = 1;
             case 1:
-              return n < r.length ? (a = r[n], i = function(m2) {
+              return n < r.length ? (a = r[n], i = (function(m2) {
                 var v;
                 switch (m2) {
                   case "jpg":
@@ -43008,7 +46255,7 @@ var pptxPreview = (() => {
                     v = "image/*";
                 }
                 return v;
-              }((y = a.name).substr(2 + (~-y.lastIndexOf(".") >>> 0))), [4, a.async("base64")]) : [3, 4];
+              })((y = a.name).substr(2 + (~-y.lastIndexOf(".") >>> 0))), [4, a.async("base64")]) : [3, 4];
             case 2:
               o2 = g.sent(), this.medias[a.name] = "data:".concat(i, ";base64,").concat(o2), g.label = 3;
             case 3:
@@ -43076,7 +46323,7 @@ var pptxPreview = (() => {
     }, e2.prototype.getMedia = function(t) {
       return this.medias[t];
     }, e2;
-  }();
+  })();
   function UE(e2) {
     var t = e2.extend, n = e2.offset, r = e2.clip, a = e2.base64, i = e2.audioFile, o2 = e2.videoFile, s = document.createElement("div");
     s.style.setProperty("position", "absolute"), s.style.setProperty("left", n.x + "px"), s.style.setProperty("top", n.y + "px");
@@ -43159,7 +46406,7 @@ var pptxPreview = (() => {
         ][n - 1] || n + "";
         break;
       case "romanUcPeriod":
-        r.textContent = function(i) {
+        r.textContent = (function(i) {
           var o2 = [
             { value: 1e3, numeral: "M" },
             { value: 900, numeral: "CM" },
@@ -43180,7 +46427,7 @@ var pptxPreview = (() => {
           for (var s = "", l = 0; l < o2.length; l++)
             for (; i >= o2[l].value; ) s += o2[l].numeral, i -= o2[l].value;
           return s;
-        }(n) + ".";
+        })(n) + ".";
         break;
       case "alphaUcPeriod":
         r.textContent = Ck(n) + ".";
@@ -43192,13 +46439,13 @@ var pptxPreview = (() => {
         r.textContent = Ck(n).toLowerCase() + ")";
         break;
       case "ea1JpnChsDbPeriod":
-        r.textContent = function(i) {
+        r.textContent = (function(i) {
           var o2 = ["\u3007", "\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D", "\u4E03", "\u516B", "\u4E5D"];
           if (!Number.isInteger(i) || i < 0) return "";
           for (var s = "", l = i.toString(), u = 0; u < l.length; u++)
             s += o2[parseInt(l[u], 10)];
           return s;
-        }(n) + ".";
+        })(n) + ".";
     }
     e2.prepend(r);
   }
@@ -43228,10 +46475,10 @@ var pptxPreview = (() => {
           )
         );
       }
-      f.buAutoNum ? gJe(y, f, t) : f.buChar && function(C, T) {
+      f.buAutoNum ? gJe(y, f, t) : f.buChar && (function(C, T) {
         var k = document.createElement("span"), M = C.firstElementChild;
         k.style.color = M.style.color, k.style.fontSize = M.style.fontSize, k.textContent = { n: "\u25A0", l: "\u25CF", u: "\u25C6", p: "\u25A1", \u00FC: "\u2714", \u00D8: "\u27A2", "\u2022": "\u2022" }[T.buChar] || "\u25A0", k.style.marginRight = "10px", C.prepend(k);
-      }(y, f), y.style.paddingLeft = (f.marginLeft || 0) + (f.indent || 0) + "px";
+      })(y, f), y.style.paddingLeft = (f.marginLeft || 0) + (f.indent || 0) + "px";
     } else {
       var S = document.createElement("span");
       S.innerHTML = "&nbsp;", S.style.fontSize = l.size + "px", y.appendChild(S);
@@ -43440,7 +46687,7 @@ var pptxPreview = (() => {
     var h = { left: 0, top: 0, bottom: 0, w: t.w, h: t.h }, p = true;
     switch (e2.shape) {
       case "customGeom":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.prstGeom, b = v === void 0 ? {} : v, _ = m2.extend, S = b.pathList, C = b.w, T = b.h, k = lt2("path"), M = { moveTo: "M", lnTo: "L", cubicBezTo: "C", close: "Z" }, I = _.w / C, L = _.h / T, E = S.map(function(R) {
             var D = M[R.type], O = Array.isArray(R.points) ? R.points.map(function(B) {
               return "".concat(B[0] * I, ",").concat(B[1] * L);
@@ -43448,14 +46695,14 @@ var pptxPreview = (() => {
             return O ? "".concat(D, " ").concat(O) : "".concat(D);
           }).join(" ");
           return k.setAttribute("d", E), k.style.fillRule = "evenodd", k;
-        }(e2), Jg(e2, d, f);
+        })(e2), Jg(e2, d, f);
         break;
       case "flowChartProcess":
       case "rect":
         f = _W(e2);
         break;
       case "snip1Rect":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("polygon"), _ = at("adj", m2, jl(m2)), S = [
             "0,0",
             "".concat(v.w - _, ",0"),
@@ -43464,10 +46711,10 @@ var pptxPreview = (() => {
             "0,".concat(v.h)
           ].join(" ");
           return b.setAttribute("points", S), b;
-        }(e2);
+        })(e2);
         break;
       case "snip2SameRect":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("polygon"), _ = at("adj1", m2, jl(m2)), S = at("adj2", m2, 0), C = [
             [_, 0],
             [v.w - _, 0],
@@ -43481,10 +46728,10 @@ var pptxPreview = (() => {
             return "".concat(T[0], ",").concat(T[1]);
           }).join(" ");
           return b.setAttribute("points", C), b;
-        }(e2);
+        })(e2);
         break;
       case "snip2DiagRect":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("polygon"), _ = at("adj1", m2, 0), S = at("adj2", m2, jl(m2)), C = [
             [_, 0],
             [v.w - S, 0],
@@ -43498,10 +46745,10 @@ var pptxPreview = (() => {
             return "".concat(T[0], ",").concat(T[1]);
           }).join(" ");
           return b.setAttribute("points", C), b;
-        }(e2);
+        })(e2);
         break;
       case "snipRoundRect":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj1", m2, jl(m2)), S = at("adj2", m2, jl(m2)), C = [
             "M ".concat(_, ",0"),
             "L ".concat(v.w - S, ",0"),
@@ -43513,26 +46760,26 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", C), b;
-        }(e2);
+        })(e2);
         break;
       case "roundRect":
-        f = function(m2) {
+        f = (function(m2) {
           var v = _W(m2), b = at("adj", m2, jl(m2));
           return v.setAttribute("rx", b + "px"), v.setAttribute("ry", b + "px"), v;
-        }(e2);
+        })(e2);
         break;
       case "wedgeRoundRectCallout":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("g"), r3 = at("adj3", m2, jl(m2)), tipX = at("adj1", m2), tipY = v.h / 2 + at("adj2", m2), half = r3 / 2, body = _W(m2), tail = lt2("polygon");
           body.setAttribute("rx", r3 + "px"), body.setAttribute("ry", r3 + "px"), tail.setAttribute(
             "points",
             "0," + (tipY - half) + " " + tipX + "," + tipY + " 0," + (tipY + half)
           ), b.appendChild(body), b.appendChild(tail);
           return b;
-        }(e2);
+        })(e2);
         break;
       case "round1Rect":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj", m2, jl(m2)), S = [
             "M 0,0",
             "L ".concat(v.w - _, ",0"),
@@ -43542,10 +46789,10 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", S), b;
-        }(e2);
+        })(e2);
         break;
       case "round2SameRect":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj1", m2, jl(m2)), S = at("adj2", m2, 0), C = [
             "M ".concat(_, ",0"),
             "L ".concat(v.w - _, ",0"),
@@ -43559,10 +46806,10 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", C), b;
-        }(e2);
+        })(e2);
         break;
       case "round2DiagRect":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj1", m2, jl(m2)), S = at("adj2", m2, 0), C = [
             "M ".concat(_, ",0"),
             "L ".concat(v.w - S, ",0"),
@@ -43576,46 +46823,46 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", C), b;
-        }(e2);
+        })(e2);
         break;
       case "triangle":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("polygon"), _ = [
             "".concat(v.w / 2, ",0"),
             "0,".concat(v.h),
             "".concat(v.w, ",").concat(v.h)
           ].join(" ");
           return b.setAttribute("points", _), b;
-        }(e2);
+        })(e2);
         break;
       case "rtTriangle":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("polygon"), _ = ["0,".concat(v.h), "0,0", "".concat(v.w, ",").concat(v.h)].join(
             " "
           );
           return b.setAttribute("points", _), b;
-        }(e2);
+        })(e2);
         break;
       case "ellipse":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("ellipse"), _ = v.w / 2, S = v.h / 2, C = _, T = S;
           return b.setAttribute("cx", _ + "px"), b.setAttribute("cy", S + "px"), b.setAttribute("rx", C + "px"), b.setAttribute("ry", T + "px"), b;
-        }(e2);
+        })(e2);
         break;
       case "line":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = ["M 0,0", "L ".concat(v.w, ",").concat(v.h)].join(" ");
           return b.setAttribute("d", _), b;
-        }(e2), Jg(e2, d, f), p = false;
+        })(e2), Jg(e2, d, f), p = false;
         break;
       case "straightConnector1":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = ["M 0,0", "L ".concat(v.w, ",").concat(v.h)].join(" ");
           return b.setAttribute("d", _), b;
-        }(e2), Jg(e2, d, f), p = false;
+        })(e2), Jg(e2, d, f), p = false;
         break;
       case "bentConnector3":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = vW("adj1", m2, 0.5 * Math.max(v.w, v.h)), S = [
             "M 0,0",
             "L ".concat(_, ",0"),
@@ -43623,20 +46870,20 @@ var pptxPreview = (() => {
             "L ".concat(v.w, ",").concat(v.h)
           ].join(" ");
           return b.setAttribute("d", S), b;
-        }(e2), Jg(e2, d, f), p = false;
+        })(e2), Jg(e2, d, f), p = false;
         break;
       case "curvedConnector3":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = vW("adj1", m2, 0.5 * Math.max(v.w, v.h)), S = [
             "M0,0",
             "Q".concat(_, ",0 ").concat(_, ",").concat(v.h / 2),
             "T".concat(v.w, ",").concat(v.h)
           ].join(" ");
           return b.setAttribute("d", S), b;
-        }(e2), Jg(e2, d, f), p = false;
+        })(e2), Jg(e2, d, f), p = false;
         break;
       case "parallelogram":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj", m2, 0.5 * Math.min(v.w, v.h)), S = [
             "M".concat(_, ",0"),
             "L".concat(v.w, ",0"),
@@ -43645,7 +46892,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", S), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj", m2, 0.5 * Math.min(v.w, v.h)), _ = 0.84 * (v.w - b), S = 0.08 * v.h + b / v.w * v.h * 0.42;
           return {
             top: S,
@@ -43655,10 +46902,10 @@ var pptxPreview = (() => {
             w: _,
             h: v.h - 2 * S
           };
-        }(e2);
+        })(e2);
         break;
       case "trapezoid":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj", m2, 0.25 * Math.min(v.w, v.h)), S = [
             "M".concat(_, ",0"),
             "L".concat(v.w - _, ",0"),
@@ -43667,7 +46914,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", S), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj", m2, 0.5 * Math.min(v.w, v.h)), _ = b / v.w * 0.66 * v.h, S = 0.66 * b;
           return {
             top: _,
@@ -43677,10 +46924,10 @@ var pptxPreview = (() => {
             w: v.w - 2 * S,
             h: v.h - _
           };
-        }(e2);
+        })(e2);
         break;
       case "diamond":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = [
             "M".concat(v.w / 2, ",0"),
             "L".concat(v.w, ",").concat(v.h / 2),
@@ -43689,7 +46936,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", _), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = 0.25 * v.h, _ = 0.25 * v.w;
           return {
             top: b,
@@ -43699,10 +46946,10 @@ var pptxPreview = (() => {
             w: 0.5 * v.w,
             h: 0.5 * v.h
           };
-        }(e2);
+        })(e2);
         break;
       case "pentagon":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = [
             "M".concat(v.w / 2, ",0"),
             "L".concat(v.w, ",").concat(0.3771 * v.h),
@@ -43712,7 +46959,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", _), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = 0.227 * v.h, _ = 0.192 * v.w;
           return {
             top: b,
@@ -43722,10 +46969,10 @@ var pptxPreview = (() => {
             w: 0.616 * v.w,
             h: 0.773 * v.h
           };
-        }(e2);
+        })(e2);
         break;
       case "hexagon":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj", m2, 0.25 * Math.min(v.w, v.h)), S = [
             "M".concat(_, ",0"),
             "L".concat(v.w - _, ",0"),
@@ -43736,7 +46983,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", S), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj", m2, 0.25 * Math.min(v.w, v.h)), _ = 0.098 * v.h + b / v.w * 0.38 * v.h, S = 0.088 * v.w + 0.422 * b;
           return {
             top: _,
@@ -43746,10 +46993,10 @@ var pptxPreview = (() => {
             w: v.w - 2 * S,
             h: v.h - 2 * _
           };
-        }(e2);
+        })(e2);
         break;
       case "heptagon":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = [
             "M".concat(v.w / 2, ",0"),
             "L".concat(0.9 * v.w, ",").concat(0.2 * v.h),
@@ -43761,7 +47008,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", _), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend;
           return {
             top: 0.2 * v.h,
@@ -43771,10 +47018,10 @@ var pptxPreview = (() => {
             w: 0.8 * v.w,
             h: 0.6 * v.h
           };
-        }(e2);
+        })(e2);
         break;
       case "octagon":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj", m2, 0.29 * Math.min(v.w, v.h)), S = [
             "M".concat(_, ",0"),
             "L".concat(v.w - _, ",0"),
@@ -43787,7 +47034,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", S), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj", m2, 0.29 * Math.min(v.w, v.h));
           return {
             top: 0.5 * b,
@@ -43797,10 +47044,10 @@ var pptxPreview = (() => {
             w: v.w - b,
             h: v.h - b
           };
-        }(e2);
+        })(e2);
         break;
       case "decagon":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = 0.344, S = 0.117, C = 0.19, T = [
             "M".concat(v.w * _, ",0"),
             "L".concat(0.656 * v.w, ",0"),
@@ -43815,7 +47062,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", T), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = 0.117, _ = 0.19;
           return {
             top: v.h * _,
@@ -43825,10 +47072,10 @@ var pptxPreview = (() => {
             w: 0.766 * v.w,
             h: 0.62 * v.h
           };
-        }(e2);
+        })(e2);
         break;
       case "dodecagon":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = 0.364, S = 0.133, C = 0.135, T = [
             "M".concat(v.w * _, ",0"),
             "L".concat(0.636 * v.w, ",0"),
@@ -43845,7 +47092,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", T), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = 0.133, _ = 0.135;
           return {
             top: v.h * _,
@@ -43855,22 +47102,22 @@ var pptxPreview = (() => {
             w: 0.734 * v.w,
             h: 0.73 * v.h
           };
-        }(e2);
+        })(e2);
         break;
       case "pie":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = rn("adj1", m2, 360), S = rn("adj2", m2, 270), C = v.w / 2, T = v.h / 2, k = v.w / 2, M = v.h / 2, I = Wa(_, k, M, C, T), L = I[0], E = I[1], R = Wa(S, k, M, C, T), D = R[0], O = R[1], B = Qg(_, S), V = "M".concat(k, ",").concat(M, ", L").concat(L, " ").concat(E, " A ").concat(C, " ").concat(T, " 0 ").concat(B, " ").concat(1, " ").concat(D, " ").concat(O, " Z");
           return b.setAttribute("d", V), b;
-        }(e2), h = em(e2);
+        })(e2), h = em(e2);
         break;
       case "arc":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = rn("adj1", m2, 270), S = rn("adj2", m2, 0), C = v.w / 2, T = v.h / 2, k = v.w / 2, M = v.h / 2, I = Wa(_, k, M, C, T), L = I[0], E = I[1], R = Wa(S, k, M, C, T), D = R[0], O = R[1], B = Qg(_, S), V = "M".concat(L, ",").concat(E, " A ").concat(C, " ").concat(T, " 0 ").concat(B, " ").concat(1, " ").concat(D, " ").concat(O);
           return b.setAttribute("d", V), b;
-        }(e2), p = false;
+        })(e2), p = false;
         break;
       case "bracketPair":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj", m2, 0.16667 * Math.min(v.w, v.h)), S = [
             "M".concat(_, ",").concat(v.h),
             "Q".concat(0, ",").concat(v.h, " ").concat(0, ",").concat(v.h - _),
@@ -43882,7 +47129,7 @@ var pptxPreview = (() => {
             "Q".concat(v.w, ",").concat(v.h, " ").concat(v.w - _, ",").concat(v.h)
           ].join(" ");
           return b.setAttribute("d", S), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = 0.285 * at("adj", m2, 0.16667 * Math.min(v.w, v.h));
           return {
             top: b,
@@ -43892,10 +47139,10 @@ var pptxPreview = (() => {
             w: v.w - 2 * b,
             h: v.h - 2 * b
           };
-        }(e2), p = false;
+        })(e2), p = false;
         break;
       case "bracePair":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj", m2, 0.083335 * Math.min(v.w, v.h)), S = [
             "M".concat(2 * _, ",").concat(v.h),
             "Q".concat(_, ",").concat(v.h, " ").concat(_, ",").concat(v.h - _),
@@ -43913,7 +47160,7 @@ var pptxPreview = (() => {
             "Q".concat(v.w - _, ",").concat(v.h, " ").concat(v.w - 2 * _, ",").concat(v.h)
           ].join(" ");
           return b.setAttribute("d", S), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = 0.285 * at("adj", m2, 0.16667 * Math.min(v.w, v.h));
           return {
             top: b,
@@ -43923,22 +47170,22 @@ var pptxPreview = (() => {
             w: v.w - 2 * b,
             h: v.h - 2 * b
           };
-        }(e2), p = false;
+        })(e2), p = false;
         break;
       case "chord":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = rn("adj1", m2, 45), S = rn("adj2", m2, 270), C = v.w / 2, T = v.h / 2, k = v.w / 2, M = v.h / 2, I = Wa(_, k, M, C, T), L = I[0], E = I[1], R = Wa(S, k, M, C, T), D = R[0], O = R[1], B = Qg(_, S), V = "M".concat(L, " ").concat(E, " A ").concat(C, " ").concat(T, " 0 ").concat(B, " ").concat(1, " ").concat(D, " ").concat(O, " Z");
           return b.setAttribute("d", V), b;
-        }(e2), h = em(e2);
+        })(e2), h = em(e2);
         break;
       case "teardrop":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = rn("adj", m2, 1), S = v.w / 2, C = v.h / 2, T = v.w / 2, k = v.h / 2, M = Wa(0, T, k, S, C), I = M[0], L = M[1], E = Wa(270, T, k, S, C), R = E[0], D = E[1], O = Qg(0, 270), B = "M".concat(I, " ").concat(L, " A ").concat(S, " ").concat(C, " 0 ").concat(O, " ").concat(1, " ").concat(R, " ").concat(D), V = S * _, z = T + V, N = k - C * V / (v.w / 2), H = (v.w / 2 + z) / 2, G = (v.h / 2 + N) / 2;
           return B += " Q".concat(H, ",0 ").concat(z, ",").concat(N), B += " Q".concat(v.w, ",").concat(G, " ").concat(T + S, ",").concat(k), b.setAttribute("d", B), b;
-        }(e2), h = em(e2);
+        })(e2), h = em(e2);
         break;
       case "frame":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj1", m2, 0.12 * Math.min(v.w, v.h)), S = [
             "M0,0",
             "L".concat(v.w, ",0"),
@@ -43952,7 +47199,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", S), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.12 * Math.min(v.w, v.h));
           return {
             top: b,
@@ -43962,10 +47209,10 @@ var pptxPreview = (() => {
             w: v.w - 2 * b,
             h: v.h - 2 * b
           };
-        }(e2);
+        })(e2);
         break;
       case "halfFrame":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj1", m2, 0.333 * Math.min(v.w, v.h)), S = Math.min(
             at("adj2", m2, 0.333 * Math.min(v.w, v.h)),
             v.w * (1 - _ / v.h)
@@ -43979,10 +47226,10 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", C), b;
-        }(e2);
+        })(e2);
         break;
       case "corner":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj1", m2, 0.5 * Math.min(v.w, v.h)), S = at("adj2", m2, 0.5 * Math.min(v.w, v.h)), C = [
             "M0,0",
             "L".concat(S, ",0"),
@@ -43993,13 +47240,13 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", C), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.5 * Math.min(v.w, v.h));
           return { top: v.h - b, bottom: 0, left: 0, right: 0, w: v.w, h: b };
-        }(e2);
+        })(e2);
         break;
       case "diagStripe":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj", m2, 0.5 * Math.min(v.w, v.h)), S = v.w * _ / v.h, C = [
             "M".concat(S, ",0"),
             "L".concat(v.w, ",0"),
@@ -44008,7 +47255,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", C), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = rn("adj", m2, 0.5), _ = 0.5 * (1 - b) * v.h, S = 0.5 * (1 - b) * v.w;
           return {
             top: 0,
@@ -44018,10 +47265,10 @@ var pptxPreview = (() => {
             w: v.w - S,
             h: v.h - _
           };
-        }(e2);
+        })(e2);
         break;
       case "plus":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj", m2, 0.25 * Math.min(v.w, v.h)), S = [
             "M".concat(_, ",0"),
             "L".concat(v.w - _, ",0"),
@@ -44038,7 +47285,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", S), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj", m2, 0.25 * Math.min(v.w, v.h));
           return {
             top: b,
@@ -44048,10 +47295,10 @@ var pptxPreview = (() => {
             w: v.w,
             h: v.h - 2 * b
           };
-        }(e2);
+        })(e2);
         break;
       case "plaque":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("path"), _ = at("adj", m2, 0.16667 * Math.min(v.w, v.h)), S = [
             "M".concat(_, ",0"),
             "L".concat(v.w - _, ",0"),
@@ -44065,7 +47312,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return b.setAttribute("d", S), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj", m2, 0.16667 * Math.min(v.w, v.h));
           return {
             top: 0.72 * b,
@@ -44075,10 +47322,10 @@ var pptxPreview = (() => {
             w: v.w - 1.44 * b,
             h: v.w - 1.44 * b
           };
-        }(e2);
+        })(e2);
         break;
       case "can":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = m2.background, _ = lt2("g"), S = lt2("path"), C = at("adj", m2, 0.25 * Math.min(v.w, v.h)), T = [
             "M0,".concat(C / 2),
             "L0,".concat(v.h - C / 2),
@@ -44090,13 +47337,13 @@ var pptxPreview = (() => {
           S.setAttribute("d", T);
           var k = lt2("ellipse"), M = v.w / 2, I = C / 2, L = v.w / 2, E = C / 2;
           return k.setAttribute("cx", M + "px"), k.setAttribute("cy", I + "px"), k.setAttribute("rx", L + "px"), k.setAttribute("ry", E + "px"), (b == null ? void 0 : b.type) === "solidFill" && k.setAttribute("fill", Qn(b, { light: 0.5 }) || "transparent"), _.appendChild(S), _.appendChild(k), _;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj", m2, 0.25 * Math.min(v.w, v.h));
           return { top: b, bottom: 0, left: 0, right: 0, w: v.w, h: v.h - b };
-        }(e2);
+        })(e2);
         break;
       case "cube":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = m2.background, _ = at("adj", m2, 0.25 * Math.min(v.w, v.h)), S = lt2("g"), C = lt2("path"), T = [
             "M0,".concat(_),
             "L".concat(v.w - _, ",").concat(_),
@@ -44121,7 +47368,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return I.setAttribute("d", L), (b == null ? void 0 : b.type) === "solidFill" && I.setAttribute("fill", Qn(b, { dark: 0.6 }) || "transparent"), S.appendChild(C), S.appendChild(k), S.appendChild(I), S;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj", m2, 0.25 * Math.min(v.w, v.h));
           return {
             top: b,
@@ -44131,10 +47378,10 @@ var pptxPreview = (() => {
             w: v.w - b,
             h: v.h - b
           };
-        }(e2);
+        })(e2);
         break;
       case "bevel":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = m2.background, _ = at("adj", m2, 0.125 * Math.min(v.w, v.h)), S = lt2("g"), C = lt2("path"), T = [
             "M".concat(_, ",").concat(_),
             "L".concat(v.w - _, ",").concat(_),
@@ -44175,7 +47422,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return D.setAttribute("d", O), (b == null ? void 0 : b.type) === "solidFill" && D.setAttribute("fill", Qn(b, { light: 0.6 }) || "transparent"), S.appendChild(C), S.appendChild(k), S.appendChild(I), S.appendChild(E), S.appendChild(D), S;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj", m2, 0.125 * Math.min(v.w, v.h));
           return {
             top: b,
@@ -44185,10 +47432,10 @@ var pptxPreview = (() => {
             w: v.w - 2 * b,
             h: v.h - 2 * b
           };
-        }(e2);
+        })(e2);
         break;
       case "donut":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj", m2, 0.25 * Math.min(v.w, v.h)), _ = lt2("path"), S = [
             "M0,".concat(v.h / 2),
             "A".concat(v.w / 2, ",").concat(v.h / 2, " 0 1,1 0,").concat(v.h / 2 + 1),
@@ -44198,10 +47445,10 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return _.setAttribute("d", S), _;
-        }(e2), h = em(e2);
+        })(e2), h = em(e2);
         break;
       case "noSmoking":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj", m2, 0.25 * Math.min(v.w, v.h)), _ = lt2("path"), S = Math.atan(v.h / v.w), C = b / 2 / Math.sin(S), T = v.w / 2, k = v.h / 2, M = -1 * v.h / v.w, I = v.h * C / v.w, L = v.w / 2 - b, E = v.h / 2 - b, R = -2 * L * L * M * I, D = Math.sqrt(
             Math.pow(2 * L * L * M * I, 2) - 4 * (E * E + L * L * M * M) * L * L * (I * I - E * E)
           ), O = 2 * (E * E + L * L * M * M), B = (R - D) / O, V = M * B + I, z = (R + D) / O, N = M * z + I, H = -v.h * C / v.w, G = -2 * L * L * M * H, j = Math.sqrt(
@@ -44218,10 +47465,10 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return _.setAttribute("d", _e), _;
-        }(e2), h = em(e2);
+        })(e2), h = em(e2);
         break;
       case "rightArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.5 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.5 * Math.min(v.w, v.h)), S = lt2("path"), C = [
             "M0,".concat(v.h / 2 - b / 2),
             "L".concat(v.w - _, ",").concat(v.h / 2 - b / 2),
@@ -44233,7 +47480,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return S.setAttribute("d", C), S;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.5 * Math.min(v.w, v.h)), _ = b * at("adj2", m2, 0.5 * Math.min(v.w, v.h)) / v.h;
           return {
             top: v.h / 2 - b / 2,
@@ -44243,10 +47490,10 @@ var pptxPreview = (() => {
             w: v.w - _,
             h: b
           };
-        }(e2);
+        })(e2);
         break;
       case "leftArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.5 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.5 * Math.min(v.w, v.h)), S = lt2("path"), C = [
             "M0,".concat(v.h / 2),
             "L".concat(_, ",0"),
@@ -44258,7 +47505,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return S.setAttribute("d", C), S;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.5 * Math.min(v.w, v.h)), _ = b * at("adj2", m2, 0.5 * Math.min(v.w, v.h)) / v.h;
           return {
             top: v.h / 2 - b / 2,
@@ -44268,10 +47515,10 @@ var pptxPreview = (() => {
             w: v.w - _,
             h: b
           };
-        }(e2);
+        })(e2);
         break;
       case "upArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.5 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.5 * Math.min(v.w, v.h)), S = lt2("path"), C = [
             "M".concat(v.w / 2, ",0"),
             "L".concat(v.w, ",").concat(_),
@@ -44283,7 +47530,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return S.setAttribute("d", C), S;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.5 * Math.min(v.w, v.h)), _ = b * at("adj2", m2, 0.5 * Math.min(v.w, v.h)) / v.w;
           return {
             top: _,
@@ -44293,10 +47540,10 @@ var pptxPreview = (() => {
             w: b,
             h: v.h - _
           };
-        }(e2);
+        })(e2);
         break;
       case "downArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.5 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.5 * Math.min(v.w, v.h)), S = lt2("path"), C = [
             "M".concat(v.w / 2, ",").concat(v.h),
             "L0,".concat(v.h - _),
@@ -44308,7 +47555,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return S.setAttribute("d", C), S;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.5 * Math.min(v.w, v.h)), _ = b * at("adj2", m2, 0.5 * Math.min(v.w, v.h)) / v.w;
           return {
             top: 0,
@@ -44318,10 +47565,10 @@ var pptxPreview = (() => {
             w: b,
             h: v.h - _
           };
-        }(e2);
+        })(e2);
         break;
       case "leftRightArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.5 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.5 * Math.min(v.w, v.h)), S = lt2("path"), C = [
             "M0,".concat(v.h / 2),
             "L".concat(_, ",0"),
@@ -44336,7 +47583,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return S.setAttribute("d", C), S;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.5 * Math.min(v.w, v.h)), _ = b * at("adj2", m2, 0.5 * Math.min(v.w, v.h)) / v.h;
           return {
             top: v.h / 2 - b / 2,
@@ -44346,10 +47593,10 @@ var pptxPreview = (() => {
             w: v.w - 2 * _,
             h: b
           };
-        }(e2);
+        })(e2);
         break;
       case "upDownArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.5 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.5 * Math.min(v.w, v.h)), S = lt2("path"), C = [
             "M".concat(v.w / 2, ",").concat(v.h),
             "L0,".concat(v.h - _),
@@ -44364,7 +47611,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return S.setAttribute("d", C), S;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.5 * Math.min(v.w, v.h)), _ = b * at("adj2", m2, 0.5 * Math.min(v.w, v.h)) / v.w;
           return {
             top: _,
@@ -44374,10 +47621,10 @@ var pptxPreview = (() => {
             w: b,
             h: v.h - 2 * _
           };
-        }(e2);
+        })(e2);
         break;
       case "quadArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.225 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.225 * Math.min(v.w, v.h)), S = at("adj3", m2, 0.225 * Math.min(v.w, v.h)), C = lt2("path"), T = [
             "M0,".concat(v.h / 2),
             "L".concat(S, ",").concat(v.h / 2 - _),
@@ -44406,7 +47653,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return C.setAttribute("d", T), C;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.225 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.225 * Math.min(v.w, v.h)), S = at("adj3", m2, 0.225 * Math.min(v.w, v.h)), C = _ === 0 ? 0 : b * S / _ / 2;
           return {
             top: v.h / 2 - b / 2,
@@ -44416,10 +47663,10 @@ var pptxPreview = (() => {
             w: v.w - 2 * C,
             h: b
           };
-        }(e2);
+        })(e2);
         break;
       case "leftRightUpArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.225 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.225 * Math.min(v.w, v.h)), S = at("adj3", m2, 0.225 * Math.min(v.w, v.h)), C = lt2("path");
           b > 2 * _ && (b = 2 * _);
           var T = [
@@ -44443,7 +47690,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return C.setAttribute("d", T), C;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.225 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.225 * Math.min(v.w, v.h)), S = at("adj3", m2, 0.225 * Math.min(v.w, v.h)), C = _ === 0 ? 0 : b * S / _ / 2;
           return {
             top: v.h - _ - b / 2,
@@ -44453,10 +47700,10 @@ var pptxPreview = (() => {
             w: v.w - 2 * C,
             h: b
           };
-        }(e2);
+        })(e2);
         break;
       case "bentArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.25 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.25 * Math.min(v.w, v.h)), S = at("adj3", m2, 0.25 * Math.min(v.w, v.h)), C = at("adj4", m2, 0.4375 * Math.min(v.w, v.h)), T = lt2("path");
           b > 2 * _ && (b = 2 * _);
           var k = C - b;
@@ -44476,10 +47723,10 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return T.setAttribute("d", M), T;
-        }(e2);
+        })(e2);
         break;
       case "uturnArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.25 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.25 * Math.min(v.w, v.h)), S = at("adj3", m2, 0.25 * Math.min(v.w, v.h)), C = at("adj4", m2, 0.4375 * Math.min(v.w, v.h)), T = at("adj5", m2, 0.75 * Math.min(v.w, v.h)), k = lt2("path");
           b > 2 * _ && (b = 2 * _), T < S && (T = S + b), C > T - S && (C = T - S);
           var M = C - b;
@@ -44503,10 +47750,10 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return k.setAttribute("d", L), k;
-        }(e2);
+        })(e2);
         break;
       case "leftUpArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.25 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.25 * Math.min(v.w, v.h)), S = at("adj3", m2, 0.25 * Math.min(v.w, v.h));
           b > 2 * _ && (b = 2 * _);
           var C = Math.min(v.w, v.h) - 2 * _;
@@ -44527,7 +47774,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return k.setAttribute("d", M), k;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.25 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.25 * Math.min(v.w, v.h)), S = at("adj3", m2, 0.25 * Math.min(v.w, v.h));
           b > 2 * _ && (b = 2 * _);
           var C = Math.min(v.w, v.h) - 2 * _;
@@ -44541,10 +47788,10 @@ var pptxPreview = (() => {
             w: v.w - T - _,
             h: b
           };
-        }(e2);
+        })(e2);
         break;
       case "bentUpArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.25 * Math.min(v.w, v.h)), _ = at("adj2", m2, 0.25 * Math.min(v.w, v.h)), S = at("adj3", m2, 0.25 * Math.min(v.w, v.h));
           b > 2 * _ && (b = 2 * _);
           var C = Math.min(v.w, v.h) - 2 * _;
@@ -44562,13 +47809,13 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return k.setAttribute("d", M), k;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj1", m2, 0.25 * Math.min(v.w, v.h));
           return { top: v.h - b, bottom: 0, left: 0, right: 0, w: v.w, h: b };
-        }(e2);
+        })(e2);
         break;
       case "curvedRightArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = m2.background, _ = at("adj1", m2, 0.25 * Math.min(v.w, v.h)), S = at("adj2", m2, 0.5 * Math.min(v.w, v.h)), C = at("adj3", m2, 0.25 * Math.min(v.w, v.h));
           _ > S && (_ = S);
           var T = S / 2 - _ / 2, k = (v.h - S / 2 - _ / 2) / 2, M = (v.h - T - _) / 2, I = lt2("g"), L = lt2("path"), E = [
@@ -44590,10 +47837,10 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return R.setAttribute("d", D), I.appendChild(L), I.appendChild(R), I;
-        }(e2);
+        })(e2);
         break;
       case "curvedLeftArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = m2.background, _ = at("adj1", m2, 0.25 * Math.min(v.w, v.h)), S = at("adj2", m2, 0.5 * Math.min(v.w, v.h)), C = at("adj3", m2, 0.25 * Math.min(v.w, v.h));
           _ > S && (_ = S);
           var T = S / 2 - _ / 2, k = (v.h - S / 2 - _ / 2) / 2, M = (v.h - T - _) / 2, I = lt2("g"), L = lt2("path"), E = [
@@ -44615,10 +47862,10 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return R.setAttribute("d", D), (b == null ? void 0 : b.type) === "solidFill" && R.setAttribute("fill", Qn(b, { dark: 0.6 }) || "transparent"), I.appendChild(L), I.appendChild(R), I;
-        }(e2);
+        })(e2);
         break;
       case "curvedUpArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = m2.background, _ = at("adj1", m2, 0.25 * Math.min(v.w, v.h)), S = at("adj2", m2, 0.5 * Math.min(v.w, v.h)), C = at("adj3", m2, 0.25 * Math.min(v.w, v.h));
           _ > S && (_ = S);
           var T = S / 2 - _ / 2, k = (v.w - S / 2 - _ / 2) / 2, M = (v.w - T - _) / 2, I = lt2("g"), L = lt2("path"), E = [
@@ -44641,10 +47888,10 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return R.setAttribute("d", D), (b == null ? void 0 : b.type) === "solidFill" && R.setAttribute("fill", Qn(b, { dark: 0.6 }) || "transparent"), I.appendChild(L), I.appendChild(R), I;
-        }(e2);
+        })(e2);
         break;
       case "curvedDownArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = m2.background, _ = at("adj1", m2, 0.25 * Math.min(v.w, v.h)), S = at("adj2", m2, 0.5 * Math.min(v.w, v.h)), C = at("adj3", m2, 0.25 * Math.min(v.w, v.h));
           _ > S && (_ = S);
           var T = S / 2 - _ / 2, k = (v.w - S / 2 - _ / 2) / 2, M = (v.w - T - _) / 2, I = lt2("g"), L = lt2("path"), E = [
@@ -44667,10 +47914,10 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return R.setAttribute("d", D), I.appendChild(L), I.appendChild(R), I;
-        }(e2);
+        })(e2);
         break;
       case "stripedRightArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = lt2("g"), _ = Math.min(v.w, v.h), S = rn("adj1", m2, 0.5) * v.h, C = rn("adj2", m2, 0.5) * _, T = _ / 8, k = _ / 16, M = _ / 32, I = 5 * _ / 32, L = v.h / 2 - S / 2, E = v.h / 2 + S / 2, R = lt2("path");
           R.setAttribute(
             "d",
@@ -44704,7 +47951,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return O.setAttribute("d", B), b.appendChild(O), b.appendChild(R), b.appendChild(D), b;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj1", m2, 0.5) * v.h, S = _ * (rn("adj2", m2, 0.5) * b) / v.h;
           return {
             top: v.h / 2 - _ / 2,
@@ -44714,10 +47961,10 @@ var pptxPreview = (() => {
             w: v.w - S,
             h: _
           };
-        }(e2);
+        })(e2);
         break;
       case "notchedRightArrow":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj1", m2, 0.5) * v.h, S = rn("adj2", m2, 0.5) * b, C = _ * S / v.h, T = v.h / 2 - _ / 2, k = v.h / 2 + _ / 2, M = lt2("path"), I = [
             "M".concat(0, ",").concat(T),
             "L".concat(v.w - S, ",").concat(T),
@@ -44730,7 +47977,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return M.setAttribute("d", I), M;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj1", m2, 0.5) * v.h, S = rn("adj2", m2, 0.5) * b, C = _ * S / v.h, T = _ * S / v.h;
           return {
             top: v.h / 2 - _ / 2,
@@ -44740,10 +47987,10 @@ var pptxPreview = (() => {
             w: v.w - C - T,
             h: _
           };
-        }(e2);
+        })(e2);
         break;
       case "homePlate":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj", m2, 0.5) * b, S = lt2("path"), C = [
             "M".concat(0, ",").concat(0),
             "L".concat(v.w - _, ",").concat(0),
@@ -44753,7 +48000,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return S.setAttribute("d", C), S;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj", m2, 0.5) * b;
           return {
             top: 0,
@@ -44763,10 +48010,10 @@ var pptxPreview = (() => {
             w: v.w - _ / 2,
             h: v.h
           };
-        }(e2);
+        })(e2);
         break;
       case "chevron":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj", m2, 0.5) * b, S = lt2("path"), C = [
             "M".concat(0, ",").concat(0),
             "L".concat(v.w - _, ",").concat(0),
@@ -44777,7 +48024,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return S.setAttribute("d", C), S;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj", m2, 0.5) * b;
           return {
             top: 0,
@@ -44787,10 +48034,10 @@ var pptxPreview = (() => {
             w: v.w - 2 * _,
             h: v.h
           };
-        }(e2);
+        })(e2);
         break;
       case "blockArc":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = lt2("path"), S = rn("adj1", m2, 180), C = rn("adj2", m2, 0), T = at("adj3", m2, 0.25 * b), k = v.w / 2, M = v.h / 2, I = v.w / 2, L = v.h / 2, E = v.w / 2 - T, R = v.h / 2 - T, D = Wa(S, k, M, I, L), O = D[0], B = D[1], V = Wa(C, k, M, I, L), z = V[0], N = V[1], H = Wa(S, k, M, E, R), G = H[0], j = H[1], J = Wa(C, k, M, E, R), re = J[0], le = J[1], Te = Qg(S, C), fe = [
             "M".concat(O, ",").concat(B),
             "A".concat(I, " ").concat(L, " 0 ").concat(Te, " 1 ").concat(z, " ").concat(N),
@@ -44799,7 +48046,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return _.setAttribute("d", fe), _;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj1", m2, 180), S = rn("adj2", m2, 0), C = at("adj3", m2, 0.25 * b), T = v.w / 2, k = v.h / 2, M = v.w / 2, I = v.h / 2, L = v.w / 2 - C, E = v.h / 2 - C, R = Wa(_, T, k, M, I), D = R[0], O = R[1], B = Wa(S, T, k, M, I), V = B[0], z = B[1], N = Wa(_, T, k, L, E), H = N[0], G = N[1], j = Wa(S, T, k, L, E), J = [
             [D, O],
             [V, z],
@@ -44818,10 +48065,10 @@ var pptxPreview = (() => {
             w: Te - re,
             h: fe - le
           };
-        }(e2);
+        })(e2);
         break;
       case "foldedCorner":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = m2.background, _ = lt2("g"), S = lt2("path"), C = at("adj", m2, 0.16667 * Math.min(v.w, v.h)), T = [
             "M0,0",
             "L".concat(v.w, ",0"),
@@ -44838,13 +48085,13 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return M.setAttribute("d", I), (b == null ? void 0 : b.type) === "solidFill" && M.setAttribute("fill", Qn(b, { dark: 0.6 }) || "transparent"), _.appendChild(S), _.appendChild(M), _;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = at("adj", m2, 0.16667 * Math.min(v.w, v.h));
           return { top: 0, bottom: b, left: 0, right: 0, w: v.w, h: v.h - b };
-        }(e2);
+        })(e2);
         break;
       case "rightArrowCallout":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj1", m2, 0.25) * b, S = rn("adj2", m2, 0.25) * b, C = rn("adj3", m2, 0.25) * b, T = rn("adj4", m2, 0.64977) * v.w, k = lt2("path"), M = [
             "M".concat(0, ",").concat(0),
             "L".concat(T, ",").concat(0),
@@ -44860,13 +48107,13 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return k.setAttribute("d", M), k;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = rn("adj4", m2, 0.64977) * v.w;
           return { top: 0, bottom: 0, left: 0, right: v.w - b, w: b, h: v.h };
-        }(e2);
+        })(e2);
         break;
       case "leftArrowCallout":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj1", m2, 0.25) * b, S = rn("adj2", m2, 0.25) * b, C = rn("adj3", m2, 0.25) * b, T = rn("adj4", m2, 0.64977) * v.w, k = lt2("path"), M = [
             "M".concat(0, ",").concat(v.h / 2),
             "L".concat(C, ",").concat(v.h / 2 - S),
@@ -44882,13 +48129,13 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return k.setAttribute("d", M), k;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = rn("adj4", m2, 0.64977) * v.w;
           return { top: 0, bottom: 0, left: v.w - b, right: 0, w: b, h: v.h };
-        }(e2);
+        })(e2);
         break;
       case "upArrowCallout":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj1", m2, 0.25) * b, S = rn("adj2", m2, 0.25) * b, C = rn("adj3", m2, 0.25) * b, T = rn("adj4", m2, 0.64977) * v.h, k = lt2("path"), M = [
             "M".concat(0, ",").concat(v.h - T),
             "L".concat(v.w / 2 - _ / 2, ",").concat(v.h - T),
@@ -44904,13 +48151,13 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return k.setAttribute("d", M), k;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = rn("adj4", m2, 0.64977) * v.h;
           return { top: v.h - b, bottom: 0, left: 0, right: 0, w: v.w, h: b };
-        }(e2);
+        })(e2);
         break;
       case "downArrowCallout":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj1", m2, 0.25) * b, S = rn("adj2", m2, 0.25) * b, C = rn("adj3", m2, 0.25) * b, T = rn("adj4", m2, 0.64977) * v.h, k = lt2("path"), M = [
             "M".concat(0, ",").concat(0),
             "L".concat(v.w, ",").concat(0),
@@ -44926,13 +48173,13 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return k.setAttribute("d", M), k;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = rn("adj4", m2, 0.64977) * v.h;
           return { top: 0, bottom: v.h - b, left: 0, right: 0, w: v.w, h: b };
-        }(e2);
+        })(e2);
         break;
       case "leftRightArrowCallout":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj1", m2, 0.25) * b, S = rn("adj2", m2, 0.25) * b, C = rn("adj3", m2, 0.25) * b, T = rn("adj4", m2, 0.48123) * v.w, k = lt2("path"), M = [
             "M".concat(0, ",").concat(v.h / 2),
             "L".concat(C, ",").concat(v.h / 2 - S),
@@ -44955,7 +48202,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return k.setAttribute("d", M), k;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = rn("adj4", m2, 0.48123) * v.w;
           return {
             top: 0,
@@ -44965,10 +48212,10 @@ var pptxPreview = (() => {
             w: b,
             h: v.h
           };
-        }(e2);
+        })(e2);
         break;
       case "quadArrowCallout":
-        f = function(m2) {
+        f = (function(m2) {
           var v = m2.extend, b = Math.min(v.w, v.h), _ = rn("adj1", m2, 0.18515) * b, S = rn("adj2", m2, 0.18515) * b, C = rn("adj3", m2, 0.18515) * b, T = rn("adj4", m2, 0.48123) * v.w, k = rn("adj4", m2, 0.48123) * v.h, M = lt2("path"), I = [
             "M".concat(0, ",").concat(v.h / 2),
             "L".concat(C, ",").concat(v.h / 2 - S),
@@ -45005,7 +48252,7 @@ var pptxPreview = (() => {
             "Z"
           ].join(" ");
           return M.setAttribute("d", I), M;
-        }(e2), h = function(m2) {
+        })(e2), h = (function(m2) {
           var v = m2.extend, b = rn("adj4", m2, 0.48123) * v.w, _ = rn("adj4", m2, 0.48123) * v.h;
           return {
             top: v.h / 2 - _ / 2,
@@ -45015,16 +48262,16 @@ var pptxPreview = (() => {
             w: b,
             h: _
           };
-        }(e2);
+        })(e2);
     }
-    f && (p ? (a == null ? void 0 : a.type) === "blipFill" ? function(m2, v, b) {
+    f && (p ? (a == null ? void 0 : a.type) === "blipFill" ? (function(m2, v, b) {
       var _ = m2.background, S = _ === void 0 ? {} : _, C = m2.extend, T = S.base64, k = S.alpha, M = S.fillRect, I = M === void 0 ? {} : M, L = I.b, E = L === void 0 ? 0 : L, R = I.t, D = R === void 0 ? 0 : R, O = I.l, B = O === void 0 ? 0 : O, V = I.r, z = V === void 0 ? 0 : V, N = lt2("defs"), H = lt2("pattern");
       H.setAttribute("id", "background_" + m2.uuid), H.setAttribute("patternUnits", "userSpaceOnUse"), H.setAttribute("width", C.w + ""), H.setAttribute("height", C.h + "");
       var G = lt2("image");
       G.setAttribute("href", T), G.setAttribute("preserveAspectRatio", "none");
       var j = C.w * B, J = C.h * D, re = C.w * (1 - B - z), le = C.h * (1 - D - E);
       G.setAttribute("width", re + ""), G.setAttribute("height", le + ""), G.setAttribute("x", j + ""), G.setAttribute("y", J + ""), typeof k == "number" && G.setAttribute("opacity", k + ""), H.appendChild(G), N.appendChild(H), v.appendChild(N), b.setAttribute("fill", "url(#background_".concat(m2.uuid, ")"));
-    }(e2, d, f) : (a == null ? void 0 : a.type) === "gradFill" ? function(m2, v, b) {
+    })(e2, d, f) : (a == null ? void 0 : a.type) === "gradFill" ? (function(m2, v, b) {
       var _ = m2.background, S = _ === void 0 ? {} : _;
       m2.extend;
       var C = S.gsList, T = S.lin, k = S.path, M = S.tileRect, I = M === void 0 ? {} : M, L = lt2("defs"), E = lt2(k === "circle" ? "radialGradient" : "linearGradient");
@@ -45047,9 +48294,9 @@ var pptxPreview = (() => {
         "fill",
         "url(#background_grad_fill_".concat(m2.uuid, ")")
       );
-    }(e2, d, f) : f.setAttribute("fill", Qn(a) || "transparent") : f.setAttribute("fill", "transparent"), r.width ? (f.setAttribute("stroke-width", r.width + "px"), f.setAttribute("stroke", Qn(r.color) || "transparent")) : f.setAttribute("stroke-width", "0"), f.setAttribute(
+    })(e2, d, f) : f.setAttribute("fill", Qn(a) || "transparent") : f.setAttribute("fill", "transparent"), r.width ? (f.setAttribute("stroke-width", r.width + "px"), f.setAttribute("stroke", Qn(r.color) || "transparent")) : f.setAttribute("stroke-width", "0"), f.setAttribute(
       "stroke-dasharray",
-      function(m2) {
+      (function(m2) {
         return m2 && m2.type !== "solid" ? ({
           sysDot: [1, 1],
           sysDash: [3, 1],
@@ -45061,14 +48308,14 @@ var pptxPreview = (() => {
         }[m2.type] || []).map(function(v) {
           return v * m2.width;
         }).join(",") : "";
-      }(r)
+      })(r)
     ), f.setAttribute(
       "stroke-linecap",
       r.cap && { sq: "square", rnd: "round", flat: "butt" }[r.cap] || "square"
     ), f.setAttribute("stroke-linejoin", r.lineJoin || "round"), r.lineJoin === "miter" && f.setAttribute("stroke-miterlimit", r.miterLim + ""), d.appendChild(f));
     var g = [];
     o2 && g.push("scaleX(-1)"), s && g.push("scaleY(-1)"), d.style.setProperty("transform", g.join(" ")), l.appendChild(d);
-    var y = function(m2, v, b) {
+    var y = (function(m2, v, b) {
       var _;
       b === void 0 && (b = false);
       var S = m2.inheritProps, C = m2.props, T = m2.paragraphs;
@@ -45115,7 +48362,7 @@ var pptxPreview = (() => {
       }, D = 0, O = T; D < O.length; D++)
         R(O[D]);
       return M;
-    }(e2.textBody, h, e2.isTextBox);
+    })(e2.textBody, h, e2.isTextBox);
     return y && l.appendChild(y), i && l.style.setProperty("transform", "rotate(".concat(i, "deg)")), l;
   }
   function Ree(e2) {
@@ -45146,7 +48393,7 @@ var pptxPreview = (() => {
       return n !== t;
     });
   }
-  var SW = function() {
+  var SW = (function() {
     function e2(t, n, r) {
       this.scale = 1, this.wrapper = t, this.pptx = n, this.options = r, this._calcScaleAndRenderPort();
     }
@@ -45205,7 +48452,7 @@ var pptxPreview = (() => {
       }
       n.append(r);
     }, e2.prototype._renderNode = function(t) {
-      return t instanceof TS ? UE(t) : t instanceof Jy ? KE(t) : t instanceof uO ? Ree(t) : t instanceof Lee ? function(n) {
+      return t instanceof TS ? UE(t) : t instanceof Jy ? KE(t) : t instanceof uO ? Ree(t) : t instanceof Lee ? (function(n) {
         var r = document.createElement("div"), a = n.extend, i = n.offset, o2 = n.flipV, s = n.flipH, l = n.rotate, u = i.x, c = i.y, f = a.w, d = a.h;
         r.className = "smart-chart-diagram", r.style.position = "absolute", r.style.left = u + "px", r.style.top = c + "px", r.style.width = f + "px", r.style.height = d + "px";
         var h = [];
@@ -45215,7 +48462,7 @@ var pptxPreview = (() => {
           g instanceof TS ? y = UE(g) : g instanceof Jy && (y = KE(g)), y && r.appendChild(y);
         }
         return r;
-      }(t) : t instanceof Eee ? function(n) {
+      })(t) : t instanceof Eee ? (function(n) {
         var r = n.extend, a = n.offset, i = n.tr, o2 = n.tableGrid.gridCol, s = document.createElement("div");
         s.style.position = "absolute", s.style.left = a.x + "px", s.style.top = a.y + "px", s.style.width = r.w + "px", s.style.height = r.h + "px";
         var l = document.createElement("table");
@@ -45289,7 +48536,7 @@ var pptxPreview = (() => {
             }
           }), l.append(h);
         }), s.append(l), s;
-      }(t) : t instanceof Dee ? function(n) {
+      })(t) : t instanceof Dee ? (function(n) {
         var r = document.createElement("div"), a = n.extend, i = n.offset, o2 = n.flipV, s = n.flipH, l = n.rotate, u = n.options, c = i.x, f = i.y, d = a.w, h = a.h;
         r.className = "chart-node", r.style.position = "absolute", r.style.left = c + "px", r.style.top = f + "px", r.style.width = d + "px", r.style.height = h + "px";
         var p = [];
@@ -45302,7 +48549,7 @@ var pptxPreview = (() => {
             g && g.dispose(), g && (g = null);
           });
         }, 0), r;
-      }(t) : void 0;
+      })(t) : void 0;
     }, e2.prototype._renderBackground = function(t, n) {
       var r, a = document.createElement("div");
       a.classList.add("slide-background"), a.style.setProperty("position", "absolute"), a.style.setProperty("left", "0"), a.style.setProperty("top", "0"), a.style.setProperty("width", "100%"), a.style.setProperty("height", "100%");
@@ -45327,8 +48574,8 @@ var pptxPreview = (() => {
         }
       n.append(a);
     }, e2;
-  }();
-  var mJe = function() {
+  })();
+  var mJe = (function() {
     function e2(t, n) {
       this.currentIndex = -1, this.dom = t, this.options = n, this._renderWrapper();
     }
@@ -45436,7 +48683,7 @@ var pptxPreview = (() => {
     }, e2.prototype.destroy = function() {
       this.pptx && this.pptx.dispose && this.pptx.dispose(), o_("destroy"), Ik("destroy");
     }, e2;
-  }();
+  })();
   function yJe(e2, t) {
     return new mJe(e2, t);
   }
@@ -45452,21 +48699,6 @@ var pptxPreview = (() => {
 /*! Bundled license information:
 
 tslib/tslib.es6.js:
-  (*! *****************************************************************************
-  Copyright (c) Microsoft Corporation.
-  
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose with or without fee is hereby granted.
-  
-  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-  REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-  AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-  INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-  LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-  OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-  PERFORMANCE OF THIS SOFTWARE.
-  ***************************************************************************** *)
-
 tslib/tslib.es6.js:
   (*! *****************************************************************************
   Copyright (c) Microsoft Corporation.
@@ -45491,7 +48723,7 @@ zrender/lib/zrender.js:
   * All rights reserved.
   *
   * LICENSE
-  * https://github.com/ecomfe/zrender/blob/master/LICENSE.txt
+  * https://github.com/ecomfe/zrender/blob/master/LICENSE
   *)
 */
 
